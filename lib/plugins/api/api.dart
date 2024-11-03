@@ -7,17 +7,17 @@ import '../00_base/app_plugin.dart';
 import '../00_base/module_manager.dart';
 import 'modules/connection_module.dart';
 
-class ConnectToDb implements AppPlugin {
-  ConnectToDb._internal();
+class Api implements AppPlugin {
+  Api._internal();
 
-  static final ConnectToDb _instance = ConnectToDb._internal();
+  static final Api _instance = Api._internal();
 
-  factory ConnectToDb() => _instance;
+  factory Api() => _instance;
 
   @override
   void onStartup() {
-    // Register ConnectionModule during startup
-    print("Plugin onStartup - Registering ConnectionModule");
+    // Custom startup action with dynamic plugin name
+    print("${runtimeType} onStartup");
     registerModules(); // Register modules at startup
   }
 
