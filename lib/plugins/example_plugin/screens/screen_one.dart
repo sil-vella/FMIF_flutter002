@@ -1,8 +1,9 @@
-// screen_one.dart
+// pref_screen.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../screens/base_screen.dart';
 import '../../../providers/app_state_provider.dart';
+import '../../main_plugin/main_plugin_main.dart';
 
 class ScreenOne extends BaseScreen {
   const ScreenOne({Key? key}) : super(key: key);
@@ -12,6 +13,8 @@ class ScreenOne extends BaseScreen {
 
   @override
   Widget buildContent(BuildContext context) {
+    final pluginStateKey = "${MainPlugin().runtimeType}State"; // Dynamically generate the state key
+
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -21,7 +24,7 @@ class ScreenOne extends BaseScreen {
           // Display current state_example value
           Selector<AppStateProvider, int?>(
             selector: (context, appStateProvider) =>
-            appStateProvider.getPluginState<Map<String, dynamic>>("PluginBState")?["state_example"],
+            appStateProvider.getPluginState<Map<String, dynamic>>(pluginStateKey)?["state_example"],
             builder: (context, stateExample, child) {
               return Text("State Example: ${stateExample ?? 'N/A'}");
             },
@@ -30,11 +33,11 @@ class ScreenOne extends BaseScreen {
           ElevatedButton(
             onPressed: () {
               final appStateProvider = Provider.of<AppStateProvider>(context, listen: false);
-              final currentState = appStateProvider.getPluginState<Map<String, dynamic>>("PluginBState");
+              final currentState = appStateProvider.getPluginState<Map<String, dynamic>>(pluginStateKey);
 
               if (currentState != null && currentState.containsKey("state_example")) {
                 appStateProvider.updatePluginState(
-                  "PluginBState",
+                  pluginStateKey,
                   {
                     "state_example": currentState["state_example"] + 1,
                   },
@@ -47,5 +50,4 @@ class ScreenOne extends BaseScreen {
       ),
     );
   }
-
 }

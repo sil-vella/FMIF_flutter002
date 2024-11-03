@@ -4,21 +4,27 @@ import 'package:provider/provider.dart';
 import '../../../navigation/navigation_container.dart';
 import '../../../utils/consts/config.dart';
 import '../../00_base/module_manager.dart';
-import '../screens/screen_one.dart';
-import '../screens/screen_two.dart';
+import '../screens/pref_screen.dart';
 
 class PluginHelper {
-  static void apiConnection() {
+  /// Fetches categories from the API and returns the response data
+  static Future<dynamic> getCategories() async {
     final createConnectionModule = ModuleManager().getModule<Function>("ConnectionModule");
     final String baseUrl = Config.apiUrl;
 
     if (createConnectionModule != null) {
       final connectionModule = createConnectionModule(baseUrl);
-      connectionModule.sendGetRequest("/endpoint").then((response) {
+      try {
+        final response = await connectionModule.sendGetRequest("/get-categories");
         print("Response from ConnectionModule: $response");
-      });
+        return response; // Return the response data
+      } catch (error) {
+        print("Error fetching categories: $error");
+        return {"error": "Failed to fetch categories"};
+      }
     } else {
       print("ConnectionModule is not available");
+      return {"error": "ConnectionModule not available"};
     }
   }
 
@@ -28,25 +34,15 @@ class PluginHelper {
       drawerLinks: [
         ListTile(
           leading: const Icon(Icons.share),
-          title: const Text('Screen One'),
+          title: const Text('Preferences'),
           onTap: () {
-            NavigationContainer.navigateTo('/screen_one');
+            NavigationContainer.navigateTo('/prefs');
           },
         ),
       ],
-      bottomNavLinks: [
-        const BottomNavigationBarItem(
-          icon: Icon(Icons.share),
-          label: 'Screen One',
-        ),
-        const BottomNavigationBarItem(
-          icon: Icon(Icons.settings),
-          label: 'Screen Two',
-        ),
-      ],
+      bottomNavLinks: [],
       routes: {
-        '/screen_one': (context) => const ScreenOne(),
-        '/screen_two': (context) => const ScreenTwo(),
+        '/prefs': (context) => const PrefScreen(),
       },
     );
   }

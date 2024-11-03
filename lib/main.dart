@@ -1,4 +1,5 @@
 // main.dart
+import 'services/shared_preferences_service.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'providers/app_state_provider.dart';
@@ -7,8 +8,11 @@ import 'plugins/00_base/plugin_manager.dart';
 import 'plugins/00_base/plugin_registry.dart';
 import 'screens/home_screen.dart';
 
-void main() {
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Initialize SharedPreferencesService
+  await SharedPreferencesService().init();
 
   // Register all plugins before starting the app
   registerPlugins();

@@ -24,14 +24,23 @@ class PluginExample implements AppPlugin {
 
     registerModules(); // Register any shared modules required by the plugin
     PluginHelper.registerNavigation(context); // Use helper class for navigation registration
+    // Register plugin state with dynamic plugin name
+    // Register plugin state with dynamic plugin name, using the default state from reset()
     Provider.of<AppStateProvider>(context, listen: false)
-        .registerPluginState("PluginBState", {"state_example": 0}); // Set plugin state
-
-    PluginHelper.connectToDb(); // Use helper class for database connection
+        .registerPluginState("${runtimeType}State", reset());
   }
 
   @override
   void registerModules() {
     // Define modules if needed
+  }
+
+  // Method to return the default state structure
+  Map<String, dynamic> reset() {
+    return {
+      "key_one": 0,
+      "key_two": "",
+      "key_three": []
+    };
   }
 }

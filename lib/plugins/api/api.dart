@@ -23,7 +23,7 @@ class Api implements AppPlugin {
 
   @override
   void initialize(BuildContext context) {
-    print("ConnectToDb initialized");
+    print("ApiConnection initialized");
 
     // Access app state if needed after the app context is available
     final appState = Provider.of<AppStateProvider>(context, listen: false);
@@ -33,7 +33,7 @@ class Api implements AppPlugin {
     if (otherPluginState != null) {
       print("Accessed PluginBState: $otherPluginState");
     } else {
-      print("PluginBState not available during ConnectToDb initialization.");
+      print("PluginBState not available during ApiConnection initialization.");
     }
   }
 
