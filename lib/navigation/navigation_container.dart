@@ -4,16 +4,19 @@ import 'package:flutter/material.dart';
 typedef NavigationLink = ListTile;
 typedef BottomNavigationLink = BottomNavigationBarItem;
 
-class NavigationContainer extends StatelessWidget {
-  final Widget child;
-  static final List<NavigationLink> _drawerLinks = [];
-  static final List<BottomNavigationLink> _bottomNavLinks = [];
-  static final Map<String, WidgetBuilder> _routes = {};
+class NavigationContainer extends ChangeNotifier {
+  static final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
-  const NavigationContainer({Key? key, required this.child}) : super(key: key);
+  final List<NavigationLink> _drawerLinks = [];
+  final List<BottomNavigationLink> _bottomNavLinks = [];
+  final Map<String, WidgetBuilder> _routes = {};
 
-  /// Hook for plugins to register navigation links and routes
-  static void registerNavigationLinks({
+  List<NavigationLink> get drawerLinks => _drawerLinks;
+  List<BottomNavigationLink> get bottomNavLinks => _bottomNavLinks;
+  Map<String, WidgetBuilder> get routes => _routes;
+
+  /// Method for plugins to register navigation links and routes
+  void registerNavigationLinks({
     required List<NavigationLink> drawerLinks,
     required List<BottomNavigationLink> bottomNavLinks,
     required Map<String, WidgetBuilder> routes,
@@ -21,33 +24,16 @@ class NavigationContainer extends StatelessWidget {
     _drawerLinks.addAll(drawerLinks);
     _bottomNavLinks.addAll(bottomNavLinks);
     _routes.addAll(routes);
+    notifyListeners(); // Notify listeners after updating navigation links
   }
 
   /// Static method to navigate to a route
   static void navigateTo(String routeName) {
-    // Global key for navigation
     navigatorKey.currentState?.pushNamed(routeName);
   }
 
-  static final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
-
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      navigatorKey: navigatorKey,
-      routes: _routes, // Register all plugin routes here
-      home: Scaffold(
-        appBar: AppBar(
-          title: const Text("App Navigation"),
-        ),
-        drawer: _buildDrawer(context),
-        body: child,
-        bottomNavigationBar: _buildBottomNavigationBar(context),
-      ),
-    );
-  }
-
-  Widget _buildDrawer(BuildContext context) {
+  /// Builds the Drawer widget with registered links
+  Widget buildDrawer(BuildContext context) {
     return Drawer(
       child: ListView(
         padding: EdgeInsets.zero,
@@ -64,29 +50,37 @@ class NavigationContainer extends StatelessWidget {
               ),
             ),
           ),
-          ..._drawerLinks, // Add registered drawer links here
+          ...drawerLinks,
         ],
       ),
     );
   }
 
-  Widget? _buildBottomNavigationBar(BuildContext context) {
-    if (_bottomNavLinks.isEmpty) {
-      print("No items in bottom navigation bar. At least 1 item is required.");
-      return null;
-    } else if (_bottomNavLinks.length > 4) {
-      print("Too many items in bottom navigation bar. Limiting to 4 items.");
-    }
+  /// Builds the BottomNavigationBar widget with registered links
+  Widget? buildBottomNavigationBar() {
+    if (_bottomNavLinks.isEmpty) return null;
 
     return BottomNavigationBar(
-      items: _bottomNavLinks.take(4).toList(), // Limits to a maximum of 4 items
+      items: _bottomNavLinks.take(4).toList(),
       onTap: (index) {
-        // Navigate to a route based on the selected item
-        if (index < _bottomNavLinks.length) {
+        if (index < _routes.length) {
           final selectedRoute = _routes.keys.elementAt(index);
-          navigatorKey.currentState?.pushNamed(selectedRoute);
+          navigateTo(selectedRoute);
         }
       },
     );
+  }
+
+  /// Custom route generator to handle dynamically registered routes
+  Route<dynamic>? generateRoute(RouteSettings settings) {
+    final routeBuilder = _routes[settings.name];
+    if (routeBuilder != null) {
+      return MaterialPageRoute(
+        builder: (context) => routeBuilder(context),
+        settings: settings,
+      );
+    }
+    // Return null if the route is not found; Flutter will handle unknown routes
+    return null;
   }
 }

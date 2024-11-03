@@ -20,40 +20,40 @@ class PluginExample implements AppPlugin {
   void initialize(BuildContext context) {
     print("PluginExample initialized");
 
-    registerModules(); // Register shared modules during initialization
-    registerNavigation(); // Register navigation during initialization
-    // Register initial state for this plugin
+    registerModules(); // Register any shared modules required by the plugin
+    registerNavigation(context); // Register navigation items with context
     Provider.of<AppStateProvider>(context, listen: false)
-        .registerPluginState("PluginBState", {"state_example": 0});
+        .registerPluginState("PluginBState", {"state_example": 0}); // Set plugin state
 
-    connectToDb();
+    connectToDb(); // Connect to the database if needed
   }
 
   @override
   void registerModules() {
-
+    // Define modules if needed
   }
 
   /// Register navigation items for the shared plugin
-  void registerNavigation() {
-    NavigationContainer.registerNavigationLinks(
+  void registerNavigation(BuildContext context) {
+    final navigationContainer = Provider.of<NavigationContainer>(context, listen: false);
+    navigationContainer.registerNavigationLinks(
       drawerLinks: [
         ListTile(
           leading: const Icon(Icons.share),
-          title: const Text('Shared Plugin Item'),
+          title: const Text('Screen One'),
           onTap: () {
-            NavigationContainer.navigateTo('/shared_screen_one');
+            NavigationContainer.navigateTo('/screen_one'); // Use the route
           },
         ),
       ],
       bottomNavLinks: [
         const BottomNavigationBarItem(
           icon: Icon(Icons.share),
-          label: 'Shared One',
+          label: 'Screen One',
         ),
         const BottomNavigationBarItem(
           icon: Icon(Icons.settings),
-          label: 'Shared Two',
+          label: 'Screen Two',
         ),
       ],
       routes: {
@@ -64,15 +64,11 @@ class PluginExample implements AppPlugin {
   }
 
   void connectToDb() {
-    // Retrieve ConnectionModule factory at the time of connection
     final createConnectionModule = ModuleManager().getModule<Function>("ConnectionModule");
     final String baseUrl = Config.apiUrl;
 
     if (createConnectionModule != null) {
-      // Create a ConnectionModule instance with a specific baseUrl
       final connectionModule = createConnectionModule(baseUrl);
-
-      // Use the instance's methods
       connectionModule.sendGetRequest("/endpoint").then((response) {
         print("Response from ConnectionModule: $response");
       });

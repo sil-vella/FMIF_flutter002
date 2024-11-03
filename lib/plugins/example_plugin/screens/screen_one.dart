@@ -1,18 +1,17 @@
-// Example screen for the route
+// screen_one.dart
 import 'package:flutter/material.dart';
+import '../../../screens/base_screen.dart';
 
-class ScreenOne extends StatelessWidget {
+class ScreenOne extends BaseScreen {
   const ScreenOne({Key? key}) : super(key: key);
 
   @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text("Example Plugin Screen"),
-      ),
-      body: const Center(
-        child: Text("Welcome to the Example Plugin Screen!"),
-      ),
+  String get title => "Screen One";
+
+  @override
+  Widget buildContent(BuildContext context) {
+    return const Center(
+      child: Text("Welcome to Screen One!"),
     );
   }
 }

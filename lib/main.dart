@@ -1,21 +1,24 @@
 // main.dart
-import 'package:banner_example/plugins/00_base/plugin_manager.dart';
-import 'package:banner_example/plugins/admobs/modules/banner/banner_ad_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'providers/app_state_provider.dart';
-import 'plugins/00_base/plugin_registry.dart';
 import 'navigation/navigation_container.dart';
+import 'plugins/00_base/plugin_manager.dart';
+import 'plugins/00_base/plugin_registry.dart';
+import 'screens/home_screen.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Register all plugins
+  // Register all plugins before starting the app
   registerPlugins();
 
   runApp(
-    ChangeNotifierProvider(
-      create: (context) => AppStateProvider(),
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (context) => AppStateProvider()),
+        ChangeNotifierProvider(create: (context) => NavigationContainer()),
+      ],
       child: const MyApp(),
     ),
   );
@@ -26,24 +29,19 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Use addPostFrameCallback to set the initial app state and initialize plugins after the first frame
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      // Set the initial app state
-      Provider.of<AppStateProvider>(context, listen: false).setMainAppState({
-        "app_main_state": "init",
-      });
+    // Access NavigationContainer from the Provider
+    final navigationContainer = Provider.of<NavigationContainer>(context, listen: false);
 
-      // Initialize all plugins with the current context
+    // Initialize plugins after the first frame to ensure BuildContext is available
+    WidgetsBinding.instance.addPostFrameCallback((_) {
       PluginManager().initializeAllPlugins(context);
     });
 
-    return const MaterialApp(
-      title: 'Banner Example',
-      home: NavigationContainer(
-        child: Center(
-          child: BannerAdWidget(),
-        ),
-      ),
+    return MaterialApp(
+      title: 'My App',
+      navigatorKey: NavigationContainer.navigatorKey,
+      home: const HomeScreen(), // Start with HomeScreen, which uses BaseScreen
+      onGenerateRoute: navigationContainer.generateRoute, // Use custom route generator
     );
   }
 }
