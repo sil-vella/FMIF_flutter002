@@ -43,6 +43,7 @@ class MainPlugin implements AppPlugin {
   // Method to return the default state structure
   Map<String, dynamic> reset() {
     return {
+      "play_state": "idle",
       "celeb_category": "",
       "celeb_name": "",
       "celeb_img_url": "",

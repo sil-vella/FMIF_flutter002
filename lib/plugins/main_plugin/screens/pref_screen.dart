@@ -77,7 +77,9 @@ class _CategorySelectionState extends State<CategorySelection> {
       children: [
         const SizedBox(height: 20),
         const Text("Select a Category", style: TextStyle(fontSize: 20)),
-        Expanded(
+        // Limit the height to half of the screen's height
+        Container(
+          height: MediaQuery.of(context).size.height * 0.5,
           child: FutureBuilder<dynamic>(
             future: PluginHelper.getCategories(),
             builder: (context, snapshot) {
@@ -89,7 +91,7 @@ class _CategorySelectionState extends State<CategorySelection> {
                 final error = snapshot.data?['error'] ?? "Failed to load categories.";
                 return Center(child: Text(error));
               } else {
-                // Display radio buttons for each category
+                // Display radio buttons for each category in a scrollable list
                 final categories = snapshot.data as List<dynamic>;
                 return ListView(
                   children: categories.map<Widget>((category) {
