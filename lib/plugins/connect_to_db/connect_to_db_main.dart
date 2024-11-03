@@ -15,12 +15,17 @@ class ConnectToDb implements AppPlugin {
   factory ConnectToDb() => _instance;
 
   @override
+  void onStartup() {
+    // Register ConnectionModule during startup
+    print("Plugin onStartup - Registering ConnectionModule");
+    registerModules(); // Register modules at startup
+  }
+
+  @override
   void initialize(BuildContext context) {
     print("ConnectToDb initialized");
 
-    // Register shared modules before accessing any states or services
-    registerModules();
-
+    // Access app state if needed after the app context is available
     final appState = Provider.of<AppStateProvider>(context, listen: false);
 
     // Attempt to access another plugin's state (if necessary)

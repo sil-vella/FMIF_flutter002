@@ -14,6 +14,13 @@ class PluginManager {
     _registeredPlugins.add(plugin);
   }
 
+  /// Calls the onStartup hook for all registered plugins
+  void runOnStartup() {
+    for (var plugin in _registeredPlugins) {
+      plugin.onStartup(); // Call the onStartup method for each plugin
+    }
+  }
+
   /// Initializes all registered plugins, passing the BuildContext
   void initializeAllPlugins(BuildContext context) {
     for (var plugin in _registeredPlugins) {

@@ -13,6 +13,9 @@ void main() {
   // Register all plugins before starting the app
   registerPlugins();
 
+  // Run the onStartup hook for all registered plugins
+  PluginManager().runOnStartup();
+
   runApp(
     MultiProvider(
       providers: [
@@ -29,7 +32,6 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Access NavigationContainer from the Provider
     final navigationContainer = Provider.of<NavigationContainer>(context, listen: false);
 
     // Initialize plugins after the first frame to ensure BuildContext is available
@@ -40,8 +42,8 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'My App',
       navigatorKey: NavigationContainer.navigatorKey,
-      home: const HomeScreen(), // Start with HomeScreen, which uses BaseScreen
-      onGenerateRoute: navigationContainer.generateRoute, // Use custom route generator
+      home: const HomeScreen(),
+      onGenerateRoute: navigationContainer.generateRoute,
     );
   }
 }
