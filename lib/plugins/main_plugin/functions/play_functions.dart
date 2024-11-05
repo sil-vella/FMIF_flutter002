@@ -5,7 +5,7 @@ import '../main_plugin_main.dart'; // Import MainPlugin to access runtimeType
 import 'main_plugin_helper.dart'; // Import PluginHelper to access getCelebDetails
 
 class PlayFunctions {
-  static void handlePlayButton(AppStateProvider appStateProvider) {
+  static Future<void> handlePlayButton(AppStateProvider appStateProvider, BuildContext context) async {
     // Use MainPlugin's runtimeType for the dynamic key
     final pluginStateKey = "${MainPlugin().runtimeType}State";
     // Retrieve the current plugin state
@@ -16,8 +16,11 @@ class PlayFunctions {
     // Save the updated play state
     appStateProvider.updatePluginState(pluginStateKey, pluginState);
 
-    // Fetch and set celebrity details
-    fetchAndSetCelebDetails(appStateProvider, pluginState, pluginStateKey);
+    // Fetch and set celebrity details, awaiting its completion
+    await fetchAndSetCelebDetails(appStateProvider, pluginState, pluginStateKey);
+
+    // Navigate to the /play screen once details are fetched
+    Navigator.of(context).pushNamed('/play');
   }
 
   static Future<void> fetchAndSetCelebDetails(

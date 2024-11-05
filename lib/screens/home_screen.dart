@@ -20,7 +20,7 @@ class HomeScreen extends BaseScreen {
       child: ElevatedButton(
         onPressed: () {
           // Call handlePlayButton with AppStateProvider
-          PlayFunctions.handlePlayButton(appStateProvider);
+          PlayFunctions.handlePlayButton(appStateProvider, context);
         },
         child: const Text('Play'),
       ),

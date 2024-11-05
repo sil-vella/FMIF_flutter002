@@ -1,4 +1,3 @@
-// pref_screen.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../screens/base_screen.dart';
@@ -87,11 +86,17 @@ class _CategorySelectionState extends State<CategorySelection> {
                 return Center(child: CircularProgressIndicator());
               } else if (snapshot.hasError) {
                 return Center(child: Text("Error: ${snapshot.error}"));
-              } else if (!snapshot.hasData || (snapshot.data is Map && snapshot.data.containsKey('error'))) {
-                final error = snapshot.data?['error'] ?? "Failed to load categories.";
-                return Center(child: Text(error));
+              } else if (!snapshot.hasData) {
+                return Center(child: Text("No categories available."));
               } else {
-                // Display radio buttons for each category in a scrollable list
+                // Handle the case where the data is not a List
+                if (snapshot.data is! List) {
+                  return Center(
+                    child: Text("Unexpected data format. Please try again later."),
+                  );
+                }
+
+                // Now we can safely cast the data to List
                 final categories = snapshot.data as List<dynamic>;
                 return ListView(
                   children: categories.map<Widget>((category) {
