@@ -13,17 +13,10 @@ class PrefScreen extends BaseScreen {
   String get title => "Preferences";
 
   @override
-  Widget buildContent(BuildContext context) {
-    return CategorySelection();
-  }
+  _PrefScreenState createState() => _PrefScreenState();
 }
 
-class CategorySelection extends StatefulWidget {
-  @override
-  _CategorySelectionState createState() => _CategorySelectionState();
-}
-
-class _CategorySelectionState extends State<CategorySelection> {
+class _PrefScreenState extends BaseScreenState<PrefScreen> {
   String? selectedCategory;
 
   @override
@@ -70,33 +63,31 @@ class _CategorySelectionState extends State<CategorySelection> {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget buildContent(BuildContext context) {
     return Column(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         const SizedBox(height: 20),
         const Text("Select a Category", style: TextStyle(fontSize: 20)),
-        // Limit the height to half of the screen's height
         Container(
           height: MediaQuery.of(context).size.height * 0.5,
           child: FutureBuilder<dynamic>(
             future: PluginHelper.getCategories(),
             builder: (context, snapshot) {
               if (snapshot.connectionState == ConnectionState.waiting) {
-                return Center(child: CircularProgressIndicator());
+                return const Center(child: CircularProgressIndicator());
               } else if (snapshot.hasError) {
                 return Center(child: Text("Error: ${snapshot.error}"));
               } else if (!snapshot.hasData) {
-                return Center(child: Text("No categories available."));
+                return const Center(child: Text("No categories available."));
               } else {
-                // Handle the case where the data is not a List
+                // Ensure the data is a List
                 if (snapshot.data is! List) {
-                  return Center(
+                  return const Center(
                     child: Text("Unexpected data format. Please try again later."),
                   );
                 }
 
-                // Now we can safely cast the data to List
                 final categories = snapshot.data as List<dynamic>;
                 return ListView(
                   children: categories.map<Widget>((category) {

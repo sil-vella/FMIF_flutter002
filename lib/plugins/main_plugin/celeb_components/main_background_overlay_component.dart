@@ -3,8 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:shared_preferences/shared_preferences.dart';
 
-class MainBackgroundComponent extends StatelessWidget {
-  const MainBackgroundComponent({Key? key}) : super(key: key);
+class MainBackgroundOverlayComponent extends StatelessWidget {
+  const MainBackgroundOverlayComponent({Key? key}) : super(key: key);
 
   Future<String> _loadCategory() async {
     final prefs = await SharedPreferences.getInstance();
@@ -19,7 +19,7 @@ class MainBackgroundComponent extends StatelessWidget {
       await rootBundle.load(backgroundImagePath);
       return backgroundImagePath;
     } catch (e) {
-      return 'assets/app_images/main_background_default_001.png';
+      return 'assets/app_images/main_background_default_001_overlay.png';
     }
   }
 

@@ -1,4 +1,3 @@
-// home_screen.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../plugins/main_plugin/functions/play_functions.dart';
@@ -11,6 +10,11 @@ class HomeScreen extends BaseScreen {
   @override
   String get title => 'Home';
 
+  @override
+  _HomeScreenState createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends BaseScreenState<HomeScreen> {
   @override
   Widget buildContent(BuildContext context) {
     // Access AppStateProvider to pass into PlayFunctions

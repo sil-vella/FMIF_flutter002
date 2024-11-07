@@ -6,7 +6,7 @@ class AppStateProvider with ChangeNotifier {
   final Map<String, dynamic> _pluginStates = {};
 
   // State for the main app
-  Map<String, dynamic> _mainAppState = {};
+  Map<String, dynamic> _mainAppState = {'main_state': 'idle'};
 
   /// Register a new plugin state with a unique key
   void registerPluginState(String pluginKey, dynamic initialState) {
@@ -35,9 +35,9 @@ class AppStateProvider with ChangeNotifier {
 
   // ------ Main App State Methods ------
 
-  /// Set initial main app state
+  /// Set initial main app state with a default main_state of 'idle'
   void setMainAppState(Map<String, dynamic> initialState) {
-    _mainAppState = initialState;
+    _mainAppState = {'main_state': 'idle', ...initialState};
     notifyListeners();
   }
 
