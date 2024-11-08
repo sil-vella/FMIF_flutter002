@@ -1,11 +1,12 @@
-// plugins/shared_plugin/functions/play_functions.dart
 import 'package:flutter/material.dart';
 import '../../../providers/app_state_provider.dart';
 import '../main_plugin_main.dart'; // Import MainPlugin to access runtimeType
-import 'main_plugin_helper.dart'; // Import PluginHelper to access getCelebDetails
 import 'package:shared_preferences/shared_preferences.dart';
 
-class PlayFunctions {
+import 'animation_helper.dart';
+import 'main_plugin_helper.dart';
+
+class PlayFunctions extends PluginHelper {
   static Future<void> handlePlayButton(AppStateProvider appStateProvider,
       BuildContext context) async {
     // Retrieve the celeb_category from SharedPreferences
@@ -56,10 +57,23 @@ class PlayFunctions {
 
     // Navigate to the /play screen once details are fetched
     Navigator.of(context).pushNamed('/play');
+
+    // Trigger the bounce animation on CelebHeadComponent with ID "celebHead01"
+    AnimationManager.repeatAnimation(
+      "celebHead01",
+      reverse: true,
+      duration: Duration(seconds: 3),
+      curve: Curves.easeInOut,
+      infinite: true,
+    );
+
   }
 
-  static Future<void> fetchAndSetCelebDetails(AppStateProvider appStateProvider,
-      Map<String, dynamic> pluginState, String pluginStateKey) async {
+  static Future<void> fetchAndSetCelebDetails(
+      AppStateProvider appStateProvider,
+      Map<String, dynamic> pluginState,
+      String pluginStateKey,
+      ) async {
     // Retrieve the current category from the plugin state
     final celebCategory = pluginState['celeb_category'];
 
@@ -77,14 +91,15 @@ class PlayFunctions {
       appStateProvider.updatePluginState(pluginStateKey, pluginState);
 
       print("Celebrity details updated in the state: $pluginState");
+
     } catch (error) {
       print("Error fetching or updating celebrity details: $error");
     }
   }
 
+
   void selectedCeleb(AppStateProvider appStateProvider,
       Map<String, dynamic> pluginState, String pluginStateKey, String selectedName) async {
-
     // Compare selected name to the correct celebrity name
     if (selectedName == pluginState['celeb_name']) {
       onCorrectSelection(appStateProvider, pluginState, pluginStateKey);
@@ -96,12 +111,12 @@ class PlayFunctions {
   // Function triggered when the correct name is selected
   void onCorrectSelection(AppStateProvider appStateProvider,
       Map<String, dynamic> pluginState, String pluginStateKey) {
-
+    // Define your logic here
   }
 
   // Function triggered when an incorrect name is selected
   void onIncorrectSelection(AppStateProvider appStateProvider,
       Map<String, dynamic> pluginState, String pluginStateKey) {
-
+    // Define your logic here
   }
 }

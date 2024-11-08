@@ -4,7 +4,6 @@ import 'package:FMIF/plugins/main_plugin/celeb_components/celeb_head_component.d
 import 'package:FMIF/plugins/main_plugin/celeb_components/main_background_component.dart';
 import '../../../screens/base_screen.dart';
 import '../celeb_components/name_buttons_component.dart';
-import '../functions/animation_helper.dart';
 import '../celeb_components/main_background_overlay_component.dart';
 
 class GameScreen extends BaseScreen {
@@ -17,24 +16,7 @@ class GameScreen extends BaseScreen {
   _GameScreenState createState() => _GameScreenState();
 }
 
-class _GameScreenState extends BaseScreenState<GameScreen> with TickerProviderStateMixin {
-  late AnimationController mainController;
-
-  @override
-  void initState() {
-    super.initState();
-    mainController = AnimationController(
-      vsync: this,
-      duration: const Duration(seconds: 3),
-    )..repeat(reverse: true);
-  }
-
-  @override
-  void dispose() {
-    mainController.dispose();
-    super.dispose();
-  }
-
+class _GameScreenState extends BaseScreenState<GameScreen> {
   @override
   Widget buildContent(BuildContext context) {
     return Column(
@@ -44,18 +26,7 @@ class _GameScreenState extends BaseScreenState<GameScreen> with TickerProviderSt
           child: Stack(
             children: [
               const Positioned.fill(child: MainBackgroundComponent()),
-              Positioned.fill(
-                child: AnimationHelper.bounce(
-                  AnimationHelper.sideToSide(
-                    AnimationHelper.pulse(
-                      const CelebHeadComponent(),
-                      controller: mainController,
-                    ),
-                    controller: mainController,
-                  ),
-                  controller: mainController,
-                ),
-              ),
+              const Positioned.fill(child: CelebHeadComponent(id: 'celebHead01',)),
               const Positioned.fill(child: MainBackgroundOverlayComponent()),
               const Positioned(
                 bottom: 0,
