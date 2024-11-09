@@ -8,18 +8,32 @@ class CelebFactsComponent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final appStateProvider = Provider.of<AppStateProvider>(context);
     final pluginStateKey = "${MainPlugin().runtimeType}State";
-    final pluginState = appStateProvider.getPluginState<Map<String, dynamic>>(pluginStateKey) ?? {};
 
-    // Retrieve celebrity data from plugin state
-    final celebFacts = pluginState['celeb_facts'] ?? [];
+    // Use select to get the play_state and check if it is 'in_play'
+    final isInPlayState = context.select<AppStateProvider, bool>((appStateProvider) {
+      final pluginState = appStateProvider.getPluginState<Map<String, dynamic>>(pluginStateKey) ?? {};
+      return pluginState['play_state'] == 'in_play';
+    });
+
+    // Return an empty container if not in 'in_play' state
+    if (!isInPlayState) {
+      return SizedBox.shrink();
+    }
+
+    // Use select to retrieve celeb_facts and only rebuild when they change
+    final celebFacts = context.select<AppStateProvider, List<String>>(
+          (appStateProvider) {
+        final pluginState = appStateProvider.getPluginState<Map<String, dynamic>>(pluginStateKey) ?? {};
+        return List<String>.from(pluginState['celeb_facts'] ?? []);
+      },
+    );
 
     return Container(
       color: Colors.white,
       padding: const EdgeInsets.all(16.0),
       child: SizedBox(
-        height: MediaQuery.of(context).size.height * 0.2, // Set max height to 40% of screen
+        height: MediaQuery.of(context).size.height * 0.2,
         child: SingleChildScrollView(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,

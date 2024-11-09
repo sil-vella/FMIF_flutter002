@@ -1,8 +1,7 @@
-// plugins/shared_plugin/admobs_main.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/app_state_provider.dart';
-import '../../services/shared_preferences_service.dart'; // Import the service
+import '../../services/shared_preferences_service.dart';
 import 'functions/main_plugin_helper.dart';
 import '../00_base/app_plugin.dart';
 
@@ -28,10 +27,17 @@ class MainPlugin implements AppPlugin {
     final pluginStateKey = "${runtimeType}State";
     final appStateProvider = Provider.of<AppStateProvider>(context, listen: false);
 
-    // Retrieve the saved category as a String
     final savedCategory = SharedPreferencesService().getString("celeb_category") ?? "";
 
-    // Use saved category if available, otherwise use the default state
+    // Register or reset the plugin state with default values, including any saved category
+    appStateProvider.registerPluginState(pluginStateKey, reset()..["celeb_category"] = savedCategory);
+  }
+
+  // Method to reset the plugin state to default
+  void resetPlayState(BuildContext context) {
+    final appStateProvider = Provider.of<AppStateProvider>(context, listen: false);
+    final pluginStateKey = "${runtimeType}State";
+    final savedCategory = SharedPreferencesService().getString("celeb_category") ?? "";
     appStateProvider.registerPluginState(pluginStateKey, reset()..["celeb_category"] = savedCategory);
   }
 
@@ -40,14 +46,13 @@ class MainPlugin implements AppPlugin {
     // Define modules if needed
   }
 
-  // Method to return the default state structure
   Map<String, dynamic> reset() {
     return {
       "play_state": "idle",
-      "celeb_category": "",
       "celeb_name": "",
       "celeb_img_url": "",
-      "celeb_facts": []
+      "celeb_facts": [],
+      "plugin_anims": {},
     };
   }
 }

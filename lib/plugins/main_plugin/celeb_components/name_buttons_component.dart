@@ -11,36 +11,63 @@ class NameButtonsComponent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final appStateProvider = Provider.of<AppStateProvider>(context);
     final pluginStateKey = "${MainPlugin().runtimeType}State";
-    final pluginState = appStateProvider.getPluginState<Map<String, dynamic>>(pluginStateKey) ?? {};
+    final appStateProvider = Provider.of<AppStateProvider>(context, listen: false);
 
-    // Retrieve celebrity data from plugin state
-    final celebName = pluginState['celeb_name'];
-    final otherNames = List<String>.from(pluginState['other_celebs'] ?? []);
+    // Listen to `play_state` to control visibility of name buttons and Flush!! button
+    final playState = context.select<AppStateProvider, String?>((appStateProvider) {
+      final pluginState = appStateProvider.getPluginState<Map<String, dynamic>>(pluginStateKey) ?? {};
+      return pluginState['play_state'] as String?;
+    });
+
+    // Show name buttons only if play_state is `idle`
+    final showNameButtons = playState == 'in_play';
+
+    // Show Flush!! button only if play_state is `revealed_correct`
+    final showFlushButton = playState == 'revealed_correct';
+
+    // Retrieve celebrity data from plugin state with null checks
+    final pluginState = appStateProvider.getPluginState<Map<String, dynamic>>(pluginStateKey) ?? {};
+    final String? celebName = pluginState['celeb_name'] as String?;
+    final otherNames = List<String>.from(pluginState['other_celebs'] ?? <String>[]);
 
     // Combine celebName and otherNames into one list, then shuffle
-    final names = [celebName, ...otherNames];
+    final names = [
+      if (celebName != null) celebName, // Add celebName only if it’s not null
+      ...otherNames
+    ];
     names.shuffle(Random());
 
-    return Container(
+    return SingleChildScrollView(
       padding: EdgeInsets.all(10.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Wrap(
-            spacing: 8.0, // Spacing between buttons
-            runSpacing: 8.0, // Spacing between rows of buttons
-            children: names.map((name) {
-              return ElevatedButton(
+          if (showNameButtons)
+            Wrap(
+              spacing: 8.0, // Spacing between buttons
+              runSpacing: 8.0, // Spacing between rows of buttons
+              children: names.map((name) {
+                return ElevatedButton(
+                  onPressed: () {
+                    // Call selectedCeleb function with the selected name
+                    PlayFunctions.selectedCeleb(appStateProvider, pluginStateKey, name);
+                  },
+                  child: Text(name),
+                );
+              }).toList(),
+            ),
+          if (showFlushButton)
+            Padding(
+              padding: const EdgeInsets.only(top: 20.0),
+              child: ElevatedButton(
                 onPressed: () {
-                  // Call selectedCeleb function with the selected name
-                  PlayFunctions().selectedCeleb(appStateProvider, pluginState, pluginStateKey, name);
+                  // Define what should happen when "Flush!!" is pressed
+                  PlayFunctions.flushAction(appStateProvider, pluginStateKey); // Example action
                 },
-                child: Text(name),
-              );
-            }).toList(),
-          ),
+                child: Text("Flush!!"),
+              ),
+            ),
         ],
       ),
     );
