@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../../../providers/app_state_provider.dart';
 import '../functions/animation_helper.dart';
 import '../functions/play_functions.dart';
+import '../main_plugin_main.dart';
 
 class AfterMathComponent extends StatefulWidget {
   const AfterMathComponent({Key? key}) : super(key: key);
@@ -48,7 +49,8 @@ class _AfterMathComponentState extends State<AfterMathComponent>
 
   @override
   Widget build(BuildContext context) {
-    final pluginStateKey = "MainPluginState";
+    final appStateProvider = Provider.of<AppStateProvider>(context, listen: false);
+    final pluginStateKey = "${MainPlugin().runtimeType}State";
 
     // Listen for animation settings from `plugin_anims`
     final List<String>? aftermathAnims = context.select<AppStateProvider, List<String>?>(
@@ -95,7 +97,7 @@ class _AfterMathComponentState extends State<AfterMathComponent>
         end: Offset(0.0, 0.0),            // End at -100% offset
         infinite: false,
         onComplete: () {
-          print("Slide up and down animation completed");
+          PlayFunctions.resetPluginPlayState(appStateProvider, pluginStateKey);
         },
       );
     }

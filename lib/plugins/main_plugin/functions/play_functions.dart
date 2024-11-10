@@ -119,7 +119,7 @@ class PlayFunctions extends PluginHelper {
 
   static Future<void> resetPluginPlayState(AppStateProvider appStateProvider, String pluginStateKey) async {
     appStateProvider.updatePluginState(pluginStateKey, {
-      'plugin_anims': {'head_anims': []},
+      'plugin_anims': {},
     });
     // Force rebuild or small delay if needed to apply the animation
     await Future.delayed(Duration(milliseconds: 100));

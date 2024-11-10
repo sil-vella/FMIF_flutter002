@@ -2,6 +2,11 @@ import 'package:flutter/material.dart';
 import 'main_plugin_helper.dart';
 
 class AnimationHelper extends PluginHelper {
+  void _resetController(AnimationController controller) {
+    controller.stop();
+    controller.reset();
+  }
+
   Widget bounce(
       Widget child, {
         required AnimationController controller,
@@ -13,7 +18,9 @@ class AnimationHelper extends PluginHelper {
         bool infinite = true,
         VoidCallback? onComplete,
       }) {
+    _resetController(controller); // Stop and reset the controller
     controller.duration = duration;
+
     if (infinite) {
       controller.repeat(reverse: reverse);
     } else {
@@ -43,7 +50,9 @@ class AnimationHelper extends PluginHelper {
         bool infinite = true,
         VoidCallback? onComplete,
       }) {
+    _resetController(controller); // Stop and reset the controller
     controller.duration = duration;
+
     if (infinite) {
       controller.repeat(reverse: reverse);
     } else {
@@ -73,7 +82,9 @@ class AnimationHelper extends PluginHelper {
         bool infinite = true,
         VoidCallback? onComplete,
       }) {
+    _resetController(controller); // Stop and reset the controller
     controller.duration = duration;
+
     if (infinite) {
       controller.repeat(reverse: reverse);
     } else {
@@ -96,10 +107,10 @@ class AnimationHelper extends PluginHelper {
       Widget child, {
         required AnimationController shakeController,
         required AnimationController dropController,
-        Duration shakeDuration = const Duration(milliseconds: 100), // Fast shake cycle
-        Duration shakeTotalDuration = const Duration(seconds: 4),    // Total shake time
-        Duration dropDuration = const Duration(seconds: 2),          // Drop for 2 seconds
-        Duration dropStartDelay = const Duration(seconds: 2),        // Delay before drop starts
+        Duration shakeDuration = const Duration(milliseconds: 100),
+        Duration shakeTotalDuration = const Duration(seconds: 4),
+        Duration dropDuration = const Duration(seconds: 2),
+        Duration dropStartDelay = const Duration(seconds: 2),
         Curve shakeCurve = Curves.easeInOut,
         Curve dropCurve = Curves.easeIn,
         Offset shakeBegin = const Offset(-10.0, 0.0),
@@ -109,39 +120,34 @@ class AnimationHelper extends PluginHelper {
         bool infinite = false,
         VoidCallback? onComplete,
       }) {
-    // Set fast shake cycle duration
-    shakeController.duration = shakeDuration;
+    _resetController(shakeController); // Stop and reset controllers
+    _resetController(dropController);
 
-    // Start shaking continuously
+    shakeController.duration = shakeDuration;
     shakeController.repeat(reverse: true);
 
-    // Schedule shake to stop after total shake duration
     Future.delayed(shakeTotalDuration, () {
       shakeController.stop();
     });
 
-    // Ensure drop starts exactly after the drop delay
     Future.delayed(dropStartDelay, () {
       dropController.duration = dropDuration;
       dropController.forward();
     });
 
-    // Call the onComplete callback when the drop animation completes
     dropController.addStatusListener((status) {
       if (status == AnimationStatus.completed && !infinite) {
-        shakeController.stop(); // Stop shaking when the drop completes
+        shakeController.stop();
         onComplete?.call();
       }
     });
 
-    // Define shake animation and drop animation
     final shakeAnimation = Tween<Offset>(begin: shakeBegin, end: shakeEnd)
         .animate(CurvedAnimation(parent: shakeController, curve: shakeCurve));
 
     final dropAnimation = Tween<Offset>(begin: dropBegin, end: dropEnd)
         .animate(CurvedAnimation(parent: dropController, curve: dropCurve));
 
-    // Use AnimatedBuilder to apply both animations together
     return AnimatedBuilder(
       animation: Listenable.merge([shakeController, dropController]),
       builder: (context, child) {
@@ -159,49 +165,44 @@ class AnimationHelper extends PluginHelper {
   Widget slideUpAndDown(
       Widget child, {
         required AnimationController controller,
-        Duration duration = const Duration(seconds: 4), // Total duration for one full cycle
+        Duration duration = const Duration(seconds: 4),
         Curve curve = Curves.easeInOut,
-        Offset begin = const Offset(0.0, -1.0),       // Start at -100% vertical offset
-        Offset middle = const Offset(0.0, 0.0),       // Original position for pause
-        Offset end = const Offset(0.0, -1.0),         // End back at -100% offset
+        Offset begin = const Offset(0.0, -1.0),
+        Offset middle = const Offset(0.0, 0.0),
+        Offset end = const Offset(0.0, -1.0),
         bool infinite = false,
         VoidCallback? onComplete,
       }) {
-    // Set the total duration
+    _resetController(controller); // Stop and reset the controller
     controller.duration = duration;
 
-    // Define the animation sequence with slide up, pause, and slide down phases
     final animation = TweenSequence<Offset>([
       TweenSequenceItem(
         tween: Tween<Offset>(begin: begin, end: middle).chain(CurveTween(curve: curve)),
-        weight: 1, // Slide up in 1 second (25% of total time)
+        weight: 1,
       ),
       TweenSequenceItem(
-        tween: ConstantTween<Offset>(middle), // Pause at original position
-        weight: 2, // Pause for 2 seconds (50% of total time)
+        tween: ConstantTween<Offset>(middle),
+        weight: 2,
       ),
       TweenSequenceItem(
         tween: Tween<Offset>(begin: middle, end: end).chain(CurveTween(curve: curve)),
-        weight: 1, // Slide down in 1 second (25% of total time)
+        weight: 1,
       ),
     ]).animate(controller);
 
-    // Start the animation with repeat or forward based on `infinite`
     if (infinite) {
       controller.repeat();
     } else {
       controller.forward();
     }
 
-    // Listener for animation completion
     controller.addStatusListener((status) {
       if (status == AnimationStatus.completed && !infinite) {
         onComplete?.call();
       }
     });
 
-    // Return the animated child with SlideTransition
     return SlideTransition(position: animation, child: child);
   }
-
 }
