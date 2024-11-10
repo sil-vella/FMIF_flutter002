@@ -29,8 +29,12 @@ class CelebFactsComponent extends StatelessWidget {
       },
     );
 
+    // Use theme properties for color and text style
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+
     return Container(
-      color: Colors.white,
+      color: colorScheme.surface, // Use theme background color
       padding: const EdgeInsets.all(16.0),
       child: SizedBox(
         height: MediaQuery.of(context).size.height * 0.2,
@@ -38,15 +42,18 @@ class CelebFactsComponent extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
+              Text(
                 "Facts:",
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                style: textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 8),
               for (var fact in celebFacts)
                 Padding(
                   padding: const EdgeInsets.only(left: 8.0, top: 4),
-                  child: Text("• $fact", style: TextStyle(fontSize: 14)),
+                  child: Text(
+                    "• $fact",
+                    style: textTheme.bodyMedium, // Use theme text style for facts
+                  ),
                 ),
             ],
           ),

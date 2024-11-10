@@ -23,6 +23,7 @@ class _CelebHeadComponentState extends State<CelebHeadComponent>
   late final AnimationController dropController;
   late final AnimationController slideUpController;
   late final AnimationController flyAwayController;
+  late final AnimationController flashController; // Controller for flashing text
 
   late final AnimationHelper animationHelper;
 
@@ -37,6 +38,10 @@ class _CelebHeadComponentState extends State<CelebHeadComponent>
     dropController = AnimationController(vsync: this);
     slideUpController = AnimationController(vsync: this);
     flyAwayController = AnimationController(vsync: this);
+    flashController = AnimationController(
+      vsync: this,
+      duration: Duration(seconds: 1),
+    )..repeat(reverse: true); // Repeating for flashing effect
   }
 
   @override
@@ -48,6 +53,7 @@ class _CelebHeadComponentState extends State<CelebHeadComponent>
     dropController.dispose();
     slideUpController.dispose();
     flyAwayController.dispose();
+    flashController.dispose();
     super.dispose();
   }
 
@@ -55,6 +61,8 @@ class _CelebHeadComponentState extends State<CelebHeadComponent>
   Widget build(BuildContext context) {
     final appStateProvider = Provider.of<AppStateProvider>(context, listen: false);
     final pluginStateKey = "${MainPlugin().runtimeType}State";
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
 
     // Check the play state and determine visibility
     final String? playState = context.select<AppStateProvider, String?>(
@@ -64,10 +72,12 @@ class _CelebHeadComponentState extends State<CelebHeadComponent>
       },
     );
 
-    // Hide the component if play_state is 'idle' or 'aftermath'
-    if (playState == 'idle' || playState == 'aftermath_correct') {
-      return SizedBox.shrink();
-    }
+    // Determine when to show the "Incorrect!!" text and celeb image
+    final bool showText = playState == 'revealed_incorrect' ||
+        playState == 'aftermath_incorrect' ||
+        playState == 'revealed_correct' ||
+        playState == 'aftermath_correct';
+    final bool showCelebImage = playState != 'idle' && playState != 'aftermath_correct';
 
     // Retrieve `headAnims` from `plugin_anims`
     final List<String>? headAnims = context.select<AppStateProvider, List<String>?>(
@@ -84,10 +94,10 @@ class _CelebHeadComponentState extends State<CelebHeadComponent>
       },
     );
 
-    final bool isImageAvailable = celebImgUrl != null && celebImgUrl.isNotEmpty;
     final screenWidth = MediaQuery.of(context).size.width;
     final imageSize = screenWidth * 0.2;
 
+    // Celeb image container
     Widget animatedChild = Container(
       width: imageSize,
       height: imageSize,
@@ -100,7 +110,7 @@ class _CelebHeadComponentState extends State<CelebHeadComponent>
     );
 
     // Apply animations based on contents of `headAnims`
-    if (headAnims != null) {
+    if (showCelebImage && headAnims != null) {
       if (headAnims.contains('bounce')) {
         animatedChild = animationHelper.bounce(
           animatedChild,
@@ -168,34 +178,63 @@ class _CelebHeadComponentState extends State<CelebHeadComponent>
           },
         );
       }
-      if (headAnims != null && headAnims.contains('flyAway')) {
+      if (headAnims.contains('flyAway')) {
         animatedChild = animationHelper.flyAway(
           animatedChild,
           controller: flyAwayController,
           slideUpDuration: Duration(seconds: 2),
           pauseDuration: Duration(seconds: 2),
-          flyAwayDuration: Duration(seconds: 2),
-          begin: Offset(0.0, 0.0),                    // Start below original position
-          middle: Offset(0.0, 0.0),                   // Center position
-          end: Offset(0.0, -6.0),                     // Move offscreen upwards
-          initialSlideCurve: Curves.easeOutCubic,     // Gentle start to center
-          flyAwayCurve: Curves.easeInCubic,           // Exponential lift-off
+          flyAwayDuration: Duration(milliseconds: 1500),
+          begin: Offset(0.0, 0.0),
+          middle: Offset(0.0, 0.0),
+          end: Offset(0.0, -6.0),
+          initialSlideCurve: Curves.easeOutCubic,
+          flyAwayCurve: Curves.easeInCubic,
           infinite: false,
           onComplete: () {
             print("Fly-away animation completed");
           },
         );
       }
-
-
-
     }
 
-    // Center the widget without initial offset
-    return Center(
-      child: animatedChild,
+    // Add the flashing "Incorrect!!" text positioned 1/3 from the top of the screen
+    return Stack(
+      children: [
+        if (showText)
+          Positioned(
+            top: MediaQuery.of(context).size.height * 0.11,
+            left: MediaQuery.of(context).size.width * 0.125,
+            right: MediaQuery.of(context).size.width * 0.125,
+            child: FadeTransition(
+              opacity: flashController.drive(
+                Tween(begin: 0.3, end: 1.0).chain(CurveTween(curve: Curves.easeInOut)),
+              ),
+              child: Text(
+                playState == 'revealed_correct' || playState == 'aftermath_correct'
+                    ? "Correct!!"
+                    : "Incorrect!!",
+                textAlign: TextAlign.center,
+                style: textTheme.headlineMedium?.copyWith(
+                  fontSize: screenWidth * 0.1,
+                  fontWeight: FontWeight.bold,
+                  color: playState == 'revealed_correct' || playState == 'aftermath_correct'
+                      ? colorScheme.primary
+                      : colorScheme.error,
+                  shadows: [
+                    Shadow(
+                      blurRadius: 20.0,
+                      color: colorScheme.background,
+                      offset: Offset(0, 0),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        if (showCelebImage)
+          Center(child: animatedChild),
+      ],
     );
   }
-
-
 }

@@ -1,4 +1,6 @@
 // main.dart
+import 'package:FMIF/utils/consts/theme_consts.dart';
+
 import 'services/shared_preferences_service.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -46,6 +48,7 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'My App',
       navigatorKey: NavigationContainer.navigatorKey,
+      theme: AppTheme.darkTheme, // Apply the custom theme here
       home: const HomeScreen(),
       onGenerateRoute: navigationContainer.generateRoute,
     );

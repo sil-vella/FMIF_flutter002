@@ -88,7 +88,7 @@ class _AfterMathComponentState extends State<AfterMathComponent>
     );
 
     final screenWidth = MediaQuery.of(context).size.width;
-    final imageSize = screenWidth * 0.2;
+    final imageSize = screenWidth * 0.3;
 
     Widget animatedChild = Container(
       width: imageSize,
@@ -110,7 +110,7 @@ class _AfterMathComponentState extends State<AfterMathComponent>
         controller: slideUpAndDownController,
         duration: Duration(seconds: 4),
         begin: Offset(0.0, 1.0),
-        middle: Offset(0.0, 0.0),
+        middle: Offset(0.0, -0.3),
         end: Offset(0.0, 1.0),
         infinite: false,
         curve: Curves.easeIn,
@@ -126,9 +126,9 @@ class _AfterMathComponentState extends State<AfterMathComponent>
         controller: flyAwayController,
         slideUpDuration: Duration(seconds: 2),
         pauseDuration: Duration(seconds: 2),
-        flyAwayDuration: Duration(seconds: 2),
+        flyAwayDuration: Duration(milliseconds: 1700),
         begin: Offset(0.0, 1.0),                    // Start below original position
-        middle: Offset(0.0, 0.0),                   // Center position
+        middle: Offset(0.0, -0.3),                  // Center position
         end: Offset(0.0, -6.0),                     // Move offscreen upwards
         initialSlideCurve: Curves.easeOutCubic,     // Gentle start to center
         flyAwayCurve: Curves.easeInCubic,           // Exponential lift-off
