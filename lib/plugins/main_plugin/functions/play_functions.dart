@@ -46,7 +46,10 @@ class PlayFunctions extends PluginHelper {
     // Update the play state in the plugin state
     appStateProvider.updatePluginState(pluginStateKey, {
       'play_state': "in_play",
-      'plugin_anims': {'head_anims': ['slideUp','bounce', 'pulse', 'sideToSide']},
+      'plugin_anims': {
+        'head_anims': ['slideUp','bounce', 'pulse', 'sideToSide'],
+        'ribbon_anims': [],
+      },
     });
 
     // Navigate to the /play screen once details are fetched
@@ -88,26 +91,35 @@ class PlayFunctions extends PluginHelper {
     if (selectedName == pluginState['celeb_name']) {
       appStateProvider.updatePluginState(pluginStateKey, {
         'play_state': 'revealed_correct',
-        'plugin_anims': {'head_anims': ['pulse', 'sideToSide', 'bounce']}
+        'plugin_anims': {
+          'head_anims': ['pulse', 'sideToSide', 'bounce'],
+          'ribbon_anims': ['shrinkAndSlideDown'],
+        }
       });
 
     } else {
       appStateProvider.updatePluginState(pluginStateKey, {
         'play_state': 'revealed_incorrect',
-        'plugin_anims': {'head_anims': ['pulse', 'sideToSide', 'bounce']}
+        'flushing': 'true',
+        'plugin_anims': {
+          'head_anims': ['pulse', 'sideToSide', 'bounce'],
+          'ribbon_anims': ['shrinkAndSlideDown'],
+        }
       });
       await activateAftermath(appStateProvider, pluginStateKey);
     }
   }
 
   // Now static: Function triggered when the correct name is selected
-  static Future<void> flushAction(AppStateProvider appStateProvider, String pluginStateKey) async {
+  static  flushAction(AppStateProvider appStateProvider, String pluginStateKey)  {
     // Define logic for correct selection here, such as updating a score or showing feedback
     appStateProvider.updatePluginState(pluginStateKey, {
-      'plugin_anims': {'head_anims': ['shakeAndDrop', 'pulse', 'sideToSide', 'bounce']},
+      'flushing': true,
+      'plugin_anims': {
+        'head_anims': ['shakeAndDrop', 'pulse', 'sideToSide', 'bounce'],
+        'ribbon_anims': [],},
     });
-    // Force rebuild or small delay if needed to apply the animation
-    await Future.delayed(Duration(milliseconds: 100));
+
   }
 
   static Future<void> activateAftermath(AppStateProvider appStateProvider, String pluginStateKey) async {
@@ -123,6 +135,7 @@ class PlayFunctions extends PluginHelper {
     } else if (currentPlayState == 'revealed_incorrect') {
       // Update state with the animations for incorrect selection
       appStateProvider.updatePluginState(pluginStateKey, {
+        'flushing': false,
         'play_state': 'aftermath_incorrect',
         'plugin_anims': {
           'aftermath_anims': ['flyAway'],

@@ -293,4 +293,54 @@ class AnimationHelper extends PluginHelper {
 
     return SlideTransition(position: animation, child: child);
   }
+
+  Widget shrinkAndSlideDown(
+      Widget child, {
+        required AnimationController controller,
+        Duration duration = const Duration(seconds: 1),
+        Curve scaleCurve = Curves.easeInOut,
+        Curve slideCurve = Curves.easeIn,
+        double scaleBegin = 1.0,
+        double scaleEnd = 0.8,
+        Offset slideBegin = Offset.zero,
+        Offset slideEnd = const Offset(0.0, 1.0),
+        bool infinite = false,
+        VoidCallback? onComplete,
+      }) {
+    _resetController(controller);
+    controller.duration = duration;
+
+    // Define scale and slide animations
+    final scaleAnimation = Tween<double>(begin: scaleBegin, end: scaleEnd)
+        .animate(CurvedAnimation(parent: controller, curve: scaleCurve));
+    final slideAnimation = Tween<Offset>(begin: slideBegin, end: slideEnd)
+        .animate(CurvedAnimation(parent: controller, curve: slideCurve));
+
+    // Start the animation
+    if (infinite) {
+      controller.repeat(reverse: true);
+    } else {
+      controller.forward();
+    }
+
+    controller.addStatusListener((status) {
+      if (status == AnimationStatus.completed && !infinite) {
+        onComplete?.call();
+      }
+    });
+
+    return AnimatedBuilder(
+      animation: controller,
+      builder: (context, child) {
+        return Transform.scale(
+          scale: scaleAnimation.value,
+          child: SlideTransition(
+            position: slideAnimation,
+            child: child,
+          ),
+        );
+      },
+      child: child,
+    );
+  }
 }

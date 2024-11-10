@@ -53,6 +53,7 @@ class MainPlugin implements AppPlugin {
       "celeb_img_url": "",
       "celeb_facts": [],
       "plugin_anims": {},
+      'flushing': false,
     };
   }
 }

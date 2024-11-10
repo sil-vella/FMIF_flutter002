@@ -1,3 +1,4 @@
+import 'package:FMIF/plugins/main_plugin/celeb_components/main_background_ribbon_component.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:FMIF/plugins/main_plugin/celeb_components/celeb_facts_component.dart';
@@ -20,53 +21,48 @@ class GameScreen extends BaseScreen {
 }
 
 class _GameScreenState extends BaseScreenState<GameScreen> with SingleTickerProviderStateMixin {
-  bool shouldRebuild = false;
-
   @override
   Widget buildContent(BuildContext context) {
     final pluginStateKey = "MainPluginState";
 
-    // Track when play_state changes to 'in_play'
+    // Monitor play_state changes to trigger specific actions or animations if needed
     context.select<AppStateProvider, String?>((appStateProvider) {
       final pluginState = appStateProvider.getPluginState<Map<String, dynamic>>(pluginStateKey) ?? {};
-      final playState = pluginState['play_state'] as String?;
-
-      // Trigger rebuild if state changes to 'in_play'
-      if (playState == 'in_play' && !shouldRebuild) {
-        setState(() {
-          shouldRebuild = true;
-        });
-      } else if (playState != 'in_play' && shouldRebuild) {
-        shouldRebuild = false;  // Reset flag when not in 'in_play' to allow future rebuilds
-      }
-
-      return playState;
+      return pluginState['play_state'] as String?;
     });
 
-    return Expanded(
-      child: Stack(
-        children: [
-          const Positioned.fill(child: MainBackgroundComponent()),
-          Positioned.fill(child: AfterMathComponent()),
-          Positioned.fill(child: CelebHeadComponent()),
+    return Column(
+      children: [
+        Expanded(
+          child: Stack(
+            children: [
+              const Positioned.fill(child: MainBackgroundComponent()),
+              const Positioned.fill(child: AfterMathComponent()),
+              const Positioned.fill(child: CelebHeadComponent()),
+              const Positioned.fill(child: MainBackgroundOverlayComponent()),
+              const Positioned.fill(child: RibbonComponent()),
 
-          const Positioned.fill(child: MainBackgroundOverlayComponent()),
-          Positioned(
-            top: 0,
-            left: 0,
-            right: 0,
-            child: const NameButtonsComponent(),
+              // Name buttons component at the top
+              const Positioned(
+                top: 0,
+                left: 0,
+                right: 0,
+                child: NameButtonsComponent(),
+              ),
+
+              // Celeb facts component at the bottom with a scrollable container
+              Positioned(
+                bottom: 0,
+                left: 0,
+                right: 0,
+                child: SingleChildScrollView(
+                  child: CelebFactsComponent(),
+                ),
+              ),
+            ],
           ),
-          Positioned(
-            bottom: 0,
-            left: 0,
-            right: 0,
-            child: SingleChildScrollView(
-              child: CelebFactsComponent(),
-            ),
-          ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }
