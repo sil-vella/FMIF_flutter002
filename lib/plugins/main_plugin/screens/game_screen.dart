@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:FMIF/plugins/main_plugin/celeb_components/celeb_facts_component.dart';
 import 'package:FMIF/plugins/main_plugin/celeb_components/celeb_head_component.dart';
 import 'package:FMIF/plugins/main_plugin/celeb_components/main_background_component.dart';
 import 'package:FMIF/plugins/main_plugin/celeb_components/aftermath_component.dart';
+import '../../../providers/app_state_provider.dart';
 import '../../../screens/base_screen.dart';
 import '../celeb_components/name_buttons_component.dart';
 import '../celeb_components/main_background_overlay_component.dart';
@@ -30,6 +32,15 @@ class _GameScreenState extends BaseScreenState<GameScreen> with SingleTickerProv
 
   @override
   Widget buildContent(BuildContext context) {
+    // Listen for changes in `play_state` to trigger a rebuild of `GameScreen`
+    final pluginStateKey = "MainPluginState";
+    final playState = context.select<AppStateProvider, String?>(
+          (appStateProvider) {
+        final pluginState = appStateProvider.getPluginState<Map<String, dynamic>>(pluginStateKey) ?? {};
+        return pluginState['play_state'] as String?;
+      },
+    );
+
     return Column(
       children: [
         const NameButtonsComponent(),

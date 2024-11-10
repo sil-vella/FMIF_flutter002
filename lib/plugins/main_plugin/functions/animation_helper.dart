@@ -2,110 +2,146 @@ import 'package:flutter/material.dart';
 import 'main_plugin_helper.dart';
 
 class AnimationHelper extends PluginHelper {
-  static Widget bounce(
+  Widget bounce(
       Widget child, {
         required AnimationController controller,
+        Duration duration = const Duration(seconds: 3),
+        Curve curve = Curves.easeInOut,
+        Offset begin = const Offset(0.0, -0.09),
+        Offset end = const Offset(0.0, 0.09),
+        bool reverse = true,
+        bool infinite = true,
         VoidCallback? onComplete,
       }) {
-    controller.duration = Duration(seconds: 3);
-    controller.repeat(reverse: true);
+    controller.duration = duration;
+    if (infinite) {
+      controller.repeat(reverse: reverse);
+    } else {
+      controller.forward();
+    }
 
     controller.addStatusListener((status) {
-      if (status == AnimationStatus.completed) {
+      if (status == AnimationStatus.completed && !infinite) {
         onComplete?.call();
       }
     });
 
-    final animation = Tween<Offset>(
-      begin: Offset(0.0, -0.09),
-      end: Offset(0.0, 0.09),
-    ).animate(CurvedAnimation(parent: controller, curve: Curves.easeInOut));
+    final animation = Tween<Offset>(begin: begin, end: end)
+        .animate(CurvedAnimation(parent: controller, curve: curve));
 
     return SlideTransition(position: animation, child: child);
   }
 
-  static Widget sideToSide(
-      Widget child,
-      {required AnimationController controller,
-        VoidCallback? onComplete}) {
-    controller.duration = Duration(seconds: 4);
-    controller.repeat(reverse: true);
+  Widget sideToSide(
+      Widget child, {
+        required AnimationController controller,
+        Duration duration = const Duration(seconds: 4),
+        Curve curve = Curves.easeInOut,
+        Offset begin = const Offset(-0.04, 0.0),
+        Offset end = const Offset(0.04, 0.0),
+        bool reverse = true,
+        bool infinite = true,
+        VoidCallback? onComplete,
+      }) {
+    controller.duration = duration;
+    if (infinite) {
+      controller.repeat(reverse: reverse);
+    } else {
+      controller.forward();
+    }
 
     controller.addStatusListener((status) {
-      if (status == AnimationStatus.completed) {
+      if (status == AnimationStatus.completed && !infinite) {
         onComplete?.call();
       }
     });
 
-    final animation = Tween<Offset>(
-      begin: Offset(-0.04, 0.0),
-      end: Offset(0.04, 0.0),
-    ).animate(CurvedAnimation(parent: controller, curve: Curves.easeInOut));
+    final animation = Tween<Offset>(begin: begin, end: end)
+        .animate(CurvedAnimation(parent: controller, curve: curve));
 
     return SlideTransition(position: animation, child: child);
   }
 
-  static Widget pulse(
-      Widget child,
-      {required AnimationController controller,
-        VoidCallback? onComplete}) {
-    controller.duration = Duration(seconds: 6);
-    controller.repeat(reverse: true);
+  Widget pulse(
+      Widget child, {
+        required AnimationController controller,
+        Duration duration = const Duration(seconds: 6),
+        Curve curve = Curves.easeInOut,
+        double begin = 0.93,
+        double end = 1.0,
+        bool reverse = true,
+        bool infinite = true,
+        VoidCallback? onComplete,
+      }) {
+    controller.duration = duration;
+    if (infinite) {
+      controller.repeat(reverse: reverse);
+    } else {
+      controller.forward();
+    }
 
     controller.addStatusListener((status) {
-      if (status == AnimationStatus.completed) {
+      if (status == AnimationStatus.completed && !infinite) {
         onComplete?.call();
       }
     });
 
-    final animation = Tween<double>(begin: 0.93, end: 1.00).animate(
-        CurvedAnimation(parent: controller, curve: Curves.easeInOut));
+    final animation = Tween<double>(begin: begin, end: end)
+        .animate(CurvedAnimation(parent: controller, curve: curve));
 
     return ScaleTransition(scale: animation, child: child);
   }
 
-  static Widget shakeAndDrop(
+  Widget shakeAndDrop(
       Widget child, {
         required AnimationController shakeController,
         required AnimationController dropController,
+        Duration shakeDuration = const Duration(milliseconds: 100), // Fast shake cycle
+        Duration shakeTotalDuration = const Duration(seconds: 4),    // Total shake time
+        Duration dropDuration = const Duration(seconds: 2),          // Drop for 2 seconds
+        Duration dropStartDelay = const Duration(seconds: 2),        // Delay before drop starts
+        Curve shakeCurve = Curves.easeInOut,
+        Curve dropCurve = Curves.easeIn,
+        Offset shakeBegin = const Offset(-10.0, 0.0),
+        Offset shakeEnd = const Offset(10.0, 0.0),
+        Offset dropBegin = const Offset(0.0, 0.0),
+        Offset dropEnd = const Offset(0.0, 100.0),
+        bool infinite = false,
         VoidCallback? onComplete,
       }) {
-    shakeController.duration = Duration(milliseconds: 200);
-    shakeController.forward();
+    // Set fast shake cycle duration
+    shakeController.duration = shakeDuration;
 
-    Future.delayed(Duration(seconds: 2), () {
-      if (dropController.status == AnimationStatus.dismissed) {
-        dropController.forward();
-      }
+    // Start shaking continuously
+    shakeController.repeat(reverse: true);
+
+    // Schedule shake to stop after total shake duration
+    Future.delayed(shakeTotalDuration, () {
+      shakeController.stop();
     });
 
+    // Ensure drop starts exactly after the drop delay
+    Future.delayed(dropStartDelay, () {
+      dropController.duration = dropDuration;
+      dropController.forward();
+    });
+
+    // Call the onComplete callback when the drop animation completes
     dropController.addStatusListener((status) {
-      if (status == AnimationStatus.completed) {
-        shakeController.stop();
+      if (status == AnimationStatus.completed && !infinite) {
+        shakeController.stop(); // Stop shaking when the drop completes
         onComplete?.call();
       }
     });
 
-    final shakeAnimation = Tween<Offset>(
-      begin: Offset(-10.0, 0.0),
-      end: Offset(10.0, 0.0),
-    ).animate(
-      CurvedAnimation(
-        parent: shakeController,
-        curve: Curves.easeInOut,
-      ),
-    );
+    // Define shake animation and drop animation
+    final shakeAnimation = Tween<Offset>(begin: shakeBegin, end: shakeEnd)
+        .animate(CurvedAnimation(parent: shakeController, curve: shakeCurve));
 
-    final dropAnimation = Tween<Offset>(
-      begin: Offset(0.0, 0.0),
-      end: Offset(0.0, 100.0),
-    ).animate(
-      CurvedAnimation(
-        parent: dropController,
-        curve: Curves.easeIn,
-      ),
-    );
+    final dropAnimation = Tween<Offset>(begin: dropBegin, end: dropEnd)
+        .animate(CurvedAnimation(parent: dropController, curve: dropCurve));
 
+    // Use AnimatedBuilder to apply both animations together
     return AnimatedBuilder(
       animation: Listenable.merge([shakeController, dropController]),
       builder: (context, child) {
@@ -118,40 +154,5 @@ class AnimationHelper extends PluginHelper {
       },
       child: child,
     );
-  }
-
-  // New slide up and down animation
-  static Widget slideUpAndDown(
-      Widget child, {
-        required AnimationController controller,
-        VoidCallback? onComplete,
-      }) {
-    controller.duration = Duration(seconds: 4); // Total duration: 1 second up, 2 seconds wait, 1 second down
-    controller.forward();
-
-    controller.addStatusListener((status) {
-      if (status == AnimationStatus.completed) {
-        onComplete?.call();
-      }
-    });
-
-    final animation = TweenSequence<Offset>([
-      TweenSequenceItem(
-        tween: Tween<Offset>(begin: Offset(0.0, 0.5), end: Offset(0.0, 0.0))
-            .chain(CurveTween(curve: Curves.easeOut)), // Slide up in 1 second
-        weight: 1,
-      ),
-      TweenSequenceItem(
-        tween: ConstantTween<Offset>(Offset(0.0, 0.0)), // Pause at the top for 2 seconds
-        weight: 2,
-      ),
-      TweenSequenceItem(
-        tween: Tween<Offset>(begin: Offset(0.0, 0.0), end: Offset(0.0, 0.5))
-            .chain(CurveTween(curve: Curves.easeIn)), // Slide down in 1 second
-        weight: 1,
-      ),
-    ]).animate(controller);
-
-    return SlideTransition(position: animation, child: child);
   }
 }

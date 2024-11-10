@@ -2,8 +2,6 @@ import 'package:flutter/material.dart';
 import '../../../providers/app_state_provider.dart';
 import '../main_plugin_main.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-
-import 'animation_helper.dart';
 import 'main_plugin_helper.dart';
 
 class PlayFunctions extends PluginHelper {
