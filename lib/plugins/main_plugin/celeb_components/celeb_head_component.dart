@@ -21,7 +21,9 @@ class _CelebHeadComponentState extends State<CelebHeadComponent>
   late final AnimationController pulseController;
   late final AnimationController shakeController;
   late final AnimationController dropController;
-  late final AnimationController slideUpController; // New slideUp controller
+  late final AnimationController slideUpController;
+  late final AnimationController flyAwayController;
+
   late final AnimationHelper animationHelper;
 
   @override
@@ -33,7 +35,8 @@ class _CelebHeadComponentState extends State<CelebHeadComponent>
     pulseController = AnimationController(vsync: this);
     shakeController = AnimationController(vsync: this);
     dropController = AnimationController(vsync: this);
-    slideUpController = AnimationController(vsync: this); // Initialize slideUp controller
+    slideUpController = AnimationController(vsync: this);
+    flyAwayController = AnimationController(vsync: this);
   }
 
   @override
@@ -43,7 +46,8 @@ class _CelebHeadComponentState extends State<CelebHeadComponent>
     pulseController.dispose();
     shakeController.dispose();
     dropController.dispose();
-    slideUpController.dispose(); // Dispose slideUp controller
+    slideUpController.dispose();
+    flyAwayController.dispose();
     super.dispose();
   }
 
@@ -61,7 +65,7 @@ class _CelebHeadComponentState extends State<CelebHeadComponent>
     );
 
     // Hide the component if play_state is 'idle' or 'aftermath'
-    if (playState == 'idle' || playState == 'aftermath') {
+    if (playState == 'idle' || playState == 'aftermath_correct') {
       return SizedBox.shrink();
     }
 
@@ -164,6 +168,27 @@ class _CelebHeadComponentState extends State<CelebHeadComponent>
           },
         );
       }
+      if (headAnims != null && headAnims.contains('flyAway')) {
+        animatedChild = animationHelper.flyAway(
+          animatedChild,
+          controller: flyAwayController,
+          slideUpDuration: Duration(seconds: 2),
+          pauseDuration: Duration(seconds: 2),
+          flyAwayDuration: Duration(seconds: 2),
+          begin: Offset(0.0, 0.0),                    // Start below original position
+          middle: Offset(0.0, 0.0),                   // Center position
+          end: Offset(0.0, -6.0),                     // Move offscreen upwards
+          initialSlideCurve: Curves.easeOutCubic,     // Gentle start to center
+          flyAwayCurve: Curves.easeInCubic,           // Exponential lift-off
+          infinite: false,
+          onComplete: () {
+            print("Fly-away animation completed");
+          },
+        );
+      }
+
+
+
     }
 
     // Center the widget without initial offset

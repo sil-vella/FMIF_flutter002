@@ -92,7 +92,11 @@ class PlayFunctions extends PluginHelper {
       });
 
     } else {
-      print("Incorrect selection.");
+      appStateProvider.updatePluginState(pluginStateKey, {
+        'play_state': 'revealed_incorrect',
+        'plugin_anims': {'head_anims': ['pulse', 'sideToSide', 'bounce']}
+      });
+      await activateAftermath(appStateProvider, pluginStateKey);
     }
   }
 
@@ -106,22 +110,33 @@ class PlayFunctions extends PluginHelper {
     await Future.delayed(Duration(milliseconds: 100));
   }
 
-  // Now static: Function triggered when the correct name is selected
   static Future<void> activateAftermath(AppStateProvider appStateProvider, String pluginStateKey) async {
-    print("aftermath functiuon reached");
-    // Define logic for correct selection here, such as updating a score or showing feedback
-    appStateProvider.updatePluginState(pluginStateKey, {
-      'play_state': 'aftermath',
-      'plugin_anims': {'aftermath_anims': ['slideUpAndDown']},
-    });
-    // Force rebuild or small delay if needed to apply the animation
+    // Retrieve the current play_state to determine which animations to apply
+    final currentPlayState = appStateProvider.getPluginState<Map<String, dynamic>>(pluginStateKey)?['play_state'];
+
+    if (currentPlayState == 'revealed_correct') {
+      // Update state with the animations for correct selection
+      appStateProvider.updatePluginState(pluginStateKey, {
+        'play_state': 'aftermath_correct',
+        'plugin_anims': {'aftermath_anims': ['slideUpAndDown']},
+      });
+    } else if (currentPlayState == 'revealed_incorrect') {
+      // Update state with the animations for incorrect selection
+      appStateProvider.updatePluginState(pluginStateKey, {
+        'play_state': 'aftermath_incorrect',
+        'plugin_anims': {
+          'aftermath_anims': ['flyAway'],
+          'head_anims': ['flyAway']
+        },  // Example alternative animation
+      });
+    }
+
+    // Force a small delay to allow the UI to rebuild and apply the animation
     await Future.delayed(Duration(milliseconds: 100));
   }
 
   static Future<void> resetPluginPlayState(AppStateProvider appStateProvider, String pluginStateKey) async {
-    appStateProvider.updatePluginState(pluginStateKey, {
-      'plugin_anims': {},
-    });
+
     // Force rebuild or small delay if needed to apply the animation
     await Future.delayed(Duration(milliseconds: 100));
     // Fetch the default state from MainPlugin
@@ -135,6 +150,10 @@ class PlayFunctions extends PluginHelper {
     // Fetch and set celebrity details, awaiting its completion
     await fetchAndSetCelebDetails(appStateProvider, pluginStateKey);
     defaultState["celeb_category"] = savedCategory;
+
+    appStateProvider.updatePluginState(pluginStateKey, {
+      'plugin_anims': {},
+    });
 
     appStateProvider.updatePluginState(pluginStateKey, {
       'play_state': 'in_play',

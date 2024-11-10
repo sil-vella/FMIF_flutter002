@@ -42,6 +42,59 @@ class AnimationHelper extends PluginHelper {
     return SlideTransition(position: animation, child: child);
   }
 
+  Widget flyAway(
+      Widget child, {
+        required AnimationController controller,
+        Duration slideUpDuration = const Duration(seconds: 2),
+        Duration pauseDuration = const Duration(seconds: 2),
+        Duration flyAwayDuration = const Duration(seconds: 4),
+        Offset begin = const Offset(0.0, 1.0),       // Start below the original position
+        Offset middle = const Offset(0.0, 0.0),      // Center/original position
+        Offset end = const Offset(0.0, -6.0),        // Move offscreen upwards
+        Curve initialSlideCurve = Curves.easeOutCubic,   // Gentle start to center
+        Curve flyAwayCurve = Curves.easeInCubic,         // Exponential lift-off
+        bool infinite = false,
+        VoidCallback? onComplete,
+      }) {
+    _resetController(controller);
+    controller.duration = slideUpDuration + pauseDuration + flyAwayDuration;
+
+    // Define the animation sequence with individual weights for each phase
+    final animation = TweenSequence<Offset>([
+      TweenSequenceItem(
+        tween: Tween<Offset>(begin: begin, end: middle).chain(CurveTween(curve: initialSlideCurve)),
+        weight: slideUpDuration.inMilliseconds.toDouble(), // Weight for slide-up
+      ),
+      TweenSequenceItem(
+        tween: ConstantTween<Offset>(middle), // Pause at the original position
+        weight: pauseDuration.inMilliseconds.toDouble(), // Weight for pause
+      ),
+      TweenSequenceItem(
+        tween: Tween<Offset>(begin: middle, end: end).chain(CurveTween(curve: flyAwayCurve)),
+        weight: flyAwayDuration.inMilliseconds.toDouble(), // Weight for fly-away
+      ),
+    ]).animate(controller);
+
+    // Start the animation based on the infinite flag
+    if (infinite) {
+      controller.repeat();
+    } else {
+      controller.forward();
+    }
+
+    // Trigger onComplete callback after animation ends if not infinite
+    controller.addStatusListener((status) {
+      if (status == AnimationStatus.completed && !infinite) {
+        onComplete?.call();
+      }
+    });
+
+    return SlideTransition(position: animation, child: child);
+  }
+
+
+
+
   Widget bounce(
       Widget child, {
         required AnimationController controller,

@@ -47,8 +47,9 @@ class _GameScreenState extends BaseScreenState<GameScreen> with SingleTickerProv
       child: Stack(
         children: [
           const Positioned.fill(child: MainBackgroundComponent()),
-          Positioned.fill(child: CelebHeadComponent()),
           Positioned.fill(child: AfterMathComponent()),
+          Positioned.fill(child: CelebHeadComponent()),
+
           const Positioned.fill(child: MainBackgroundOverlayComponent()),
           Positioned(
             top: 0,

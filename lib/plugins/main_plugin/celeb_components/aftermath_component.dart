@@ -16,6 +16,7 @@ class AfterMathComponent extends StatefulWidget {
 class _AfterMathComponentState extends State<AfterMathComponent>
     with TickerProviderStateMixin {
   late final AnimationController slideUpAndDownController;
+  late final AnimationController flyAwayController;
   late final AnimationHelper animationHelper;
   String? randomImagePath;
 
@@ -23,21 +24,36 @@ class _AfterMathComponentState extends State<AfterMathComponent>
   void initState() {
     super.initState();
     animationHelper = AnimationHelper();
-    slideUpAndDownController = AnimationController(vsync: this, duration: Duration(seconds: 4));
+    slideUpAndDownController = AnimationController(vsync: this);
+    flyAwayController = AnimationController(vsync: this);
     loadRandomImage();
   }
 
   @override
   void dispose() {
     slideUpAndDownController.dispose();
+    flyAwayController.dispose();
     super.dispose();
   }
 
   void loadRandomImage() {
-    final imagePaths = [
+    // Define separate image paths for correct and incorrect aftermath states
+    final correctImagePaths = [
       'assets/after_animations/elmo-fire012.gif',
-      // Add all image paths here
+      // Add other correct aftermath images here
     ];
+
+    final incorrectImagePaths = [
+      'assets/after_animations/elmo-fire012.gif',
+      // Add other incorrect aftermath images here
+    ];
+
+    // Determine which list to use based on play_state
+    final appStateProvider = Provider.of<AppStateProvider>(context, listen: false);
+    final pluginStateKey = "${MainPlugin().runtimeType}State";
+    final playState = appStateProvider.getPluginState<Map<String, dynamic>>(pluginStateKey)?['play_state'];
+
+    final imagePaths = (playState == 'aftermath_correct') ? correctImagePaths : incorrectImagePaths;
 
     if (imagePaths.isNotEmpty) {
       final randomIndex = Random().nextInt(imagePaths.length);
@@ -52,23 +68,24 @@ class _AfterMathComponentState extends State<AfterMathComponent>
     final appStateProvider = Provider.of<AppStateProvider>(context, listen: false);
     final pluginStateKey = "${MainPlugin().runtimeType}State";
 
-    // Listen for animation settings from `plugin_anims`
-    final List<String>? aftermathAnims = context.select<AppStateProvider, List<String>?>(
-          (appStateProvider) {
-        final pluginState = appStateProvider.getPluginState<Map<String, dynamic>>(pluginStateKey) ?? {};
-        final animations = List<String>.from(pluginState['plugin_anims']?['aftermath_anims'] ?? []);
-        return animations;
-      },
-    );
-
+    // Check if the play_state is aftermath_correct or aftermath_incorrect
     final isAftermathState = context.select<AppStateProvider, bool>((appStateProvider) {
       final pluginState = appStateProvider.getPluginState<Map<String, dynamic>>(pluginStateKey) ?? {};
-      return pluginState['play_state'] == 'aftermath';
+      final playState = pluginState['play_state'];
+      return playState == 'aftermath_correct' || playState == 'aftermath_incorrect';
     });
 
     if (!isAftermathState) {
       return SizedBox.shrink();
     }
+
+    // Listen for animation settings from `plugin_anims`
+    final List<String>? aftermathAnims = context.select<AppStateProvider, List<String>?>(
+          (appStateProvider) {
+        final pluginState = appStateProvider.getPluginState<Map<String, dynamic>>(pluginStateKey) ?? {};
+        return List<String>.from(pluginState['plugin_anims']?['aftermath_anims'] ?? []);
+      },
+    );
 
     final screenWidth = MediaQuery.of(context).size.width;
     final imageSize = screenWidth * 0.2;
@@ -86,15 +103,35 @@ class _AfterMathComponentState extends State<AfterMathComponent>
       ),
     );
 
-    // Apply `slideUpAndDown` animation if it's specified in the state
+    // Apply animations based on contents of `aftermathAnims`
     if (aftermathAnims != null && aftermathAnims.contains('slideUpAndDown')) {
       animatedChild = animationHelper.slideUpAndDown(
         animatedChild,
         controller: slideUpAndDownController,
         duration: Duration(seconds: 4),
-        begin: Offset(0.0, 0.0),          // Start at -100% offset
-        middle: Offset(0.0, -1.0),          // Pause at original position
-        end: Offset(0.0, 0.0),            // End at -100% offset
+        begin: Offset(0.0, 1.0),
+        middle: Offset(0.0, 0.0),
+        end: Offset(0.0, 1.0),
+        infinite: false,
+        curve: Curves.easeIn,
+        onComplete: () {
+          PlayFunctions.resetPluginPlayState(appStateProvider, pluginStateKey);
+        },
+      );
+    }
+
+    if (aftermathAnims != null && aftermathAnims.contains('flyAway')) {
+      animatedChild = animationHelper.flyAway(
+        animatedChild,
+        controller: flyAwayController,
+        slideUpDuration: Duration(seconds: 2),
+        pauseDuration: Duration(seconds: 2),
+        flyAwayDuration: Duration(seconds: 2),
+        begin: Offset(0.0, 1.0),                    // Start below original position
+        middle: Offset(0.0, 0.0),                   // Center position
+        end: Offset(0.0, -6.0),                     // Move offscreen upwards
+        initialSlideCurve: Curves.easeOutCubic,     // Gentle start to center
+        flyAwayCurve: Curves.easeInCubic,           // Exponential lift-off
         infinite: false,
         onComplete: () {
           PlayFunctions.resetPluginPlayState(appStateProvider, pluginStateKey);
@@ -102,12 +139,11 @@ class _AfterMathComponentState extends State<AfterMathComponent>
       );
     }
 
-    // Center the widget with initial offset
+
+
+
     return Center(
-      child: Transform.translate(
-        offset: Offset(0, imageSize),
-        child: animatedChild,
-      ),
+      child: animatedChild,
     );
   }
 }
