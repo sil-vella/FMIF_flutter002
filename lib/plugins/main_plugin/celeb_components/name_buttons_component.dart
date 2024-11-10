@@ -20,7 +20,7 @@ class NameButtonsComponent extends StatelessWidget {
       return pluginState['play_state'] as String?;
     });
 
-    // Show name buttons only if play_state is `idle`
+    // Show name buttons only if play_state is `in_play`
     final showNameButtons = playState == 'in_play';
 
     // Show Flush!! button only if play_state is `revealed_correct`
@@ -38,37 +38,40 @@ class NameButtonsComponent extends StatelessWidget {
     ];
     names.shuffle(Random());
 
-    return SingleChildScrollView(
-      padding: EdgeInsets.all(10.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          if (showNameButtons)
-            Wrap(
-              spacing: 8.0, // Spacing between buttons
-              runSpacing: 8.0, // Spacing between rows of buttons
-              children: names.map((name) {
-                return ElevatedButton(
-                  onPressed: () {
-                    // Call selectedCeleb function with the selected name
-                    PlayFunctions.selectedCeleb(appStateProvider, pluginStateKey, name);
-                  },
-                  child: Text(name),
-                );
-              }).toList(),
-            ),
-          if (showFlushButton)
-            Padding(
-              padding: const EdgeInsets.only(top: 20.0),
-              child: ElevatedButton(
-                onPressed: () {
-                  // Define what should happen when "Flush!!" is pressed
-                  PlayFunctions.flushAction(appStateProvider, pluginStateKey); // Example action
-                },
-                child: Text("Flush!!"),
+    return Center(
+      child: SingleChildScrollView(
+        padding: EdgeInsets.all(10.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.center, // Center items in the column
+          children: [
+            if (showNameButtons)
+              Wrap(
+                alignment: WrapAlignment.center, // Center the wrap
+                spacing: 8.0, // Spacing between buttons
+                runSpacing: 8.0, // Spacing between rows of buttons
+                children: names.map((name) {
+                  return ElevatedButton(
+                    onPressed: () {
+                      // Call selectedCeleb function with the selected name
+                      PlayFunctions.selectedCeleb(appStateProvider, pluginStateKey, name);
+                    },
+                    child: Text(name),
+                  );
+                }).toList(),
               ),
-            ),
-        ],
+            if (showFlushButton)
+              Padding(
+                padding: const EdgeInsets.only(top: 20.0),
+                child: ElevatedButton(
+                  onPressed: () {
+                    // Define what should happen when "Flush!!" is pressed
+                    PlayFunctions.flushAction(appStateProvider, pluginStateKey); // Example action
+                  },
+                  child: Text("Flush!!"),
+                ),
+              ),
+          ],
+        ),
       ),
     );
   }

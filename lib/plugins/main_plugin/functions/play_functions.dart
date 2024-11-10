@@ -46,7 +46,7 @@ class PlayFunctions extends PluginHelper {
     // Update the play state in the plugin state
     appStateProvider.updatePluginState(pluginStateKey, {
       'play_state': "in_play",
-      'plugin_anims': {'head_anims': ['bounce', 'pulse', 'sideToSide']},
+      'plugin_anims': {'head_anims': ['slideUp','bounce', 'pulse', 'sideToSide']},
     });
 
     // Navigate to the /play screen once details are fetched
@@ -88,6 +88,7 @@ class PlayFunctions extends PluginHelper {
     if (selectedName == pluginState['celeb_name']) {
       appStateProvider.updatePluginState(pluginStateKey, {
         'play_state': 'revealed_correct',
+        'plugin_anims': {'head_anims': ['pulse', 'sideToSide', 'bounce']}
       });
 
     } else {
@@ -137,7 +138,7 @@ class PlayFunctions extends PluginHelper {
 
     appStateProvider.updatePluginState(pluginStateKey, {
       'play_state': 'in_play',
-      'plugin_anims': {'head_anims': ['pulse', 'sideToSide', 'bounce']},
+      'plugin_anims': {'head_anims': ['slideUp','pulse', 'sideToSide', 'bounce']},
     });
   }
 

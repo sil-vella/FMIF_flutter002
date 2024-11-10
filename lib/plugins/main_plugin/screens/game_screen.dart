@@ -20,49 +20,52 @@ class GameScreen extends BaseScreen {
 }
 
 class _GameScreenState extends BaseScreenState<GameScreen> with SingleTickerProviderStateMixin {
-  @override
-  void initState() {
-    super.initState();
-  }
-
-  @override
-  void dispose() {
-    super.dispose();
-  }
+  bool shouldRebuild = false;
 
   @override
   Widget buildContent(BuildContext context) {
-    // Listen for changes in `play_state` to trigger a rebuild of `GameScreen`
     final pluginStateKey = "MainPluginState";
-    final playState = context.select<AppStateProvider, String?>(
-          (appStateProvider) {
-        final pluginState = appStateProvider.getPluginState<Map<String, dynamic>>(pluginStateKey) ?? {};
-        return pluginState['play_state'] as String?;
-      },
-    );
 
-    return Column(
-      children: [
-        const NameButtonsComponent(),
-        Expanded(
-          child: Stack(
-            children: [
-              const Positioned.fill(child: MainBackgroundComponent()),
-              Positioned.fill(child: CelebHeadComponent()),
-              Positioned.fill(child: AfterMathComponent()), // Added AfterMathComponent here
-              const Positioned.fill(child: MainBackgroundOverlayComponent()),
-              Positioned(
-                bottom: 0,
-                left: 0,
-                right: 0,
-                child: SingleChildScrollView(
-                  child: CelebFactsComponent(),
-                ),
-              ),
-            ],
+    // Track when play_state changes to 'in_play'
+    context.select<AppStateProvider, String?>((appStateProvider) {
+      final pluginState = appStateProvider.getPluginState<Map<String, dynamic>>(pluginStateKey) ?? {};
+      final playState = pluginState['play_state'] as String?;
+
+      // Trigger rebuild if state changes to 'in_play'
+      if (playState == 'in_play' && !shouldRebuild) {
+        setState(() {
+          shouldRebuild = true;
+        });
+      } else if (playState != 'in_play' && shouldRebuild) {
+        shouldRebuild = false;  // Reset flag when not in 'in_play' to allow future rebuilds
+      }
+
+      return playState;
+    });
+
+    return Expanded(
+      child: Stack(
+        children: [
+          const Positioned.fill(child: MainBackgroundComponent()),
+          Positioned.fill(child: CelebHeadComponent()),
+          Positioned.fill(child: AfterMathComponent()),
+          const Positioned.fill(child: MainBackgroundOverlayComponent()),
+          Positioned(
+            top: 0,
+            left: 0,
+            right: 0,
+            child: const NameButtonsComponent(),
           ),
-        ),
-      ],
+          Positioned(
+            bottom: 0,
+            left: 0,
+            right: 0,
+            child: SingleChildScrollView(
+              child: CelebFactsComponent(),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

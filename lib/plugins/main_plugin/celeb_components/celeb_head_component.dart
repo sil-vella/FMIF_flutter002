@@ -1,9 +1,11 @@
-import 'package:FMIF/plugins/main_plugin/functions/play_functions.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'dart:math';
+
 import '../../../providers/app_state_provider.dart';
 import '../functions/animation_helper.dart';
 import '../main_plugin_main.dart';
+import '../functions/play_functions.dart';
 
 class CelebHeadComponent extends StatefulWidget {
   const CelebHeadComponent({Key? key}) : super(key: key);
@@ -19,6 +21,7 @@ class _CelebHeadComponentState extends State<CelebHeadComponent>
   late final AnimationController pulseController;
   late final AnimationController shakeController;
   late final AnimationController dropController;
+  late final AnimationController slideUpController; // New slideUp controller
   late final AnimationHelper animationHelper;
 
   @override
@@ -30,6 +33,7 @@ class _CelebHeadComponentState extends State<CelebHeadComponent>
     pulseController = AnimationController(vsync: this);
     shakeController = AnimationController(vsync: this);
     dropController = AnimationController(vsync: this);
+    slideUpController = AnimationController(vsync: this); // Initialize slideUp controller
   }
 
   @override
@@ -39,6 +43,7 @@ class _CelebHeadComponentState extends State<CelebHeadComponent>
     pulseController.dispose();
     shakeController.dispose();
     dropController.dispose();
+    slideUpController.dispose(); // Dispose slideUp controller
     super.dispose();
   }
 
@@ -47,13 +52,24 @@ class _CelebHeadComponentState extends State<CelebHeadComponent>
     final appStateProvider = Provider.of<AppStateProvider>(context, listen: false);
     final pluginStateKey = "${MainPlugin().runtimeType}State";
 
-    // Retrieve `headAnims` from `plugin_anims` and check its contents
+    // Check the play state and determine visibility
+    final String? playState = context.select<AppStateProvider, String?>(
+          (appStateProvider) {
+        final pluginState = appStateProvider.getPluginState<Map<String, dynamic>>(pluginStateKey) ?? {};
+        return pluginState['play_state'] as String?;
+      },
+    );
+
+    // Hide the component if play_state is 'idle' or 'aftermath'
+    if (playState == 'idle' || playState == 'aftermath') {
+      return SizedBox.shrink();
+    }
+
+    // Retrieve `headAnims` from `plugin_anims`
     final List<String>? headAnims = context.select<AppStateProvider, List<String>?>(
           (appStateProvider) {
         final pluginState = appStateProvider.getPluginState<Map<String, dynamic>>(pluginStateKey) ?? {};
-        final headAnims = List<String>.from(pluginState['plugin_anims']?['head_anims'] ?? []);
-        print("Current headAnims: $headAnims"); // Debug output for headAnims list
-        return headAnims;
+        return List<String>.from(pluginState['plugin_anims']?['head_anims'] ?? []);
       },
     );
 
@@ -69,6 +85,8 @@ class _CelebHeadComponentState extends State<CelebHeadComponent>
     final imageSize = screenWidth * 0.2;
 
     Widget animatedChild = Container(
+      width: imageSize,
+      height: imageSize,
       decoration: BoxDecoration(
         image: DecorationImage(
           image: NetworkImage(celebImgUrl ?? ''),
@@ -80,7 +98,6 @@ class _CelebHeadComponentState extends State<CelebHeadComponent>
     // Apply animations based on contents of `headAnims`
     if (headAnims != null) {
       if (headAnims.contains('bounce')) {
-        print('Applying bounce animation');
         animatedChild = animationHelper.bounce(
           animatedChild,
           controller: bounceController,
@@ -92,7 +109,6 @@ class _CelebHeadComponentState extends State<CelebHeadComponent>
         );
       }
       if (headAnims.contains('sideToSide')) {
-        print('Applying sideToSide animation');
         animatedChild = animationHelper.sideToSide(
           animatedChild,
           controller: sideToSideController,
@@ -104,7 +120,6 @@ class _CelebHeadComponentState extends State<CelebHeadComponent>
         );
       }
       if (headAnims.contains('pulse')) {
-        print('Applying pulse animation');
         animatedChild = animationHelper.pulse(
           animatedChild,
           controller: pulseController,
@@ -116,15 +131,14 @@ class _CelebHeadComponentState extends State<CelebHeadComponent>
         );
       }
       if (headAnims.contains('shakeAndDrop')) {
-        print('Applying shakeAndDrop animation');
         animatedChild = animationHelper.shakeAndDrop(
           animatedChild,
           shakeController: shakeController,
           dropController: dropController,
-          shakeDuration: Duration(milliseconds: 100),  // Fast shake cycles
-          shakeTotalDuration: Duration(seconds: 4),    // Total shake time
-          dropDuration: Duration(seconds: 2),          // Drop for 2 seconds
-          dropStartDelay: Duration(seconds: 2),        // Drop starts after 2 seconds
+          shakeDuration: Duration(milliseconds: 100),
+          shakeTotalDuration: Duration(seconds: 4),
+          dropDuration: Duration(seconds: 2),
+          dropStartDelay: Duration(seconds: 2),
           shakeBegin: Offset(-10.0, 0.0),
           shakeEnd: Offset(10.0, 0.0),
           dropBegin: Offset(0.0, 0.0),
@@ -137,16 +151,26 @@ class _CelebHeadComponentState extends State<CelebHeadComponent>
           },
         );
       }
-
-
+      if (headAnims.contains('slideUp')) {
+        animatedChild = animationHelper.slideUp(
+          animatedChild,
+          controller: slideUpController,
+          duration: Duration(seconds: 1),
+          begin: Offset(0.0, 1.0),
+          end: Offset(0.0, 0.0),
+          infinite: false,
+          onComplete: () {
+            print("Slide up animation completed");
+          },
+        );
+      }
     }
 
+    // Center the widget without initial offset
     return Center(
-      child: SizedBox(
-        width: imageSize,
-        height: imageSize,
-        child: isImageAvailable ? animatedChild : CircularProgressIndicator(),
-      ),
+      child: animatedChild,
     );
   }
+
+
 }

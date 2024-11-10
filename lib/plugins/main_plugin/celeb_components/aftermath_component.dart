@@ -102,7 +102,7 @@ class _AfterMathComponentState extends State<AfterMathComponent>
       );
     }
 
-    // Center the widget with initial offset of -100% height
+    // Center the widget with initial offset
     return Center(
       child: Transform.translate(
         offset: Offset(0, imageSize),
