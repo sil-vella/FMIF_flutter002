@@ -111,6 +111,7 @@ class PlayFunctions extends PluginHelper {
     // Define logic for correct selection here, such as updating a score or showing feedback
     appStateProvider.updatePluginState(pluginStateKey, {
       'play_state': 'aftermath',
+      'plugin_anims': {'aftermath_anims': ['slideUpAndDown']},
     });
     // Force rebuild or small delay if needed to apply the animation
     await Future.delayed(Duration(milliseconds: 100));

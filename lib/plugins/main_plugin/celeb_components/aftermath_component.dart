@@ -2,6 +2,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../providers/app_state_provider.dart';
+import '../functions/animation_helper.dart';
 import '../functions/play_functions.dart';
 
 class AfterMathComponent extends StatefulWidget {
@@ -11,13 +12,24 @@ class AfterMathComponent extends StatefulWidget {
   _AfterMathComponentState createState() => _AfterMathComponentState();
 }
 
-class _AfterMathComponentState extends State<AfterMathComponent> {
+class _AfterMathComponentState extends State<AfterMathComponent>
+    with TickerProviderStateMixin {
+  late final AnimationController slideUpAndDownController;
+  late final AnimationHelper animationHelper;
   String? randomImagePath;
 
   @override
   void initState() {
     super.initState();
+    animationHelper = AnimationHelper();
+    slideUpAndDownController = AnimationController(vsync: this, duration: Duration(seconds: 4));
     loadRandomImage();
+  }
+
+  @override
+  void dispose() {
+    slideUpAndDownController.dispose();
+    super.dispose();
   }
 
   void loadRandomImage() {
@@ -37,15 +49,21 @@ class _AfterMathComponentState extends State<AfterMathComponent> {
   @override
   Widget build(BuildContext context) {
     final pluginStateKey = "MainPluginState";
-    final appStateProvider = Provider.of<AppStateProvider>(context, listen: false);
 
-    // Listen to play_state changes and only rebuild when play_state is aftermath
+    // Listen for animation settings from `plugin_anims`
+    final List<String>? aftermathAnims = context.select<AppStateProvider, List<String>?>(
+          (appStateProvider) {
+        final pluginState = appStateProvider.getPluginState<Map<String, dynamic>>(pluginStateKey) ?? {};
+        final animations = List<String>.from(pluginState['plugin_anims']?['aftermath_anims'] ?? []);
+        return animations;
+      },
+    );
+
     final isAftermathState = context.select<AppStateProvider, bool>((appStateProvider) {
       final pluginState = appStateProvider.getPluginState<Map<String, dynamic>>(pluginStateKey) ?? {};
       return pluginState['play_state'] == 'aftermath';
     });
 
-    // Only render component when in aftermath state
     if (!isAftermathState) {
       return SizedBox.shrink();
     }
@@ -53,20 +71,40 @@ class _AfterMathComponentState extends State<AfterMathComponent> {
     final screenWidth = MediaQuery.of(context).size.width;
     final imageSize = screenWidth * 0.2;
 
-    return Center(
-      child: SizedBox(
-        width: imageSize,
-        height: imageSize,
-        child: Container(
-          decoration: BoxDecoration(
-            image: DecorationImage(
-              image: randomImagePath != null
-                  ? AssetImage(randomImagePath!)
-                  : AssetImage('assets/app_images/default_celeb_head.png'),
-              fit: BoxFit.cover,
-            ),
-          ),
+    Widget animatedChild = Container(
+      width: imageSize,
+      height: imageSize,
+      decoration: BoxDecoration(
+        image: DecorationImage(
+          image: randomImagePath != null
+              ? AssetImage(randomImagePath!)
+              : AssetImage('assets/app_images/default_celeb_head.png'),
+          fit: BoxFit.cover,
         ),
+      ),
+    );
+
+    // Apply `slideUpAndDown` animation if it's specified in the state
+    if (aftermathAnims != null && aftermathAnims.contains('slideUpAndDown')) {
+      animatedChild = animationHelper.slideUpAndDown(
+        animatedChild,
+        controller: slideUpAndDownController,
+        duration: Duration(seconds: 4),
+        begin: Offset(0.0, 0.0),          // Start at -100% offset
+        middle: Offset(0.0, -1.0),          // Pause at original position
+        end: Offset(0.0, 0.0),            // End at -100% offset
+        infinite: false,
+        onComplete: () {
+          print("Slide up and down animation completed");
+        },
+      );
+    }
+
+    // Center the widget with initial offset of -100% height
+    return Center(
+      child: Transform.translate(
+        offset: Offset(0, imageSize),
+        child: animatedChild,
       ),
     );
   }

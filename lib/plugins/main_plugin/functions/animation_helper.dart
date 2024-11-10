@@ -155,4 +155,53 @@ class AnimationHelper extends PluginHelper {
       child: child,
     );
   }
+
+  Widget slideUpAndDown(
+      Widget child, {
+        required AnimationController controller,
+        Duration duration = const Duration(seconds: 4), // Total duration for one full cycle
+        Curve curve = Curves.easeInOut,
+        Offset begin = const Offset(0.0, -1.0),       // Start at -100% vertical offset
+        Offset middle = const Offset(0.0, 0.0),       // Original position for pause
+        Offset end = const Offset(0.0, -1.0),         // End back at -100% offset
+        bool infinite = false,
+        VoidCallback? onComplete,
+      }) {
+    // Set the total duration
+    controller.duration = duration;
+
+    // Define the animation sequence with slide up, pause, and slide down phases
+    final animation = TweenSequence<Offset>([
+      TweenSequenceItem(
+        tween: Tween<Offset>(begin: begin, end: middle).chain(CurveTween(curve: curve)),
+        weight: 1, // Slide up in 1 second (25% of total time)
+      ),
+      TweenSequenceItem(
+        tween: ConstantTween<Offset>(middle), // Pause at original position
+        weight: 2, // Pause for 2 seconds (50% of total time)
+      ),
+      TweenSequenceItem(
+        tween: Tween<Offset>(begin: middle, end: end).chain(CurveTween(curve: curve)),
+        weight: 1, // Slide down in 1 second (25% of total time)
+      ),
+    ]).animate(controller);
+
+    // Start the animation with repeat or forward based on `infinite`
+    if (infinite) {
+      controller.repeat();
+    } else {
+      controller.forward();
+    }
+
+    // Listener for animation completion
+    controller.addStatusListener((status) {
+      if (status == AnimationStatus.completed && !infinite) {
+        onComplete?.call();
+      }
+    });
+
+    // Return the animated child with SlideTransition
+    return SlideTransition(position: animation, child: child);
+  }
+
 }
