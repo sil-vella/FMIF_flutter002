@@ -173,13 +173,16 @@ class _CelebHeadComponentState extends State<CelebHeadComponent>
           dropController: dropController,
           shakeDuration: Duration(milliseconds: 100),
           shakeTotalDuration: Duration(seconds: 4),
-          dropDuration: Duration(seconds: 2),
-          dropStartDelay: Duration(seconds: 2),
-          shakeBegin: Offset(-10.0, 0.0),
-          shakeEnd: Offset(10.0, 0.0),
+          dropDuration: Duration(milliseconds: 1800),
+          dropStartDelay: Duration(milliseconds: 1000),
+          shakeBegin: Offset(-3.0, 0.0),
+          shakeEnd: Offset(3.0, 0.0),
           dropBegin: Offset(0.0, 0.0),
-          dropEnd: Offset(0.0, 100.0),
-          shakeCurve: Curves.easeInOut,
+          dropEnd: Offset(0.0, 150.0),
+          shakeCurve: CustomShakeCurve(
+            accelerationFactor: 1.0, // Adjust the acceleration
+            decelerationFactor: 0.2, // Adjust the deceleration
+          ),
           dropCurve: Curves.easeIn,
           infinite: false,
           onComplete: () {

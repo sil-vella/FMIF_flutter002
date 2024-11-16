@@ -1,5 +1,23 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'main_plugin_helper.dart';
+
+class CustomShakeCurve extends Curve {
+  final double accelerationFactor; // Controls the acceleration phase
+  final double decelerationFactor; // Controls the deceleration phase
+
+  CustomShakeCurve({
+    this.accelerationFactor = 2.0, // Default values
+    this.decelerationFactor = 2.0,
+  });
+
+  @override
+  double transform(double t) {
+    // Customizable quadratic ease-in-out logic
+    return pow(t, accelerationFactor).toDouble() * (3 - pow(t, decelerationFactor).toDouble());
+  }
+}
 
 class AnimationHelper extends PluginHelper {
   void _resetController(AnimationController controller) {

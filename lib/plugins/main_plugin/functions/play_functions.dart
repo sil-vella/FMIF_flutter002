@@ -123,7 +123,7 @@ class PlayFunctions extends PluginHelper {
   static void flushAction(AppStateProvider appStateProvider, String pluginStateKey, context) {
     // Create an instance of AudioHelper
     // Access the singleton instance
-    AudioHelper().playEffectSound('app_audio/flush005.mp3', context);
+    AudioHelper().playEffectSound('app_audio/flush006.mp3', context);
 
 
     // Update plugin state
