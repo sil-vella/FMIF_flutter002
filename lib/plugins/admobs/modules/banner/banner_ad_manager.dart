@@ -16,9 +16,7 @@ class BannerAdManager {
       size: AdSize.banner,
       request: const AdRequest(),
       listener: BannerAdListener(
-        onAdLoaded: (Ad ad) => print('Ad loaded: ${ad.adUnitId}'),
         onAdFailedToLoad: (Ad ad, LoadAdError error) {
-          print('Ad failed to load: ${error.message}');
           ad.dispose();
         },
       ),

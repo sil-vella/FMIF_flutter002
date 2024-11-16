@@ -38,4 +38,9 @@ class Config {
     'ADMOBS_BOTTOM_BANNER01',
     defaultValue: '',
   );
+
+  static const String admobsInterstitial01 = String.fromEnvironment(
+    'ADMOBS_INTERSTITIAL01',
+    defaultValue: '',
+  );
 }

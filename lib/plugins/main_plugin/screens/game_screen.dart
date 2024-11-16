@@ -9,6 +9,8 @@ import '../../../providers/app_state_provider.dart';
 import '../../../screens/base_screen.dart';
 import '../celeb_components/name_buttons_component.dart';
 import '../celeb_components/main_background_overlay_component.dart';
+import '../functions/play_functions.dart';
+import '../functions/audio_helper.dart';
 
 class GameScreen extends BaseScreen {
   const GameScreen({Key? key}) : super(key: key);
@@ -21,48 +23,78 @@ class GameScreen extends BaseScreen {
 }
 
 class _GameScreenState extends BaseScreenState<GameScreen> with SingleTickerProviderStateMixin {
-  @override
-  Widget buildContent(BuildContext context) {
-    final pluginStateKey = "MainPluginState";
+  late AppStateProvider _appStateProvider;
 
-    // Monitor play_state changes to trigger specific actions or animations if needed
-    context.select<AppStateProvider, String?>((appStateProvider) {
-      final pluginState = appStateProvider.getPluginState<Map<String, dynamic>>(pluginStateKey) ?? {};
-      return pluginState['play_state'] as String?;
+  @override
+  void initState() {
+    super.initState();
+
+    // Initialize AppStateProvider
+    _appStateProvider = Provider.of<AppStateProvider>(context, listen: false);
+
+    // Auto-play background music
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await AudioHelper().playBackgroundSound(
+        audioPath: 'app_audio/background005.mp3',
+        context: context,
+      );
     });
 
-    return Column(
-      children: [
-        Expanded(
-          child: Stack(
-            children: [
-              const Positioned.fill(child: MainBackgroundComponent()),
-              const Positioned.fill(child: AfterMathComponent()),
-              const Positioned.fill(child: CelebHeadComponent()),
-              const Positioned.fill(child: MainBackgroundOverlayComponent()),
-              const Positioned.fill(child: RibbonComponent()),
+    // Check if 'main_state' is 'in_play'
+    if (_appStateProvider.getMainAppState('main_state') != 'in_play') {
+      WidgetsBinding.instance.addPostFrameCallback((_) async {
+        await PlayFunctions.handlePlayButton(_appStateProvider, context);
+      });
+    }
+  }
 
-              // Name buttons component at the top
-              const Positioned(
-                top: 0,
-                left: 0,
-                right: 0,
-                child: NameButtonsComponent(),
-              ),
+  @override
+  void dispose() {
+    AudioHelper().stopBackgroundSound(); // Stop background music when leaving the screen
+    super.dispose();
+  }
 
-              // Celeb facts component at the bottom with a scrollable container
-              Positioned(
-                bottom: 0,
-                left: 0,
-                right: 0,
-                child: SingleChildScrollView(
-                  child: CelebFactsComponent(),
-                ),
+  @override
+  Widget buildContent(BuildContext context) {
+    return Consumer<AppStateProvider>(
+      builder: (context, appStateProvider, child) {
+        // Adjust volume dynamically based on mute state
+        AudioHelper().updateVolumeBasedOnState(context);
+
+        return Column(
+          children: [
+            Expanded(
+              child: Stack(
+                children: [
+                  const Positioned.fill(child: MainBackgroundComponent()),
+                  const Positioned.fill(child: AfterMathComponent()),
+                  const Positioned.fill(child: CelebHeadComponent()),
+                  const Positioned.fill(child: MainBackgroundOverlayComponent()),
+                  const Positioned.fill(child: RibbonComponent()),
+
+                  // Name buttons component at the top
+                  const Positioned(
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    child: NameButtonsComponent(),
+                  ),
+
+                  // Celeb facts component at the bottom with a scrollable container
+                  Positioned(
+                    bottom: 0,
+                    left: 0,
+                    right: 0,
+                    child: SingleChildScrollView(
+                      child: CelebFactsComponent(),
+                    ),
+                  ),
+                ],
               ),
-            ],
-          ),
-        ),
-      ],
+            ),
+          ],
+        );
+      },
     );
   }
 }

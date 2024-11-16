@@ -18,7 +18,7 @@ class _AfterMathComponentState extends State<AfterMathComponent>
   late final AnimationController slideUpAndDownController;
   late final AnimationController flyAwayController;
   late final AnimationHelper animationHelper;
-  String? randomImagePath;
+  String? animationImageUrl;
 
   @override
   void initState() {
@@ -26,7 +26,7 @@ class _AfterMathComponentState extends State<AfterMathComponent>
     animationHelper = AnimationHelper();
     slideUpAndDownController = AnimationController(vsync: this);
     flyAwayController = AnimationController(vsync: this);
-    loadRandomImage();
+    loadAnimationImage();
   }
 
   @override
@@ -36,31 +36,19 @@ class _AfterMathComponentState extends State<AfterMathComponent>
     super.dispose();
   }
 
-  void loadRandomImage() {
-    // Define separate image paths for correct and incorrect aftermath states
-    final correctImagePaths = [
-      'assets/after_animations/elmo-fire012.gif',
-      // Add other correct aftermath images here
-    ];
-
-    final incorrectImagePaths = [
-      'assets/after_animations/elmo-fire012.gif',
-      // Add other incorrect aftermath images here
-    ];
-
-    // Determine which list to use based on play_state
+  void loadAnimationImage() {
+    // Determine which URL to use based on play_state
     final appStateProvider = Provider.of<AppStateProvider>(context, listen: false);
     final pluginStateKey = "${MainPlugin().runtimeType}State";
     final playState = appStateProvider.getPluginState<Map<String, dynamic>>(pluginStateKey)?['play_state'];
 
-    final imagePaths = (playState == 'aftermath_correct') ? correctImagePaths : incorrectImagePaths;
+    // Fetch correct or incorrect animation URL from pluginState
+    final pluginState = appStateProvider.getPluginState<Map<String, dynamic>>(pluginStateKey) ?? {};
+    animationImageUrl = (playState == 'aftermath_correct')
+        ? pluginState['correct_anim']
+        : pluginState['incorrect_anim'];
 
-    if (imagePaths.isNotEmpty) {
-      final randomIndex = Random().nextInt(imagePaths.length);
-      setState(() {
-        randomImagePath = imagePaths[randomIndex];
-      });
-    }
+    setState(() {}); // Trigger rebuild with updated URL
   }
 
   @override
@@ -90,17 +78,36 @@ class _AfterMathComponentState extends State<AfterMathComponent>
     final screenWidth = MediaQuery.of(context).size.width;
     final imageSize = screenWidth * 0.3;
 
-    Widget animatedChild = Container(
+    // Display a network image from the retrieved URL or fallback to a default image with loading and error handling
+    Widget animatedChild = animationImageUrl != null && animationImageUrl!.isNotEmpty
+        ? FutureBuilder(
+      future: precacheImage(NetworkImage(animationImageUrl!), context),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.done) {
+          return Container(
+            width: imageSize,
+            height: imageSize,
+            decoration: BoxDecoration(
+              image: DecorationImage(
+                image: NetworkImage(animationImageUrl!),
+                fit: BoxFit.cover,
+              ),
+            ),
+          );
+        } else {
+          return SizedBox(
+            width: imageSize,
+            height: imageSize,
+            child: Center(child: CircularProgressIndicator()),
+          );
+        }
+      },
+    )
+        : Container(
       width: imageSize,
       height: imageSize,
-      decoration: BoxDecoration(
-        image: DecorationImage(
-          image: randomImagePath != null
-              ? AssetImage(randomImagePath!)
-              : AssetImage('assets/app_images/default_celeb_head.png'),
-          fit: BoxFit.cover,
-        ),
-      ),
+      color: Colors.grey,
+      child: Icon(Icons.error, color: Colors.red),
     );
 
     // Apply animations based on contents of `aftermathAnims`
@@ -138,9 +145,6 @@ class _AfterMathComponentState extends State<AfterMathComponent>
         },
       );
     }
-
-
-
 
     return Center(
       child: animatedChild,

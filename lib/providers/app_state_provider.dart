@@ -5,12 +5,14 @@ class AppStateProvider with ChangeNotifier {
   final Map<String, dynamic> _pluginStates = {};
   Map<String, dynamic> _mainAppState = {'main_state': 'idle'};
 
+  bool isPluginStateRegistered(String pluginKey) {
+    return _pluginStates.containsKey(pluginKey);
+  }
+
   void registerPluginState(String pluginKey, dynamic initialState) {
     if (!_pluginStates.containsKey(pluginKey)) {
       _pluginStates[pluginKey] = initialState;
       notifyListeners();
-    } else {
-      print("Plugin state for $pluginKey is already registered.");
     }
   }
 
@@ -22,15 +24,14 @@ class AppStateProvider with ChangeNotifier {
     return pluginState as T?;
   }
 
-  void updatePluginState(String pluginKey, Map<String, dynamic> newState) {
+  // Updated to return Future<void> for async compatibility
+  Future<void> updatePluginState(String pluginKey, Map<String, dynamic> newState) async {
     if (_pluginStates.containsKey(pluginKey)) {
       _pluginStates[pluginKey] = {
         ..._pluginStates[pluginKey],
         ...newState,
       };
       notifyListeners();
-    } else {
-      print("No state registered for plugin: $pluginKey");
     }
   }
 
@@ -45,5 +46,10 @@ class AppStateProvider with ChangeNotifier {
   void updateMainAppState(String key, dynamic value) {
     _mainAppState[key] = value;
     notifyListeners();
+  }
+
+  // Method to retrieve a specific value from the main app state
+  T? getMainAppState<T>(String key) {
+    return _mainAppState[key] as T?;
   }
 }

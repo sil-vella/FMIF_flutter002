@@ -125,7 +125,6 @@ class _RibbonComponentState extends State<RibbonComponent>
                       slideCurve: Curves.easeIn,
                       infinite: false, // Set to true if you want looping behavior
                       onComplete: () {
-                        print("Ribbon animation completed");
                       },
                     );
                   }

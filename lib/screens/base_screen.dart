@@ -15,29 +15,39 @@ abstract class BaseScreen extends StatefulWidget {
 abstract class BaseScreenState<T extends BaseScreen> extends State<T> {
   @override
   Widget build(BuildContext context) {
-    final navigationContainer = Provider.of<NavigationContainer>(context);
+    return Consumer<NavigationContainer>(
+      builder: (context, navigationContainer, child) {
 
-    // Retrieve BannerAdWidget if it has been registered by AdmobsPlugin
-    final bannerModuleFactory = ModuleManager().getModule<Function>("BannerModule");
-    final bannerWidget = bannerModuleFactory != null ? bannerModuleFactory() as Widget : null;
+        // Retrieve BannerAdWidget if it has been registered by AdmobsPlugin
+        final bannerModuleFactory = ModuleManager().getModule<Function>("BannerModule");
+        final bannerWidget = bannerModuleFactory != null ? bannerModuleFactory() as Widget : null;
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(widget.title),
-      ),
-      drawer: navigationContainer.buildDrawer(context),
-      body: Column(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Expanded(
-            child: buildContent(context), // Main content of the screen
+        // Retrieve InterstitialAdWidget if it has been registered by AdmobsPlugin
+        final interstitialModuleFactory = ModuleManager().getModule<Function>("InterstitialModule");
+        final interstitialWidget = interstitialModuleFactory != null ? interstitialModuleFactory() as Widget : null;
+
+        return Scaffold(
+          appBar: AppBar(
+            title: Text(widget.title),
+            actions: [
+              ...navigationContainer.appBarActions, // Dynamically updated AppBar actions
+            ],
           ),
-          if (bannerWidget != null) ...[
-            bannerWidget, // Display banner ad above the bottom navigation bar
-          ],
-        ],
-      ),
-      bottomNavigationBar: navigationContainer.buildBottomNavigationBar(),
+          drawer: navigationContainer.buildDrawer(context),
+          body: Column(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Expanded(
+                child: buildContent(context), // Main content of the screen
+              ),
+              if (bannerWidget != null) ...[
+                bannerWidget, // Display banner ad above the bottom navigation bar
+              ],
+            ],
+          ),
+          bottomNavigationBar: navigationContainer.buildBottomNavigationBar(),
+        );
+      },
     );
   }
 

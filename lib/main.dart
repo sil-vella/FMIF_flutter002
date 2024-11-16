@@ -46,7 +46,7 @@ class MyApp extends StatelessWidget {
     });
 
     return MaterialApp(
-      title: 'My App',
+      title: 'FMIF',
       navigatorKey: NavigationContainer.navigatorKey,
       theme: AppTheme.darkTheme, // Apply the custom theme here
       home: const HomeScreen(),

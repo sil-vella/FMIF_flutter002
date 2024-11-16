@@ -1,4 +1,3 @@
-// navigation/navigation_container.dart
 import 'package:flutter/material.dart';
 
 typedef NavigationLink = ListTile;
@@ -10,10 +9,12 @@ class NavigationContainer extends ChangeNotifier {
   final List<NavigationLink> _drawerLinks = [];
   final List<BottomNavigationLink> _bottomNavLinks = [];
   final Map<String, WidgetBuilder> _routes = {};
+  final List<Widget> _appBarActions = []; // Store AppBar actions
 
   List<NavigationLink> get drawerLinks => _drawerLinks;
   List<BottomNavigationLink> get bottomNavLinks => _bottomNavLinks;
   Map<String, WidgetBuilder> get routes => _routes;
+  List<Widget> get appBarActions => _appBarActions; // Expose AppBar actions
 
   /// Method for plugins to register navigation links and routes
   void registerNavigationLinks({
@@ -26,6 +27,18 @@ class NavigationContainer extends ChangeNotifier {
     _routes.addAll(routes);
     notifyListeners(); // Notify listeners after updating navigation links
   }
+
+  /// Method for plugins to register AppBar actions
+  void registerAppBarItems(List<Widget> actions) {
+    _appBarActions.addAll(actions);
+    notifyListeners(); // Notify listeners about the update
+  }
+
+  @override
+  void notifyListeners() {
+    super.notifyListeners();
+  }
+
 
   /// Static method to navigate to a route
   static void navigateTo(String routeName) {

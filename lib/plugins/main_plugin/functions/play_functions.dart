@@ -2,181 +2,192 @@ import 'package:flutter/material.dart';
 import '../../../providers/app_state_provider.dart';
 import '../main_plugin_main.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'audio_helper.dart';
 import 'main_plugin_helper.dart';
+
 
 class PlayFunctions extends PluginHelper {
   static Future<void> handlePlayButton(AppStateProvider appStateProvider, BuildContext context) async {
-    // Retrieve the celeb_category from SharedPreferences
-    final prefs = await SharedPreferences.getInstance();
-    final celebCategory = prefs.getString('celeb_category');
+    print('Starting handlePlayButton');
+    try {
+      // Retrieve the celeb_category from SharedPreferences
+      final prefs = await SharedPreferences.getInstance();
+      final celebCategory = prefs.getString('celeb_category');
+      print('Retrieved celeb_category: $celebCategory');
 
-    // Check if the celeb_category has a value
-    if (celebCategory == null || celebCategory.isEmpty) {
-      // If not, show a popup alert and link to the /pref screen
-      showDialog(
-        context: context,
-        builder: (BuildContext context) {
-          return AlertDialog(
-            title: Text("Category Required"),
-            content: Text("Please choose a category to continue."),
-            actions: [
-              TextButton(
-                onPressed: () {
-                  Navigator.of(context).pop(); // Close the alert dialog
-                  Navigator.of(context).pushNamed('/prefs'); // Navigate to the /pref screen
-                },
-                child: Text("Choose Category"),
-              ),
-            ],
-          );
+      if (celebCategory == null || celebCategory.isEmpty) {
+        print('celeb_category is null or empty');
+        showDialog(
+          context: context,
+          builder: (BuildContext context) {
+            return AlertDialog(
+              title: Text("Category Required"),
+              content: Text("Please choose a category to continue."),
+              actions: [
+                TextButton(
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                    Navigator.of(context).pushNamed('/prefs');
+                  },
+                  child: Text("Choose Category"),
+                ),
+              ],
+            );
+          },
+        );
+        return;
+      }
+
+      // Use MainPlugin's runtimeType for the dynamic key
+      final pluginStateKey = "${MainPlugin().runtimeType}State";
+      print('Using pluginStateKey: $pluginStateKey');
+
+      // Fetch and set celebrity details since a category is set
+      print('Fetching details since celeb_category is set');
+      await fetchAndSetCelebDetails(appStateProvider, pluginStateKey);
+
+      // Retrieve updated pluginState to reflect fetched details
+      var pluginState = appStateProvider.getPluginState<Map<String, dynamic>>(pluginStateKey) ?? {};
+      print('pluginState after fetching: $pluginState');
+
+      // Update the main app state to indicate that play has started
+      appStateProvider.updateMainAppState('main_state', 'in_play');
+      print('Updated main app state to in_play');
+
+      // Update the play state in the plugin state
+      appStateProvider.updatePluginState(pluginStateKey, {
+        'play_state': "in_play",
+        'plugin_anims': {
+          'head_anims': ['slideUp', 'bounce', 'pulse', 'sideToSide'],
+          'ribbon_anims': [],
         },
-      );
-      return; // Stop the function if no category is selected
+      });
+      print('Updated plugin state to in_play');
+
+      // Navigate to the /play screen once details are verified and fetched
+      print('Navigating to /play');
+      Navigator.of(context).pushNamed('/play');
+    } catch (error) {
+      print('Error in handlePlayButton: $error');
     }
-
-    // Update the main app state to indicate that play has started
-    appStateProvider.updateMainAppState('main_state', 'in_play');
-
-    // Use MainPlugin's runtimeType for the dynamic key
-    final pluginStateKey = "${MainPlugin().runtimeType}State";
-
-    // Fetch and set celebrity details, awaiting its completion
-    await fetchAndSetCelebDetails(appStateProvider, pluginStateKey);
-
-    // Update the play state in the plugin state
-    appStateProvider.updatePluginState(pluginStateKey, {
-      'play_state': "in_play",
-      'plugin_anims': {
-        'head_anims': ['slideUp','bounce', 'pulse', 'sideToSide'],
-        'ribbon_anims': [],
-      },
-    });
-
-    // Navigate to the /play screen once details are fetched
-    Navigator.of(context).pushNamed('/play');
   }
 
-  static Future<void> fetchAndSetCelebDetails(
-      AppStateProvider appStateProvider,
-      String pluginStateKey,
-      ) async {
-    // Retrieve the current category from the plugin state
-    final pluginState = appStateProvider.getPluginState<Map<String, dynamic>>(pluginStateKey) ?? {};
-    final celebCategory = pluginState['celeb_category'];
-
-    print("getting from category $celebCategory");
-
+  static Future<void> fetchAndSetCelebDetails(AppStateProvider appStateProvider, String pluginStateKey) async {
+    print('fetching');
     try {
-      // Fetch the celeb details from the API
-      final celebDetails = await PluginHelper.getCelebDetails(celebCategory);
+      final pluginState = appStateProvider.getPluginState<Map<String, dynamic>>(pluginStateKey) ?? {};
+      final celebCategory = pluginState['celeb_category'];
 
-      // Update specific fields in the plugin state
+      final celebDetails = await PluginHelper.getCelebDetails(celebCategory);
       appStateProvider.updatePluginState(pluginStateKey, {
         'celeb_name': celebDetails['name'],
         'celeb_facts': celebDetails['facts'],
         'celeb_img_url': celebDetails['image'],
         'other_celebs': celebDetails['other_celebs'],
+        'correct_anim': celebDetails['correct_animation'],
+        'incorrect_anim': celebDetails['incorrect_animation']
       });
 
-      print("Celebrity details updated in the state: ${appStateProvider.getPluginState(pluginStateKey)}");
-
     } catch (error) {
-      print("Error fetching or updating celebrity details: $error");
     }
   }
 
   static Future<void> selectedCeleb(AppStateProvider appStateProvider, String pluginStateKey, String selectedName) async {
-    final pluginState = appStateProvider.getPluginState<Map<String, dynamic>>(pluginStateKey) ?? {};
+    try {
+      final pluginState = appStateProvider.getPluginState<Map<String, dynamic>>(pluginStateKey) ?? {};
 
-    if (selectedName == pluginState['celeb_name']) {
-      appStateProvider.updatePluginState(pluginStateKey, {
-        'play_state': 'revealed_correct',
-        'plugin_anims': {
-          'head_anims': ['pulse', 'sideToSide', 'bounce'],
-          'ribbon_anims': ['shrinkAndSlideDown'],
-        }
-      });
-
-    } else {
-      appStateProvider.updatePluginState(pluginStateKey, {
-        'play_state': 'revealed_incorrect',
-        'flushing': 'true',
-        'plugin_anims': {
-          'head_anims': ['pulse', 'sideToSide', 'bounce'],
-          'ribbon_anims': ['shrinkAndSlideDown'],
-        }
-      });
-      await activateAftermath(appStateProvider, pluginStateKey);
+      if (selectedName == pluginState['celeb_name']) {
+        appStateProvider.updatePluginState(pluginStateKey, {
+          'play_state': 'revealed_correct',
+          'plugin_anims': {
+            'head_anims': ['pulse', 'sideToSide', 'bounce'],
+            'ribbon_anims': ['shrinkAndSlideDown'],
+          }
+        });
+      } else {
+        appStateProvider.updatePluginState(pluginStateKey, {
+          'play_state': 'revealed_incorrect',
+          'flushing': 'true',
+          'plugin_anims': {
+            'head_anims': ['pulse', 'sideToSide', 'bounce'],
+            'ribbon_anims': ['shrinkAndSlideDown'],
+          }
+        });
+        await activateAftermath(appStateProvider, pluginStateKey);
+      }
+    } catch (error) {
+      print("Error in selectedCeleb: $error");
     }
   }
 
-  // Now static: Function triggered when the correct name is selected
-  static  flushAction(AppStateProvider appStateProvider, String pluginStateKey)  {
-    // Define logic for correct selection here, such as updating a score or showing feedback
+  static void flushAction(AppStateProvider appStateProvider, String pluginStateKey, context) {
+    // Create an instance of AudioHelper
+    // Access the singleton instance
+    AudioHelper().playEffectSound('app_audio/flush005.mp3', context);
+
+
+    // Update plugin state
     appStateProvider.updatePluginState(pluginStateKey, {
       'flushing': true,
       'plugin_anims': {
         'head_anims': ['shakeAndDrop', 'pulse', 'sideToSide', 'bounce'],
-        'ribbon_anims': [],},
+        'ribbon_anims': [],
+      },
     });
-
   }
 
   static Future<void> activateAftermath(AppStateProvider appStateProvider, String pluginStateKey) async {
-    // Retrieve the current play_state to determine which animations to apply
-    final currentPlayState = appStateProvider.getPluginState<Map<String, dynamic>>(pluginStateKey)?['play_state'];
+    try {
+      final currentPlayState = appStateProvider.getPluginState<Map<String, dynamic>>(pluginStateKey)?['play_state'];
 
-    if (currentPlayState == 'revealed_correct') {
-      // Update state with the animations for correct selection
-      appStateProvider.updatePluginState(pluginStateKey, {
-        'play_state': 'aftermath_correct',
-        'plugin_anims': {'aftermath_anims': ['slideUpAndDown']},
-      });
-    } else if (currentPlayState == 'revealed_incorrect') {
-      // Update state with the animations for incorrect selection
-      appStateProvider.updatePluginState(pluginStateKey, {
-        'flushing': false,
-        'play_state': 'aftermath_incorrect',
-        'plugin_anims': {
-          'aftermath_anims': ['flyAway'],
-          'head_anims': ['flyAway']
-        },  // Example alternative animation
-      });
+      if (currentPlayState == 'revealed_correct') {
+        appStateProvider.updatePluginState(pluginStateKey, {
+          'play_state': 'aftermath_correct',
+          'plugin_anims': {'aftermath_anims': ['slideUpAndDown']},
+        });
+      } else if (currentPlayState == 'revealed_incorrect') {
+        appStateProvider.updatePluginState(pluginStateKey, {
+          'flushing': false,
+          'play_state': 'aftermath_incorrect',
+          'plugin_anims': {
+            'aftermath_anims': ['flyAway'],
+            'head_anims': ['flyAway']
+          },
+        });
+      }
+
+      await Future.delayed(Duration(milliseconds: 100));
+    } catch (error) {
+      print("Error in activateAftermath: $error");
     }
-
-    // Force a small delay to allow the UI to rebuild and apply the animation
-    await Future.delayed(Duration(milliseconds: 100));
   }
 
   static Future<void> resetPluginPlayState(AppStateProvider appStateProvider, String pluginStateKey) async {
+    try {
+      await Future.delayed(Duration(milliseconds: 100));
+      final defaultState = MainPlugin().reset();
 
-    // Force rebuild or small delay if needed to apply the animation
-    await Future.delayed(Duration(milliseconds: 100));
-    // Fetch the default state from MainPlugin
-    final defaultState = MainPlugin().reset();
+      appStateProvider.updatePluginState(pluginStateKey, defaultState);
 
-    // Update the plugin state with the default values
-    appStateProvider.updatePluginState(pluginStateKey, defaultState);
+      final savedCategory = await SharedPreferences.getInstance().then((prefs) => prefs.getString("celeb_category") ?? "");
+      await fetchAndSetCelebDetails(appStateProvider, pluginStateKey);
+      defaultState["celeb_category"] = savedCategory;
 
-    // Retrieve any saved category from SharedPreferences (if required)
-    final savedCategory = await SharedPreferences.getInstance().then((prefs) => prefs.getString("celeb_category") ?? "");
-    // Fetch and set celebrity details, awaiting its completion
-    await fetchAndSetCelebDetails(appStateProvider, pluginStateKey);
-    defaultState["celeb_category"] = savedCategory;
+      appStateProvider.updatePluginState(pluginStateKey, {
+        'plugin_anims': {},
+      });
 
-    appStateProvider.updatePluginState(pluginStateKey, {
-      'plugin_anims': {},
-    });
-
-    appStateProvider.updatePluginState(pluginStateKey, {
-      'play_state': 'in_play',
-      'plugin_anims': {'head_anims': ['slideUp','pulse', 'sideToSide', 'bounce']},
-    });
+      appStateProvider.updatePluginState(pluginStateKey, {
+        'play_state': 'in_play',
+        'plugin_anims': {'head_anims': ['slideUp','pulse', 'sideToSide', 'bounce']},
+      });
+    } catch (error) {
+      print("Error in resetPluginPlayState: $error");
+    }
   }
 
-  // Now static: Function triggered when an incorrect name is selected
-  static void onIncorrectSelection(AppStateProvider appStateProvider, String pluginStateKey) {
-    // Define logic for incorrect selection here, such as showing feedback or updating attempts
-  }
 }
+
+
+
 

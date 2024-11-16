@@ -17,13 +17,11 @@ class Api implements AppPlugin {
   @override
   void onStartup() {
     // Custom startup action with dynamic plugin name
-    print("${runtimeType} onStartup");
     registerModules(); // Register modules at startup
   }
 
   @override
   void initialize(BuildContext context) {
-    print("ApiConnection initialized");
 
     // Access app state if needed after the app context is available
     final appState = Provider.of<AppStateProvider>(context, listen: false);
@@ -31,9 +29,6 @@ class Api implements AppPlugin {
     // Attempt to access another plugin's state (if necessary)
     final otherPluginState = appState.getPluginState<Map<String, dynamic>>("PluginBState");
     if (otherPluginState != null) {
-      print("Accessed PluginBState: $otherPluginState");
-    } else {
-      print("PluginBState not available during ApiConnection initialization.");
     }
   }
 

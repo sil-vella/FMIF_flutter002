@@ -65,7 +65,7 @@ class NameButtonsComponent extends StatelessWidget {
                 child: ElevatedButton(
                   onPressed: () {
                     // Define what should happen when "Flush!!" is pressed
-                    PlayFunctions.flushAction(appStateProvider, pluginStateKey); // Example action
+                    PlayFunctions.flushAction(appStateProvider, pluginStateKey, context); // Example action
                   },
                   child: Text("Flush!!"),
                 ),

@@ -17,17 +17,26 @@ class HomeScreen extends BaseScreen {
 class _HomeScreenState extends BaseScreenState<HomeScreen> {
   @override
   Widget buildContent(BuildContext context) {
-    // Access AppStateProvider to pass into PlayFunctions
-    final appStateProvider = Provider.of<AppStateProvider>(context, listen: false);
-
-    return Center(
-      child: ElevatedButton(
-        onPressed: () {
-          // Call handlePlayButton with AppStateProvider
-          PlayFunctions.handlePlayButton(appStateProvider, context);
-        },
-        child: const Text('Play'),
-      ),
+    return Stack(
+      children: [
+        // Background image
+        Positioned.fill(
+          child: Image.asset(
+            'assets/app_images/pre_game_main_background.jpg', // Replace with your background image path
+            fit: BoxFit.cover, // Ensures the image covers the entire screen
+          ),
+        ),
+        // Foreground content
+        Center(
+          child: ElevatedButton(
+            onPressed: () {
+              final appStateProvider = Provider.of<AppStateProvider>(context, listen: false);
+              PlayFunctions.handlePlayButton(appStateProvider, context);
+            },
+            child: const Text('Play'),
+          ),
+        ),
+      ],
     );
   }
 }

@@ -97,16 +97,38 @@ class _CelebHeadComponentState extends State<CelebHeadComponent>
     final screenWidth = MediaQuery.of(context).size.width;
     final imageSize = screenWidth * 0.2;
 
-    // Celeb image container
-    Widget animatedChild = Container(
+    // Celeb image container with loading indicator and error handling
+    Widget animatedChild = celebImgUrl != null && celebImgUrl.isNotEmpty
+        ? FutureBuilder(
+      future: precacheImage(NetworkImage(celebImgUrl), context),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.done) {
+          return Container(
+            width: imageSize,
+            height: imageSize,
+            decoration: BoxDecoration(
+              image: DecorationImage(
+                image: NetworkImage(celebImgUrl),
+                fit: BoxFit.cover,
+              ),
+            ),
+          );
+        } else {
+          return SizedBox(
+            width: imageSize,
+            height: imageSize,
+            child: Center(
+              child: CircularProgressIndicator(),
+            ),
+          );
+        }
+      },
+    )
+        : Container(
       width: imageSize,
       height: imageSize,
-      decoration: BoxDecoration(
-        image: DecorationImage(
-          image: NetworkImage(celebImgUrl ?? ''),
-          fit: BoxFit.cover,
-        ),
-      ),
+      color: Colors.grey, // Placeholder color or local asset for missing image
+      child: Icon(Icons.error, color: Colors.red),
     );
 
     // Apply animations based on contents of `headAnims`
@@ -173,9 +195,7 @@ class _CelebHeadComponentState extends State<CelebHeadComponent>
           begin: Offset(0.0, 1.0),
           end: Offset(0.0, 0.0),
           infinite: false,
-          onComplete: () {
-            print("Slide up animation completed");
-          },
+          onComplete: () {},
         );
       }
       if (headAnims.contains('flyAway')) {
@@ -191,9 +211,7 @@ class _CelebHeadComponentState extends State<CelebHeadComponent>
           initialSlideCurve: Curves.easeOutCubic,
           flyAwayCurve: Curves.easeInCubic,
           infinite: false,
-          onComplete: () {
-            print("Fly-away animation completed");
-          },
+          onComplete: () {},
         );
       }
     }

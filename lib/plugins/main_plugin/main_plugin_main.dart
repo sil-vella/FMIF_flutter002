@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/app_state_provider.dart';
 import '../../services/shared_preferences_service.dart';
+import '../00_base/module_manager.dart';
 import 'functions/main_plugin_helper.dart';
 import '../00_base/app_plugin.dart';
 
@@ -14,36 +15,49 @@ class MainPlugin implements AppPlugin {
 
   @override
   void onStartup() {
-    print("${runtimeType} onStartup");
+    // Add any non-context-dependent startup logic here
+    print("MainPlugin onStartup executed.");
   }
 
   @override
   void initialize(BuildContext context) async {
-    print("${runtimeType} initialized");
+    print("Initializing MainPlugin...");
 
+    // Register modules
     registerModules();
+
+    // Register AppBar items with context
+    PluginHelper.registerAppbarItems(context);
+
+    // Register navigation
     PluginHelper.registerNavigation(context);
 
+    // Access and initialize app state
     final pluginStateKey = "${runtimeType}State";
     final appStateProvider = Provider.of<AppStateProvider>(context, listen: false);
 
+    // Load saved category, if any
     final savedCategory = SharedPreferencesService().getString("celeb_category") ?? "";
 
-    // Register or reset the plugin state with default values, including any saved category
-    appStateProvider.registerPluginState(pluginStateKey, reset()..["celeb_category"] = savedCategory);
+    // Initialize only if plugin state is not yet registered
+    if (!appStateProvider.isPluginStateRegistered(pluginStateKey)) {
+      final initialState = reset();
+      if (savedCategory.isNotEmpty) {
+        initialState["celeb_category"] = savedCategory;
+      }
+      appStateProvider.registerPluginState(pluginStateKey, initialState);
+    }
   }
 
   // Method to reset the plugin state to default
   void resetPlayState(BuildContext context) {
     final appStateProvider = Provider.of<AppStateProvider>(context, listen: false);
     final pluginStateKey = "${runtimeType}State";
-    final savedCategory = SharedPreferencesService().getString("celeb_category") ?? "";
-    appStateProvider.registerPluginState(pluginStateKey, reset()..["celeb_category"] = savedCategory);
+    appStateProvider.registerPluginState(pluginStateKey, reset());
   }
 
   @override
   void registerModules() {
-    // Define modules if needed
   }
 
   Map<String, dynamic> reset() {
@@ -54,6 +68,8 @@ class MainPlugin implements AppPlugin {
       "celeb_facts": [],
       "plugin_anims": {},
       'flushing': false,
+      'correct_anim': "",
+      'incorrect_anim': ""
     };
   }
 }
