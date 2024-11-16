@@ -3,16 +3,16 @@ import 'package:flutter/material.dart';
 import 'interstitial_ad_manager.dart';
 
 class InterstitialAdWidget extends StatelessWidget {
-  const InterstitialAdWidget({Key? key}) : super(key: key);
+  final InterstitialAdManager manager; // Define the manager parameter
+
+  const InterstitialAdWidget({Key? key, required this.manager}) : super(key: key); // Ensure it's required
 
   @override
   Widget build(BuildContext context) {
-    final InterstitialAdManager adManager = InterstitialAdManager();
-    adManager.loadInterstitialAd(); // Load the ad when the widget builds
-
     return ElevatedButton(
       onPressed: () {
-        adManager.showInterstitialAd();
+        print("InterstitialAdWidget: Button pressed, attempting to show ad.");
+        manager.showInterstitialAd(); // Use the provided manager to show the ad
       },
       child: const Text("Show Interstitial Ad"),
     );

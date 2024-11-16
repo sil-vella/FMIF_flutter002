@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../providers/app_state_provider.dart';
+import '../../00_base/module_manager.dart';
+import '../../admobs/modules/interstitial/interstitial_ad_manager.dart';
 import '../main_plugin_main.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'audio_helper.dart';
@@ -161,17 +163,62 @@ class PlayFunctions extends PluginHelper {
       print("Error in activateAftermath: $error");
     }
   }
+  static bool _isResetting = false; // Flag to prevent reentrant calls
 
   static Future<void> resetPluginPlayState(AppStateProvider appStateProvider, String pluginStateKey) async {
-    try {
-      await Future.delayed(Duration(milliseconds: 100));
-      final defaultState = MainPlugin().reset();
+    if (_isResetting) {
+      print("resetPluginPlayState is already in progress. Skipping duplicate call.");
+      return;
+    }
 
+    _isResetting = true; // Set the flag to true at the start of the method
+    try {
+      // Retrieve InterstitialAdWidget if it has been registered by AdmobsPlugin
+      final interstitialModuleFactory = ModuleManager().getModule<Function>("InterstitialModule");
+      final interstitialWidget = interstitialModuleFactory != null ? interstitialModuleFactory() as Widget : null;
+
+      // Check and update the ad_counter
+      final pluginState = appStateProvider.getPluginState<Map<String, dynamic>>(pluginStateKey) ?? {};
+      int adCounter = pluginState['ad_counter'] ?? 0;
+
+      print("Current ad_counter: $adCounter"); // Debug: Log current ad_counter
+
+      if (adCounter >= 4) {
+        print("ad_counter >= 4, attempting to play interstitial ad."); // Debug: Ad logic triggered
+
+        // Play the interstitial ad
+        if (interstitialWidget != null) {
+          print("InterstitialWidget exists, showing ad..."); // Debug: InterstitialWidget check
+          final adManager = InterstitialAdManager();
+          adManager.showInterstitialAd();
+        } else {
+          print("InterstitialWidget is null, unable to show ad."); // Debug: Widget is missing
+        }
+
+        // Reset the ad_counter to 0
+        appStateProvider.updatePluginState(pluginStateKey, {'ad_counter': 0});
+        print("ad_counter reset to 0 after showing ad."); // Debug: Counter reset
+      } else {
+        print("ad_counter < 4, incrementing ad_counter."); // Debug: Increment logic
+        // Increment the ad_counter
+        appStateProvider.updatePluginState(pluginStateKey, {'ad_counter': adCounter + 1});
+        print("ad_counter incremented to ${adCounter + 1}."); // Debug: Log incremented value
+      }
+
+      await Future.delayed(Duration(milliseconds: 100));
+
+      // Reset the plugin state
+      final defaultState = MainPlugin().reset();
       appStateProvider.updatePluginState(pluginStateKey, defaultState);
 
+      print("Plugin state reset to default."); // Debug: State reset
+
+      // Retrieve and set the saved category
       final savedCategory = await SharedPreferences.getInstance().then((prefs) => prefs.getString("celeb_category") ?? "");
       await fetchAndSetCelebDetails(appStateProvider, pluginStateKey);
       defaultState["celeb_category"] = savedCategory;
+
+      print("Saved category retrieved and set: $savedCategory"); // Debug: Category
 
       appStateProvider.updatePluginState(pluginStateKey, {
         'plugin_anims': {},
@@ -179,10 +226,14 @@ class PlayFunctions extends PluginHelper {
 
       appStateProvider.updatePluginState(pluginStateKey, {
         'play_state': 'in_play',
-        'plugin_anims': {'head_anims': ['slideUp','pulse', 'sideToSide', 'bounce']},
+        'plugin_anims': {'head_anims': ['slideUp', 'pulse', 'sideToSide', 'bounce']},
       });
+
+      print("Plugin state updated with play_state and animations."); // Debug: State updated
     } catch (error) {
-      print("Error in resetPluginPlayState: $error");
+      print("Error in resetPluginPlayState: $error"); // Debug: Error handling
+    } finally {
+      _isResetting = false; // Ensure the flag is reset even if an error occurs
     }
   }
 

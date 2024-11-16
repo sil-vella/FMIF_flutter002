@@ -8,12 +8,12 @@ class InterstitialAdManager {
   InterstitialAd? _interstitialAd;
   bool _isAdLoaded = false;
 
-  // Use Config to set the ad unit ID based on the platform
   final String adUnitId = Platform.isAndroid
-      ? Config.admobsInterstitial01 // Android ad unit ID from Config
-      : Config.admobsInterstitial01; // iOS ad unit ID from Config
+      ? Config.admobsInterstitial01
+      : Config.admobsInterstitial01;
 
   void loadInterstitialAd() {
+    print("Loading interstitial ad...");
     InterstitialAd.load(
       adUnitId: adUnitId,
       request: const AdRequest(),
@@ -21,10 +21,12 @@ class InterstitialAdManager {
         onAdLoaded: (InterstitialAd ad) {
           _interstitialAd = ad;
           _isAdLoaded = true;
+          print("Interstitial ad loaded successfully: _isAdLoaded=$_isAdLoaded");
           _setUpAdCallbacks();
         },
         onAdFailedToLoad: (LoadAdError error) {
           _isAdLoaded = false;
+          print("Failed to load interstitial ad: $error");
         },
       ),
     );
@@ -33,27 +35,33 @@ class InterstitialAdManager {
   void _setUpAdCallbacks() {
     _interstitialAd?.fullScreenContentCallback = FullScreenContentCallback(
       onAdShowedFullScreenContent: (InterstitialAd ad) {
+        print("Interstitial ad displayed.");
       },
       onAdDismissedFullScreenContent: (InterstitialAd ad) {
+        print("Interstitial ad dismissed.");
         ad.dispose();
         _isAdLoaded = false;
-        loadInterstitialAd(); // Preload another ad for next use
+        loadInterstitialAd(); // Preload another ad
       },
       onAdFailedToShowFullScreenContent: (InterstitialAd ad, AdError error) {
+        print("Interstitial ad failed to show: $error");
         ad.dispose();
         _isAdLoaded = false;
       },
-
     );
   }
 
   void showInterstitialAd() {
     if (_isAdLoaded && _interstitialAd != null) {
+      print("Showing interstitial ad...");
       _interstitialAd?.show();
+    } else {
+      print("Interstitial ad not ready: _isAdLoaded=$_isAdLoaded, _interstitialAd=$_interstitialAd");
     }
   }
 
   void dispose() {
+    print("Disposing interstitial ad.");
     _interstitialAd?.dispose();
     _interstitialAd = null;
     _isAdLoaded = false;

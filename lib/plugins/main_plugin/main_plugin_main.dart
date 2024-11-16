@@ -45,21 +45,31 @@ class MainPlugin implements AppPlugin {
       if (savedCategory.isNotEmpty) {
         initialState["celeb_category"] = savedCategory;
       }
+      initialState["ad_counter"] = 0; // Initialize ad_counter here
       appStateProvider.registerPluginState(pluginStateKey, initialState);
     }
   }
 
-  // Method to reset the plugin state to default
+  // Method to reset the plugin state to default while preserving ad_counter
   void resetPlayState(BuildContext context) {
     final appStateProvider = Provider.of<AppStateProvider>(context, listen: false);
     final pluginStateKey = "${runtimeType}State";
-    appStateProvider.registerPluginState(pluginStateKey, reset());
+
+    // Retrieve current ad_counter
+    final pluginState = appStateProvider.getPluginState<Map<String, dynamic>>(pluginStateKey) ?? {};
+    final adCounter = pluginState['ad_counter'] ?? 0;
+
+    // Reset the plugin state while preserving ad_counter
+    final resetState = reset();
+    resetState["ad_counter"] = adCounter;
+
+    appStateProvider.registerPluginState(pluginStateKey, resetState);
   }
 
   @override
-  void registerModules() {
-  }
+  void registerModules() {}
 
+  // Default state
   Map<String, dynamic> reset() {
     return {
       "play_state": "idle",
@@ -69,7 +79,8 @@ class MainPlugin implements AppPlugin {
       "plugin_anims": {},
       'flushing': false,
       'correct_anim': "",
-      'incorrect_anim': ""
+      'incorrect_anim': "",
+      // 'ad_counter' is not included here to avoid resetting it periodically
     };
   }
 }

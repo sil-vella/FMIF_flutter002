@@ -22,10 +22,6 @@ abstract class BaseScreenState<T extends BaseScreen> extends State<T> {
         final bannerModuleFactory = ModuleManager().getModule<Function>("BannerModule");
         final bannerWidget = bannerModuleFactory != null ? bannerModuleFactory() as Widget : null;
 
-        // Retrieve InterstitialAdWidget if it has been registered by AdmobsPlugin
-        final interstitialModuleFactory = ModuleManager().getModule<Function>("InterstitialModule");
-        final interstitialWidget = interstitialModuleFactory != null ? interstitialModuleFactory() as Widget : null;
-
         return Scaffold(
           appBar: AppBar(
             title: Text(widget.title),

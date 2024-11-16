@@ -9,22 +9,24 @@ class PluginManager {
   factory PluginManager() => _instance;
   PluginManager._internal();
 
-  /// Registers a plugin without initializing it immediately
   void registerPlugin(AppPlugin plugin) {
+    print("PluginManager: Registering plugin ${plugin.runtimeType}");
     _registeredPlugins.add(plugin);
   }
 
-  /// Calls the onStartup hook for all registered plugins
   void runOnStartup() {
+    print("PluginManager: Running onStartup for all registered plugins...");
     for (var plugin in _registeredPlugins) {
-      plugin.onStartup(); // Call the onStartup method for each plugin
+      print("PluginManager: Calling onStartup for ${plugin.runtimeType}");
+      plugin.onStartup();
     }
   }
 
-  /// Initializes all registered plugins, passing the BuildContext
   void initializeAllPlugins(BuildContext context) {
+    print("PluginManager: Initializing all registered plugins...");
     for (var plugin in _registeredPlugins) {
-      plugin.initialize(context); // Pass BuildContext to each plugin
+      print("PluginManager: Initializing ${plugin.runtimeType}");
+      plugin.initialize(context);
     }
   }
 }
