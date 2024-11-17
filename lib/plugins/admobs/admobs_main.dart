@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:provider/provider.dart';
@@ -20,6 +22,10 @@ class AdmobsPlugin implements AppPlugin {
     adUnitId: Config.admobsInterstitial01, // Fetch the Ad Unit ID from Config
   );
 
+  void showInterstitialAd() {
+    _interstitialAdService.showAd();
+  }
+
   @override
   void onStartup() {
     print("AdmobsPlugin onStartup: Registering modules and preloading interstitial ad.");
@@ -30,10 +36,7 @@ class AdmobsPlugin implements AppPlugin {
     registerModules(); // Register modules at startup
 
     _interstitialAdService.loadAd();
-  }
 
-  void showInterstitialAd() {
-    _interstitialAdService.showAd();
   }
 
   @override
