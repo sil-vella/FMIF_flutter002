@@ -186,17 +186,23 @@ class PlayFunctions extends PluginHelper {
       if (adCounter >= 3) {
         print("ad_counter >= 3, attempting to play interstitial ad."); // Debug: Ad logic triggered
 
-        // Show the interstitial ad
+        // Retrieve the InterstitialAdService instance from ModuleManager
+        final interstitialAdServiceFactory = ModuleManager().getModule<Function>("InterstitialAdService");
+        final interstitialAdService = interstitialAdServiceFactory != null ? interstitialAdServiceFactory() : null;
+
         try {
-          AdmobsPlugin().showInterstitialAd();
-          print("Interstitial ad displayed.");
+          if (interstitialAdService != null) {
+            // Show the interstitial ad only if it's ready
+            interstitialAdService.showAd();
+            print("Interstitial ad displayed.");
+          }
         } catch (e) {
           print("Error showing interstitial ad: $e");
         }
 
         // Reset the ad_counter to 0
         appStateProvider.updatePluginState(pluginStateKey, {'ad_counter': 0});
-        print("ad_counter reset to 0 after showing ad."); // Debug: Counter reset
+        print("ad_counter reset to 0 after showing ad.");
       } else {
         print("ad_counter < 4, incrementing ad_counter."); // Debug: Increment logic
 

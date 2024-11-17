@@ -1,5 +1,4 @@
 import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:provider/provider.dart';
@@ -9,7 +8,7 @@ import '../../utils/consts/config.dart';
 import '../00_base/app_plugin.dart';
 import '../00_base/module_manager.dart';
 import 'modules/banner/banner_ad.dart';
-import 'modules/interstitial/interstitial_ad.dart';
+import 'modules/interstitial/interstitial_ad.dart';  // Import the InterstitialAdModule
 
 class AdmobsPlugin implements AppPlugin {
   AdmobsPlugin._internal();
@@ -23,7 +22,7 @@ class AdmobsPlugin implements AppPlugin {
   );
 
   void showInterstitialAd() {
-    _interstitialAdService.showAd();
+    _interstitialAdService.showAd(); // Show the interstitial ad
   }
 
   @override
@@ -35,8 +34,8 @@ class AdmobsPlugin implements AppPlugin {
 
     registerModules(); // Register modules at startup
 
+    // Preload the interstitial ad
     _interstitialAdService.loadAd();
-
   }
 
   @override
@@ -45,16 +44,15 @@ class AdmobsPlugin implements AppPlugin {
     registerModules();
 
     final appState = Provider.of<AppStateProvider>(context, listen: false);
-
-
   }
 
   @override
   void registerModules() {
-    // Register a factory function for BannerModule
+    // Register a factory function for BannerModule and InterstitialAdService
     ModuleManager().registerModule("BannerModule", () => BannerAdModule());
 
-
+    // Register InterstitialAdService
+    ModuleManager().registerModule("InterstitialAdService", () => _interstitialAdService);
   }
 
   void _initializeAdMob() {
