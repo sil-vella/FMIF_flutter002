@@ -84,6 +84,7 @@ class _AfterMathComponentState extends State<AfterMathComponent>
       future: precacheImage(NetworkImage(animationImageUrl!), context),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.done) {
+          // Image has loaded, proceed with animation
           return Container(
             width: imageSize,
             height: imageSize,
@@ -94,11 +95,20 @@ class _AfterMathComponentState extends State<AfterMathComponent>
               ),
             ),
           );
-        } else {
+        } else if (snapshot.connectionState == ConnectionState.waiting) {
+          // Image is still loading, show a loading spinner
           return SizedBox(
             width: imageSize,
             height: imageSize,
             child: Center(child: CircularProgressIndicator()),
+          );
+        } else {
+          // Error loading the image, show an error message
+          return Container(
+            width: imageSize,
+            height: imageSize,
+            color: Colors.grey,
+            child: Icon(Icons.error, color: Colors.red),
           );
         }
       },
