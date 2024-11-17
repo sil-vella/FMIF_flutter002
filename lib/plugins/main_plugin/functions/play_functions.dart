@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../providers/app_state_provider.dart';
 import '../../00_base/module_manager.dart';
-import '../../admobs/modules/interstitial/interstitial_ad_manager.dart';
+import '../../admobs/admobs_main.dart';
 import '../main_plugin_main.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'audio_helper.dart';
@@ -184,17 +184,14 @@ class PlayFunctions extends PluginHelper {
       print("Current ad_counter: $adCounter"); // Debug: Log current ad_counter
 
       if (adCounter >= 3) {
-        print("ad_counter >= 4, attempting to play interstitial ad."); // Debug: Ad logic triggered
+        print("ad_counter >= 3, attempting to play interstitial ad."); // Debug: Ad logic triggered
 
-        // Play the interstitial ad with retries
-        if (interstitialWidget != null) {
-          print("InterstitialWidget exists, showing ad with retries..."); // Debug: InterstitialWidget check
-          final adManager = InterstitialAdManager();
-
-          // Use the retry mechanism to ensure the ad is loaded and displayed
-          await adManager.showInterstitialAdWithDelay(retryDelayInSeconds: 2, maxRetries: 5);
-        } else {
-          print("InterstitialWidget is null, unable to show ad."); // Debug: Widget is missing
+        // Show the interstitial ad
+        try {
+          AdmobsPlugin().showInterstitialAd();
+          print("Interstitial ad displayed.");
+        } catch (e) {
+          print("Error showing interstitial ad: $e");
         }
 
         // Reset the ad_counter to 0

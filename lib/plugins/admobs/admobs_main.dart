@@ -3,11 +3,11 @@ import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:provider/provider.dart';
 
 import '../../providers/app_state_provider.dart';
+import '../../utils/consts/config.dart';
 import '../00_base/app_plugin.dart';
 import '../00_base/module_manager.dart';
-import 'modules/banner/banner_ad_widget.dart';
-import 'modules/interstitial/interstitial_ad_manager.dart';
-import 'modules/interstitial/interstitial_ad_widget.dart';
+import 'modules/banner/banner_ad.dart';
+import 'modules/interstitial/interstitial_ad.dart';
 
 class AdmobsPlugin implements AppPlugin {
   AdmobsPlugin._internal();
@@ -16,7 +16,9 @@ class AdmobsPlugin implements AppPlugin {
 
   factory AdmobsPlugin() => _instance;
 
-  final InterstitialAdManager _interstitialAdManager = InterstitialAdManager();
+  final InterstitialAdService _interstitialAdService = InterstitialAdService(
+    adUnitId: Config.admobsInterstitial01, // Fetch the Ad Unit ID from Config
+  );
 
   @override
   void onStartup() {
@@ -27,9 +29,11 @@ class AdmobsPlugin implements AppPlugin {
 
     registerModules(); // Register modules at startup
 
-    // Preload interstitial ad
-    _interstitialAdManager.loadInterstitialAd();
-    print("AdmobsPlugin: Interstitial ad preloading initiated.");
+    _interstitialAdService.loadAd();
+  }
+
+  void showInterstitialAd() {
+    _interstitialAdService.showAd();
   }
 
   @override
@@ -39,19 +43,15 @@ class AdmobsPlugin implements AppPlugin {
 
     final appState = Provider.of<AppStateProvider>(context, listen: false);
 
-    // Ensure interstitial ad is preloaded
-    _interstitialAdManager.loadInterstitialAd();
+
   }
 
   @override
   void registerModules() {
     // Register a factory function for BannerModule
-    ModuleManager().registerModule("BannerModule", () => BannerAdWidget());
+    ModuleManager().registerModule("BannerModule", () => BannerAdModule());
 
-    // Register a factory function for InterstitialModule
-    ModuleManager().registerModule("InterstitialModule", () {
-      return InterstitialAdWidget(manager: _interstitialAdManager); // Pass the manager
-    });
+
   }
 
   void _initializeAdMob() {
