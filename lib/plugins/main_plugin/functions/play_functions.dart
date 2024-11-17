@@ -183,14 +183,16 @@ class PlayFunctions extends PluginHelper {
 
       print("Current ad_counter: $adCounter"); // Debug: Log current ad_counter
 
-      if (adCounter >= 4) {
+      if (adCounter >= 3) {
         print("ad_counter >= 4, attempting to play interstitial ad."); // Debug: Ad logic triggered
 
-        // Play the interstitial ad
+        // Play the interstitial ad with retries
         if (interstitialWidget != null) {
-          print("InterstitialWidget exists, showing ad..."); // Debug: InterstitialWidget check
+          print("InterstitialWidget exists, showing ad with retries..."); // Debug: InterstitialWidget check
           final adManager = InterstitialAdManager();
-          adManager.showInterstitialAd();
+
+          // Use the retry mechanism to ensure the ad is loaded and displayed
+          await adManager.showInterstitialAdWithDelay(retryDelayInSeconds: 2, maxRetries: 5);
         } else {
           print("InterstitialWidget is null, unable to show ad."); // Debug: Widget is missing
         }
@@ -200,6 +202,7 @@ class PlayFunctions extends PluginHelper {
         print("ad_counter reset to 0 after showing ad."); // Debug: Counter reset
       } else {
         print("ad_counter < 4, incrementing ad_counter."); // Debug: Increment logic
+
         // Increment the ad_counter
         appStateProvider.updatePluginState(pluginStateKey, {'ad_counter': adCounter + 1});
         print("ad_counter incremented to ${adCounter + 1}."); // Debug: Log incremented value

@@ -1,5 +1,5 @@
-// plugins/shared_plugin/admobs_main.dart
 import 'package:flutter/material.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:provider/provider.dart';
 
 import '../../providers/app_state_provider.dart';
@@ -21,6 +21,10 @@ class AdmobsPlugin implements AppPlugin {
   @override
   void onStartup() {
     print("AdmobsPlugin onStartup: Registering modules and preloading interstitial ad.");
+
+    // Initialize AdMob SDK with test device ID
+    _initializeAdMob();
+
     registerModules(); // Register modules at startup
 
     // Preload interstitial ad
@@ -50,4 +54,18 @@ class AdmobsPlugin implements AppPlugin {
     });
   }
 
+  void _initializeAdMob() {
+    WidgetsFlutterBinding.ensureInitialized();
+
+    // Initialize Google Mobile Ads
+    MobileAds.instance.initialize();
+
+    // Set up test device IDs
+    const String testDeviceId = "7DF149AB78F0BC466F2AED45CE5A9D84"; // Replace with your test device ID
+    MobileAds.instance.updateRequestConfiguration(
+      RequestConfiguration(testDeviceIds: [testDeviceId]),
+    );
+
+    print("AdMob initialized with test device ID: $testDeviceId");
+  }
 }

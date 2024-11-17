@@ -1,7 +1,5 @@
-// services/admobs/interstitial_ad_manager.dart
 import 'dart:io';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
-
 import '../../../../utils/consts/config.dart'; // Import Config
 
 class InterstitialAdManager {
@@ -21,15 +19,47 @@ class InterstitialAdManager {
         onAdLoaded: (InterstitialAd ad) {
           _interstitialAd = ad;
           _isAdLoaded = true;
-          print("Interstitial ad loaded successfully: _isAdLoaded=$_isAdLoaded");
+          print("Interstitial ad successfully loaded: _isAdLoaded=$_isAdLoaded");
           _setUpAdCallbacks();
         },
         onAdFailedToLoad: (LoadAdError error) {
           _isAdLoaded = false;
-          print("Failed to load interstitial ad: $error");
+          print("Interstitial ad failed to load: $error");
         },
       ),
     );
+  }
+
+  Future<void> showInterstitialAdWithDelay({int retryDelayInSeconds = 2, int maxRetries = 3}) async {
+    int retryCount = 0;
+
+    while (!_isAdLoaded || _interstitialAd == null) {
+      if (retryCount >= maxRetries) {
+        print("Max retries reached. Ad could not be displayed.");
+        return;
+      }
+
+      print("Ad not ready, retrying after $retryDelayInSeconds seconds (attempt ${retryCount + 1})...");
+      await Future.delayed(Duration(seconds: retryDelayInSeconds));
+      retryCount++;
+    }
+
+    // Once the ad is ready
+    print("Ad is ready, displaying...");
+    _interstitialAd?.show();
+  }
+
+  void showInterstitialAd() {
+    if (_isAdLoaded && _interstitialAd != null) {
+      print("Showing interstitial ad...");
+      _interstitialAd?.show();
+    } else {
+      print("Interstitial ad not ready: _isAdLoaded=$_isAdLoaded, _interstitialAd=$_interstitialAd");
+      if (!_isAdLoaded) {
+        print("Triggering ad reload since no ad is loaded.");
+        loadInterstitialAd(); // Reload the ad if not ready
+      }
+    }
   }
 
   void _setUpAdCallbacks() {
@@ -49,15 +79,6 @@ class InterstitialAdManager {
         _isAdLoaded = false;
       },
     );
-  }
-
-  void showInterstitialAd() {
-    if (_isAdLoaded && _interstitialAd != null) {
-      print("Showing interstitial ad...");
-      _interstitialAd?.show();
-    } else {
-      print("Interstitial ad not ready: _isAdLoaded=$_isAdLoaded, _interstitialAd=$_interstitialAd");
-    }
   }
 
   void dispose() {
