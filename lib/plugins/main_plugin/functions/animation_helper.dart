@@ -311,54 +311,66 @@ class AnimationHelper extends PluginHelper {
 
     return SlideTransition(position: animation, child: child);
   }
-
-  Widget shrinkAndSlideDown(
+  Widget cutTape(
       Widget child, {
         required AnimationController controller,
         Duration duration = const Duration(seconds: 1),
         Curve scaleCurve = Curves.easeInOut,
-        Curve slideCurve = Curves.easeIn,
+        Curve rotateCurve = Curves.easeInOut,
         double scaleBegin = 1.0,
-        double scaleEnd = 0.8,
-        Offset slideBegin = Offset.zero,
-        Offset slideEnd = const Offset(0.0, 1.0),
-        bool infinite = false,
+        double scaleEnd = 0.9,
+        double rotationBegin = 0.0, // Start angle (in radians)
+        double rotationEnd = pi / 2, // 90 degrees downward (in radians)
+        double translateY = 0.0, // Amount to translate along the Y-axis
+        Duration yAxisDelay = const Duration(milliseconds: 800), // Delay for Y-axis animation
+        Alignment pivot = Alignment.centerLeft, // Default pivot point
         VoidCallback? onComplete,
       }) {
-    _resetController(controller);
+    _resetController(controller); // Reset the controller
     controller.duration = duration;
 
-    // Define scale and slide animations
+    // Define animations for scale, rotation, and delayed translation
     final scaleAnimation = Tween<double>(begin: scaleBegin, end: scaleEnd)
         .animate(CurvedAnimation(parent: controller, curve: scaleCurve));
-    final slideAnimation = Tween<Offset>(begin: slideBegin, end: slideEnd)
-        .animate(CurvedAnimation(parent: controller, curve: slideCurve));
+    final rotationAnimation = Tween<double>(begin: rotationBegin, end: rotationEnd)
+        .animate(CurvedAnimation(parent: controller, curve: rotateCurve));
+    final translateAnimation = Tween<double>(begin: 0.0, end: translateY).animate(
+      CurvedAnimation(
+        parent: controller,
+        curve: Interval(
+          yAxisDelay.inMilliseconds / duration.inMilliseconds, // Start delay for Y-axis
+          1.0, // End at the same time as the rest of the animation
+          curve: Curves.easeInOut,
+        ),
+      ),
+    );
 
     // Start the animation
-    if (infinite) {
-      controller.repeat(reverse: true);
-    } else {
-      controller.forward();
-    }
+    controller.forward();
 
     controller.addStatusListener((status) {
-      if (status == AnimationStatus.completed && !infinite) {
+      if (status == AnimationStatus.completed) {
         onComplete?.call();
       }
     });
 
+    // Return an AnimatedBuilder to combine scale, rotation, and translation with pivot
     return AnimatedBuilder(
       animation: controller,
       builder: (context, child) {
-        return Transform.scale(
-          scale: scaleAnimation.value,
-          child: SlideTransition(
-            position: slideAnimation,
-            child: child,
-          ),
+        return Transform(
+          alignment: pivot, // Use the provided pivot point
+          transform: Matrix4.identity()
+            ..translate(0.0, translateAnimation.value) // Apply delayed Y-axis translation
+            ..scale(scaleAnimation.value, 1) // Horizontal shrink only
+            ..rotateZ(rotationAnimation.value), // Rotate in 2D plane around Z-axis
+          child: child,
         );
       },
       child: child,
     );
   }
+
+
+
 }

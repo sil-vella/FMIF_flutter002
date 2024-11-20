@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 import '../../../providers/app_state_provider.dart';
 import '../../00_base/module_manager.dart';
@@ -94,7 +96,7 @@ class PlayFunctions extends PluginHelper {
     }
   }
 
-  static Future<void> selectedCeleb(AppStateProvider appStateProvider, String pluginStateKey, String selectedName) async {
+  static Future<void> selectedCeleb(AppStateProvider appStateProvider, String pluginStateKey, String selectedName, context) async {
     try {
       final pluginState = appStateProvider.getPluginState<Map<String, dynamic>>(pluginStateKey) ?? {};
 
@@ -103,7 +105,7 @@ class PlayFunctions extends PluginHelper {
           'play_state': 'revealed_correct',
           'plugin_anims': {
             'head_anims': ['pulse', 'sideToSide', 'bounce'],
-            'ribbon_anims': ['shrinkAndSlideDown'],
+            'ribbon_anims': ['cut_tape'],
           }
         });
       } else {
@@ -112,10 +114,10 @@ class PlayFunctions extends PluginHelper {
           'flushing': 'true',
           'plugin_anims': {
             'head_anims': ['pulse', 'sideToSide', 'bounce'],
-            'ribbon_anims': ['shrinkAndSlideDown'],
+            'ribbon_anims': ['cut_tape'],
           }
         });
-        await activateAftermath(appStateProvider, pluginStateKey);
+        await activateAftermath(appStateProvider, pluginStateKey, context);
       }
     } catch (error) {
       print("Error in selectedCeleb: $error");
@@ -138,16 +140,49 @@ class PlayFunctions extends PluginHelper {
     });
   }
 
-  static Future<void> activateAftermath(AppStateProvider appStateProvider, String pluginStateKey) async {
+  static Future<void> activateAftermath(
+      AppStateProvider appStateProvider,
+      String pluginStateKey,
+      BuildContext context,
+      ) async {
     try {
-      final currentPlayState = appStateProvider.getPluginState<Map<String, dynamic>>(pluginStateKey)?['play_state'];
+      final pluginState = appStateProvider.getPluginState<Map<String, dynamic>>(pluginStateKey) ?? {};
+      final currentPlayState = pluginState['play_state'];
 
       if (currentPlayState == 'revealed_correct') {
+        // Update plugin state for correct aftermath
         appStateProvider.updatePluginState(pluginStateKey, {
           'play_state': 'aftermath_correct',
-          'plugin_anims': {'aftermath_anims': ['slideUpAndDown']},
+          'plugin_anims': {
+            'aftermath_anims': ['slideUpAndDown'],
+            'game_screen_anims': ['hue_and_bright']
+          },
         });
+        // Check the 'correct_anim' and determine audio to play
+        final correctAnim = pluginState['correct_anim'] ?? "";
+        String audioKey;
+        if (correctAnim.contains('skibidi')) {
+          audioKey = 'skibidi'; // Specific key for 'skibidi'
+        } else {
+          // Filter keys to exclude 'skibidi' and select a random key
+          final audioKeys = AudioHelper()
+              .audioFiles
+              .keys
+              .where((key) => key != 'skibidi')
+              .toList();
+          final randomIndex = Random().nextInt(audioKeys.length);
+          audioKey = audioKeys[randomIndex];
+        }
+
+        final audioPath = AudioHelper().audioFiles[audioKey];
+        if (audioPath != null) {
+          AudioHelper().playEffectSound(audioPath, context);
+        } else {
+          print("Error: Audio path for key '$audioKey' not found.");
+        }
+
       } else if (currentPlayState == 'revealed_incorrect') {
+        // Check the 'incorrect_anim' (if needed, similar logic could be added here)
         appStateProvider.updatePluginState(pluginStateKey, {
           'flushing': false,
           'play_state': 'aftermath_incorrect',
@@ -163,6 +198,7 @@ class PlayFunctions extends PluginHelper {
       print("Error in activateAftermath: $error");
     }
   }
+
   static bool _isResetting = false; // Flag to prevent reentrant calls
 
   static Future<void> resetPluginPlayState(AppStateProvider appStateProvider, String pluginStateKey) async {
@@ -192,8 +228,8 @@ class PlayFunctions extends PluginHelper {
 
         try {
           if (interstitialAdService != null) {
-            // Show the interstitial ad only if it's ready
-            interstitialAdService.showAd();
+            // Show the interstitial ad if it is ready
+            interstitialAdService.showAd(); // Show the interstitial ad
             print("Interstitial ad displayed.");
           }
         } catch (e) {
@@ -232,7 +268,10 @@ class PlayFunctions extends PluginHelper {
 
       appStateProvider.updatePluginState(pluginStateKey, {
         'play_state': 'in_play',
-        'plugin_anims': {'head_anims': ['slideUp', 'pulse', 'sideToSide', 'bounce']},
+        'plugin_anims': {
+          'head_anims': ['slideUp', 'pulse', 'sideToSide', 'bounce'],
+          'game_screen_anims': []
+        },
       });
 
       print("Plugin state updated with play_state and animations."); // Debug: State updated

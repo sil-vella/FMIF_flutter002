@@ -1,4 +1,4 @@
-import 'package:FMIF/plugins/main_plugin/celeb_components/main_background_ribbon_component.dart';
+import 'package:FMIF/plugins/main_plugin/celeb_components/ribbon_component.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:FMIF/plugins/main_plugin/celeb_components/celeb_facts_component.dart';
@@ -7,6 +7,7 @@ import 'package:FMIF/plugins/main_plugin/celeb_components/main_background_compon
 import 'package:FMIF/plugins/main_plugin/celeb_components/aftermath_component.dart';
 import '../../../providers/app_state_provider.dart';
 import '../../../screens/base_screen.dart';
+import '../celeb_components/aftermath_anim_component.dart';
 import '../celeb_components/name_buttons_component.dart';
 import '../celeb_components/main_background_overlay_component.dart';
 import '../functions/play_functions.dart';
@@ -29,18 +30,19 @@ class _GameScreenState extends BaseScreenState<GameScreen> with SingleTickerProv
   void initState() {
     super.initState();
 
-    // Initialize AppStateProvider
     _appStateProvider = Provider.of<AppStateProvider>(context, listen: false);
 
-    // Auto-play background music
+    // Auto-play background music playlist
     WidgetsBinding.instance.addPostFrameCallback((_) async {
-      await AudioHelper().playBackgroundSound(
-        audioPath: 'app_audio/background005.mp3',
+      await AudioHelper().playBackgroundPlaylist(
+        audioPaths: [
+          'app_audio/background001.mp3',
+          'app_audio/background_pt2_003.mp3',
+        ],
         context: context,
       );
     });
 
-    // Check if 'main_state' is 'in_play'
     if (_appStateProvider.getMainAppState('main_state') != 'in_play') {
       WidgetsBinding.instance.addPostFrameCallback((_) async {
         await PlayFunctions.handlePlayButton(_appStateProvider, context);
@@ -50,9 +52,10 @@ class _GameScreenState extends BaseScreenState<GameScreen> with SingleTickerProv
 
   @override
   void dispose() {
-    AudioHelper().stopBackgroundSound(); // Stop background music when leaving the screen
+    AudioHelper().stopBackgroundSound();
     super.dispose();
   }
+
 
   @override
   Widget buildContent(BuildContext context) {
@@ -71,6 +74,7 @@ class _GameScreenState extends BaseScreenState<GameScreen> with SingleTickerProv
                   const Positioned.fill(child: CelebHeadComponent()),
                   const Positioned.fill(child: MainBackgroundOverlayComponent()),
                   const Positioned.fill(child: RibbonComponent()),
+                  const Positioned.fill(child: AfterMathAnimComponent()),
 
                   // Name buttons component at the top
                   const Positioned(

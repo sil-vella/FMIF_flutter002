@@ -186,7 +186,7 @@ class _CelebHeadComponentState extends State<CelebHeadComponent>
           dropCurve: Curves.easeIn,
           infinite: false,
           onComplete: () {
-            PlayFunctions.activateAftermath(appStateProvider, pluginStateKey);
+            PlayFunctions.activateAftermath(appStateProvider, pluginStateKey, context);
           },
         );
       }

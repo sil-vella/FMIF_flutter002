@@ -53,7 +53,7 @@ class NameButtonsComponent extends StatelessWidget {
                   return ElevatedButton(
                     onPressed: () {
                       // Call selectedCeleb function with the selected name
-                      PlayFunctions.selectedCeleb(appStateProvider, pluginStateKey, name);
+                      PlayFunctions.selectedCeleb(appStateProvider, pluginStateKey, name, context);
                     },
                     child: Text(name),
                   );

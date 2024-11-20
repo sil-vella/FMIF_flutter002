@@ -17,23 +17,62 @@ class AudioHelper {
   final List<AudioPlayer> _effectPlayers = [];
   double _globalVolume = 0.5;
 
-  /// Plays background sound with looping
-  Future<void> playBackgroundSound({
-    required String audioPath,
+  List<String> _backgroundPlaylist = [];
+  int _currentTrackIndex = 0;
+
+  /// Map of available audio files
+  final Map<String, String> audioFiles = {
+    "aftermath_1": "app_audio/aftermath-001.mp3",
+    "aftermath_2": "app_audio/aftermath-002.mp3",
+    "aftermath_3": "app_audio/aftermath-003.mp3",
+    "skibidi": "app_audio/aftermath-004-skibidi.mp3",
+    // Add more audio files here
+  };
+
+  /// Plays a playlist of background sounds in sequence
+  Future<void> playBackgroundPlaylist({
+    required List<String> audioPaths,
     required BuildContext context,
   }) async {
     try {
-      await _backgroundPlayer.setReleaseMode(ReleaseMode.loop);
+      _backgroundPlaylist = audioPaths;
+      _currentTrackIndex = 0;
 
-      final appStateProvider = Provider.of<AppStateProvider>(context, listen: false);
-      final isMuted = appStateProvider.getPluginState("MainPluginState")?["sound_muted"] ?? false;
-
-      await _backgroundPlayer.play(
-        AssetSource(audioPath),
-        volume: isMuted ? 0.0 : _globalVolume,
-      );
+      if (_backgroundPlaylist.isNotEmpty) {
+        await _playCurrentTrack(context);
+      }
     } catch (e) {
-      print("Error playing background sound: $e");
+      print("Error starting background playlist: $e");
+    }
+  }
+
+  Future<void> _playCurrentTrack(BuildContext context) async {
+    try {
+      if (_currentTrackIndex < _backgroundPlaylist.length) {
+        final currentTrack = _backgroundPlaylist[_currentTrackIndex];
+
+        final appStateProvider = Provider.of<AppStateProvider>(context, listen: false);
+        final isMuted = appStateProvider.getPluginState("MainPluginState")?["sound_muted"] ?? false;
+
+        await _backgroundPlayer.setReleaseMode(ReleaseMode.stop);
+        await _backgroundPlayer.play(
+          AssetSource(currentTrack),
+          volume: isMuted ? 0.0 : _globalVolume,
+        );
+
+        _backgroundPlayer.onPlayerComplete.listen((_) async {
+          _currentTrackIndex++;
+          if (_currentTrackIndex < _backgroundPlaylist.length) {
+            await _playCurrentTrack(context); // Play the next track
+          } else {
+            // Restart the playlist (loop)
+            _currentTrackIndex = 0;
+            await _playCurrentTrack(context);
+          }
+        });
+      }
+    } catch (e) {
+      print("Error playing track: $e");
     }
   }
 

@@ -29,12 +29,8 @@ class CelebFactsComponent extends StatelessWidget {
       },
     );
 
-    // Use theme properties for color and text style
-    final colorScheme = Theme.of(context).colorScheme;
-    final textTheme = Theme.of(context).textTheme;
-
     return Container(
-      color: colorScheme.surface, // Use theme background color
+      color: Theme.of(context).colorScheme.secondary, // Accent color for the background
       padding: const EdgeInsets.all(16.0),
       child: SizedBox(
         height: MediaQuery.of(context).size.height * 0.2,
@@ -44,7 +40,10 @@ class CelebFactsComponent extends StatelessWidget {
             children: [
               Text(
                 "Facts:",
-                style: textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold),
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black, // Black text
+                ),
               ),
               const SizedBox(height: 8),
               for (var fact in celebFacts)
@@ -52,7 +51,9 @@ class CelebFactsComponent extends StatelessWidget {
                   padding: const EdgeInsets.only(left: 8.0, top: 4),
                   child: Text(
                     "• $fact",
-                    style: textTheme.bodyMedium, // Use theme text style for facts
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: Colors.black, // Black text for the facts
+                    ),
                   ),
                 ),
             ],
