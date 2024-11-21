@@ -36,8 +36,8 @@ class _GameScreenState extends BaseScreenState<GameScreen> with SingleTickerProv
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       await AudioHelper().playBackgroundPlaylist(
         audioPaths: [
-          'app_audio/background001.mp3',
-          'app_audio/background_pt2_003.mp3',
+          'audio/background_pt_1_002.mp3',
+          'audio/background_pt2_003.mp3',
         ],
         context: context,
       );

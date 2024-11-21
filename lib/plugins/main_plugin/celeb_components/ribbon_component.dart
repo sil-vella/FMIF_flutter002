@@ -55,13 +55,13 @@ class _RibbonComponentState extends State<RibbonComponent>
   }
 
   Future<String> _getBackgroundImagePath(String category) async {
-    final backgroundImagePath = 'assets/app_images/tape_$category.png';
+    final backgroundImagePath = 'assets/images/tape_$category.png';
 
     try {
       await rootBundle.load(backgroundImagePath);
       return backgroundImagePath;
     } catch (e) {
-      return 'assets/app_images/tape001.png';
+      return 'assets/images/tape001.png';
     }
   }
 

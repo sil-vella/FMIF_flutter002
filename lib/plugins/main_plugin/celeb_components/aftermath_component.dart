@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../providers/app_state_provider.dart';
 import '../functions/animation_helper.dart';
+import '../functions/audio_helper.dart';
 import '../functions/play_functions.dart';
 import '../main_plugin_main.dart';
 
@@ -18,7 +19,21 @@ class _AfterMathComponentState extends State<AfterMathComponent>
   late final AnimationController slideUpAndDownController;
   late final AnimationController flyAwayController;
   late final AnimationHelper animationHelper;
+
   String? animationImageUrl;
+
+  // Hardcoded lists of animations
+  final List<String> correctAnimations = [
+    'assets/animations/after_animations/correct_anim/elmo-fire012.gif',
+    'assets/animations/after_animations/correct_anim/skib.gif',
+  ];
+
+  final List<String> incorrectAnimations = [
+    'assets/animations/after_animations/incorrect_anim/angel-wings-white.gif',
+    'assets/animations/after_animations/incorrect_anim/rocket.gif',
+  ];
+
+  String? lastPlayState; // Keep track of the last play state
 
   @override
   void initState() {
@@ -26,7 +41,6 @@ class _AfterMathComponentState extends State<AfterMathComponent>
     animationHelper = AnimationHelper();
     slideUpAndDownController = AnimationController(vsync: this);
     flyAwayController = AnimationController(vsync: this);
-    loadAnimationImage();
   }
 
   @override
@@ -36,19 +50,60 @@ class _AfterMathComponentState extends State<AfterMathComponent>
     super.dispose();
   }
 
-  void loadAnimationImage() {
-    // Determine which URL to use based on play_state
-    final appStateProvider = Provider.of<AppStateProvider>(context, listen: false);
-    final pluginStateKey = "${MainPlugin().runtimeType}State";
-    final playState = appStateProvider.getPluginState<Map<String, dynamic>>(pluginStateKey)?['play_state'];
+  void _playAudioForAnimation(String playState, String animation) {
+    final audioHelper = AudioHelper();
 
-    // Fetch correct or incorrect animation URL from pluginState
-    final pluginState = appStateProvider.getPluginState<Map<String, dynamic>>(pluginStateKey) ?? {};
-    animationImageUrl = (playState == 'aftermath_correct')
-        ? pluginState['correct_anim']
-        : pluginState['incorrect_anim'];
+    if (playState == 'aftermath_correct') {
+      if (animation.contains('skib.gif')) {
+        // Play skibidi from correctAfter
+        audioHelper.playEffectSound(audioHelper.correctAfter['skibidi']!, context);
+      } else {
+        // Randomize from correctAfter excluding skibidi
+        final otherAudioKeys = audioHelper.correctAfter.keys
+            .where((key) => key != 'skibidi')
+            .toList();
+        if (otherAudioKeys.isNotEmpty) {
+          final randomKey = otherAudioKeys[Random().nextInt(otherAudioKeys.length)];
+          audioHelper.playEffectSound(audioHelper.correctAfter[randomKey]!, context);
+        }
+      }
+    } else if (playState == 'aftermath_incorrect') {
+      if (animation.contains('rocket.gif')) {
+        // Play specific rocket sound
+        audioHelper.playEffectSound(audioHelper.incorrectAfter['aftermath_rocket_001']!, context);
+      } else if (animation.contains('angel-wings-white.gif')) {
+        // Play specific wings sound
+        audioHelper.playEffectSound(audioHelper.incorrectAfter['aftermath_wings_001']!, context);
+      } else {
+        // Randomize from incorrectAfter for other animations
+        final incorrectAudioKeys = audioHelper.incorrectAfter.keys
+            .where((key) => key != 'aftermath_rocket_001' && key != 'aftermath_wings_001')
+            .toList();
+        if (incorrectAudioKeys.isNotEmpty) {
+          final randomKey = incorrectAudioKeys[Random().nextInt(incorrectAudioKeys.length)];
+          audioHelper.playEffectSound(audioHelper.incorrectAfter[randomKey]!, context);
+        }
+      }
+    }
+  }
 
-    setState(() {}); // Trigger rebuild with updated URL
+  void _selectRandomAnimation(String playState) {
+    if (playState == 'aftermath_correct') {
+      animationImageUrl = correctAnimations.isNotEmpty
+          ? correctAnimations[Random().nextInt(correctAnimations.length)]
+          : null;
+    } else if (playState == 'aftermath_incorrect') {
+      animationImageUrl = incorrectAnimations.isNotEmpty
+          ? incorrectAnimations[Random().nextInt(incorrectAnimations.length)]
+          : null;
+    } else {
+      animationImageUrl = null; // Reset if not in aftermath state
+    }
+
+    if (animationImageUrl != null) {
+      _playAudioForAnimation(playState, animationImageUrl!); // Trigger audio for the chosen animation
+    }
+    print('Selected animation for play_state "$playState": $animationImageUrl');
   }
 
   @override
@@ -56,62 +111,35 @@ class _AfterMathComponentState extends State<AfterMathComponent>
     final appStateProvider = Provider.of<AppStateProvider>(context, listen: false);
     final pluginStateKey = "${MainPlugin().runtimeType}State";
 
-    // Check if the play_state is aftermath_correct or aftermath_incorrect
-    final isAftermathState = context.select<AppStateProvider, bool>((appStateProvider) {
+    final playState = context.select<AppStateProvider, String?>((appStateProvider) {
       final pluginState = appStateProvider.getPluginState<Map<String, dynamic>>(pluginStateKey) ?? {};
-      final playState = pluginState['play_state'];
-      return playState == 'aftermath_correct' || playState == 'aftermath_incorrect';
+      return pluginState['play_state'] as String?;
     });
 
-    if (!isAftermathState) {
+    // Detect when the playState changes from `aftermath_incorrect`
+    if (lastPlayState == 'aftermath_incorrect' && playState != 'aftermath_incorrect') {
+      print("State changed from 'aftermath_incorrect'. Fading out sounds...");
+      AudioHelper().fadeOutAndStopEffectSounds(); // Fade out and stop sounds
+    }
+
+    // Update the last play state
+    lastPlayState = playState;
+
+    if (playState == 'aftermath_correct' || playState == 'aftermath_incorrect') {
+      _selectRandomAnimation(playState!);
+    } else {
       return SizedBox.shrink();
     }
 
-    // Listen for animation settings from `plugin_anims`
-    final List<String>? aftermathAnims = context.select<AppStateProvider, List<String>?>(
-          (appStateProvider) {
-        final pluginState = appStateProvider.getPluginState<Map<String, dynamic>>(pluginStateKey) ?? {};
-        return List<String>.from(pluginState['plugin_anims']?['aftermath_anims'] ?? []);
-      },
-    );
-
     final screenWidth = MediaQuery.of(context).size.width;
-    final imageSize = screenWidth * 0.3;
+    final imageSize = screenWidth * 0.8;
 
-    // Display a network image from the retrieved URL or fallback to a default image with loading and error handling
     Widget animatedChild = animationImageUrl != null && animationImageUrl!.isNotEmpty
-        ? FutureBuilder(
-      future: precacheImage(NetworkImage(animationImageUrl!), context),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.done) {
-          // Image has loaded, proceed with animation
-          return Container(
-            width: imageSize,
-            height: imageSize,
-            decoration: BoxDecoration(
-              image: DecorationImage(
-                image: NetworkImage(animationImageUrl!),
-                fit: BoxFit.cover,
-              ),
-            ),
-          );
-        } else if (snapshot.connectionState == ConnectionState.waiting) {
-          // Image is still loading, show a loading spinner
-          return SizedBox(
-            width: imageSize,
-            height: imageSize,
-            child: Center(child: CircularProgressIndicator()),
-          );
-        } else {
-          // Error loading the image, show an error message
-          return Container(
-            width: imageSize,
-            height: imageSize,
-            color: Colors.grey,
-            child: Icon(Icons.error, color: Colors.red),
-          );
-        }
-      },
+        ? Image.asset(
+      animationImageUrl!,
+      width: imageSize,
+      height: imageSize,
+      fit: BoxFit.contain, // Adjusted to prevent cropping
     )
         : Container(
       width: imageSize,
@@ -120,7 +148,11 @@ class _AfterMathComponentState extends State<AfterMathComponent>
       child: Icon(Icons.error, color: Colors.red),
     );
 
-    // Apply animations based on contents of `aftermathAnims`
+    final aftermathAnims = context.select<AppStateProvider, List<String>?>((appStateProvider) {
+      final pluginState = appStateProvider.getPluginState<Map<String, dynamic>>(pluginStateKey) ?? {};
+      return List<String>.from(pluginState['plugin_anims']?['aftermath_anims'] ?? []);
+    });
+
     if (aftermathAnims != null && aftermathAnims.contains('slideUpAndDown')) {
       animatedChild = animationHelper.slideUpAndDown(
         animatedChild,
@@ -143,16 +175,24 @@ class _AfterMathComponentState extends State<AfterMathComponent>
         controller: flyAwayController,
         slideUpDuration: Duration(seconds: 2),
         pauseDuration: Duration(seconds: 2),
-        flyAwayDuration: Duration(milliseconds: 1700),
-        begin: Offset(0.0, 1.0),                    // Start below original position
-        middle: Offset(0.0, -0.3),                  // Center position
-        end: Offset(0.0, -6.0),                     // Move offscreen upwards
-        initialSlideCurve: Curves.easeOutCubic,     // Gentle start to center
-        flyAwayCurve: Curves.easeInCubic,           // Exponential lift-off
+        flyAwayDuration: Duration(milliseconds: 2400),
+        begin: Offset(0.0, 1.0),
+        middle: Offset(0.0, -0.3),
+        end: Offset(0.0, -6.0),
+        initialSlideCurve: Curves.easeOutCubic,
+        flyAwayCurve: Curves.easeInCubic,
         infinite: false,
         onComplete: () {
           PlayFunctions.resetPluginPlayState(appStateProvider, pluginStateKey);
         },
+      );
+    }
+
+    // Apply Transform for incorrect animations
+    if (playState == 'aftermath_incorrect') {
+      animatedChild = Transform.translate(
+        offset: Offset(0, 70), // Move the animation 50 pixels down
+        child: animatedChild,
       );
     }
 

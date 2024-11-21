@@ -22,11 +22,11 @@ class AfterMathAnimComponent extends StatelessWidget {
 
     // List of GIF asset paths
     final List<String> gifAssetPaths = [
-      'assets/correct_aftermath_background_gifs/fire001.gif',
-      'assets/correct_aftermath_background_gifs/explosion001.gif',
-      'assets/correct_aftermath_background_gifs/pyramid-head001.gif',
-      'assets/correct_aftermath_background_gifs/silent-hill-nurse001.gif',
-      'assets/correct_aftermath_background_gifs/out_of_screen001.gif'
+      'assets/animations/correct_background_anims/fire001.gif',
+      'assets/animations/correct_background_anims/explosion001.gif',
+      'assets/animations/correct_background_anims/pyramid-head001.gif',
+      'assets/animations/correct_background_anims/silent-hill-nurse001.gif',
+      'assets/animations/correct_background_anims/out_of_screen001.gif'
     ];
 
     if (playState == 'aftermath_correct') {

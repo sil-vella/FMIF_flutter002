@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -21,12 +22,21 @@ class AudioHelper {
   int _currentTrackIndex = 0;
 
   /// Map of available audio files
-  final Map<String, String> audioFiles = {
-    "aftermath_1": "app_audio/aftermath-001.mp3",
-    "aftermath_2": "app_audio/aftermath-002.mp3",
-    "aftermath_3": "app_audio/aftermath-003.mp3",
-    "skibidi": "app_audio/aftermath-004-skibidi.mp3",
-    // Add more audio files here
+  final Map<String, String> correctAfter = {
+    "aftermath_1": "audio/aftermath-001.mp3",
+    "aftermath_2": "audio/aftermath-002.mp3",
+    "aftermath_3": "audio/aftermath-003.mp3",
+    "skibidi": "audio/aftermath-004-skibidi.mp3",
+  };
+
+  final Map<String, String> incorrectAfter = {
+    "aftermath_rocket_001": "audio/aftermath_rocket_001.mp3",
+    "aftermath_wings_001": "audio/aftermath_wings_001.mp3",
+  };
+
+  final Map<String, String> applauseFiles = {
+    "applause_1": "audio/applause_pt_1_002.mp3",
+    "applause_2": "audio/applause_pt_2_002.mp3",
   };
 
   /// Plays a playlist of background sounds in sequence
@@ -115,6 +125,34 @@ class AudioHelper {
     } catch (e) {
       print("Error playing effect sound: $e");
     }
+  }
+
+  /// Fades out all currently playing effect sounds
+  void fadeOutAndStopEffectSounds() {
+    for (final effectPlayer in _effectPlayers) {
+      _fadeOutPlayer(effectPlayer);
+    }
+  }
+
+  /// Fades out an individual player
+  void _fadeOutPlayer(AudioPlayer player) {
+    double fadeVolume = _globalVolume;
+    Timer.periodic(const Duration(milliseconds: 100), (timer) {
+      if (fadeVolume > 0) {
+        fadeVolume -= 0.05; // Gradual decrease
+        player.setVolume(fadeVolume.clamp(0.0, 1.0));
+      } else {
+        timer.cancel();
+        player.stop();
+        _effectPlayers.remove(player);
+        player.dispose();
+      }
+    });
+  }
+
+  /// Resets the global volume for all future playbacks
+  void resetGlobalVolume() {
+    _globalVolume = 0.5;
   }
 
   /// Stops background sound but keeps the player ready

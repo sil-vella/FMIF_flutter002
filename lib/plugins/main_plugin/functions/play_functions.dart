@@ -77,12 +77,30 @@ class PlayFunctions extends PluginHelper {
   }
 
   static Future<void> fetchAndSetCelebDetails(AppStateProvider appStateProvider, String pluginStateKey) async {
-    print('fetching');
+    print('Fetching celebrity details...');
     try {
       final pluginState = appStateProvider.getPluginState<Map<String, dynamic>>(pluginStateKey) ?? {};
+      print('Current plugin state before fetching: $pluginState');
+
       final celebCategory = pluginState['celeb_category'];
+      if (celebCategory == null || celebCategory.isEmpty) {
+        print('No celebrity category found in plugin state.');
+        return;
+      }
 
       final celebDetails = await PluginHelper.getCelebDetails(celebCategory);
+      print('Fetched celebrity details: $celebDetails');
+
+      // Log details being updated
+      print('Updating plugin state with: ${{
+        'celeb_name': celebDetails['name'],
+        'celeb_facts': celebDetails['facts'],
+        'celeb_img_url': celebDetails['image'],
+        'other_celebs': celebDetails['other_celebs'],
+        'correct_anim': celebDetails['correct_animation'],
+        'incorrect_anim': celebDetails['incorrect_animation']
+      }}');
+
       appStateProvider.updatePluginState(pluginStateKey, {
         'celeb_name': celebDetails['name'],
         'celeb_facts': celebDetails['facts'],
@@ -92,15 +110,23 @@ class PlayFunctions extends PluginHelper {
         'incorrect_anim': celebDetails['incorrect_animation']
       });
 
+      // Print the updated plugin state
+      final updatedPluginState = appStateProvider.getPluginState<Map<String, dynamic>>(pluginStateKey) ?? {};
+      print('Updated plugin state after fetching: $updatedPluginState');
     } catch (error) {
+      print('Error fetching and setting celebrity details: $error');
     }
   }
 
-  static Future<void> selectedCeleb(AppStateProvider appStateProvider, String pluginStateKey, String selectedName, context) async {
+
+
+  static Future<void> selectedCeleb(
+      AppStateProvider appStateProvider, String pluginStateKey, String selectedName, BuildContext context) async {
     try {
       final pluginState = appStateProvider.getPluginState<Map<String, dynamic>>(pluginStateKey) ?? {};
 
       if (selectedName == pluginState['celeb_name']) {
+        print("Selected name matches celeb_name. Updating to revealed_correct.");
         appStateProvider.updatePluginState(pluginStateKey, {
           'play_state': 'revealed_correct',
           'plugin_anims': {
@@ -108,7 +134,20 @@ class PlayFunctions extends PluginHelper {
             'ribbon_anims': ['cut_tape'],
           }
         });
+
+        // Play a random applause file
+        final applauseKeys = AudioHelper().applauseFiles.keys.toList();
+        final randomKey = applauseKeys[Random().nextInt(applauseKeys.length)];
+        final applausePath = AudioHelper().applauseFiles[randomKey];
+
+        if (applausePath != null) {
+          AudioHelper().playEffectSound(applausePath, context);
+        } else {
+          print("Error: No applause sound found for key '$randomKey'");
+        }
+
       } else {
+        print("Selected name does not match celeb_name. Updating to revealed_incorrect.");
         appStateProvider.updatePluginState(pluginStateKey, {
           'play_state': 'revealed_incorrect',
           'flushing': 'true',
@@ -117,6 +156,7 @@ class PlayFunctions extends PluginHelper {
             'ribbon_anims': ['cut_tape'],
           }
         });
+        print("Calling activateAftermath for revealed_incorrect.");
         await activateAftermath(appStateProvider, pluginStateKey, context);
       }
     } catch (error) {
@@ -127,7 +167,7 @@ class PlayFunctions extends PluginHelper {
   static void flushAction(AppStateProvider appStateProvider, String pluginStateKey, context) {
     // Create an instance of AudioHelper
     // Access the singleton instance
-    AudioHelper().playEffectSound('app_audio/flush006.mp3', context);
+    AudioHelper().playEffectSound('audio/flush006.mp3', context);
 
 
     // Update plugin state
@@ -150,7 +190,7 @@ class PlayFunctions extends PluginHelper {
       final currentPlayState = pluginState['play_state'];
 
       if (currentPlayState == 'revealed_correct') {
-        // Update plugin state for correct aftermath
+        print("Play state is revealed_correct. Updating to aftermath_correct.");
         appStateProvider.updatePluginState(pluginStateKey, {
           'play_state': 'aftermath_correct',
           'plugin_anims': {
@@ -158,31 +198,10 @@ class PlayFunctions extends PluginHelper {
             'game_screen_anims': ['hue_and_bright']
           },
         });
-        // Check the 'correct_anim' and determine audio to play
-        final correctAnim = pluginState['correct_anim'] ?? "";
-        String audioKey;
-        if (correctAnim.contains('skibidi')) {
-          audioKey = 'skibidi'; // Specific key for 'skibidi'
-        } else {
-          // Filter keys to exclude 'skibidi' and select a random key
-          final audioKeys = AudioHelper()
-              .audioFiles
-              .keys
-              .where((key) => key != 'skibidi')
-              .toList();
-          final randomIndex = Random().nextInt(audioKeys.length);
-          audioKey = audioKeys[randomIndex];
-        }
-
-        final audioPath = AudioHelper().audioFiles[audioKey];
-        if (audioPath != null) {
-          AudioHelper().playEffectSound(audioPath, context);
-        } else {
-          print("Error: Audio path for key '$audioKey' not found.");
-        }
+        print("Correct anim: ${pluginState['correct_anim']}");
 
       } else if (currentPlayState == 'revealed_incorrect') {
-        // Check the 'incorrect_anim' (if needed, similar logic could be added here)
+        print("Play state is revealed_incorrect. Updating to aftermath_incorrect.");
         appStateProvider.updatePluginState(pluginStateKey, {
           'flushing': false,
           'play_state': 'aftermath_incorrect',
@@ -198,6 +217,7 @@ class PlayFunctions extends PluginHelper {
       print("Error in activateAftermath: $error");
     }
   }
+
 
   static bool _isResetting = false; // Flag to prevent reentrant calls
 

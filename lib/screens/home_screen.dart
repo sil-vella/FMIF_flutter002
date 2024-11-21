@@ -22,7 +22,7 @@ class _HomeScreenState extends BaseScreenState<HomeScreen> {
         // Background image
         Positioned.fill(
           child: Image.asset(
-            'assets/app_images/pre_game_main_background.jpg', // Replace with your background image path
+            'assets/images/pre_game_main_background.jpg', // Replace with your background image path
             fit: BoxFit.cover, // Ensures the image covers the entire screen
           ),
         ),
