@@ -1,5 +1,5 @@
 // plugins/shared_plugin/plugin_helper.dart
-import 'package:FMIF/plugins/main_plugin/functions/play_functions.dart';
+import 'package:flush_me_im_famous/plugins/main_plugin/functions/play_functions.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';

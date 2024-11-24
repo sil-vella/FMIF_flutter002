@@ -78,6 +78,7 @@ class MainPlugin implements AppPlugin {
       "celeb_facts": [],
       "plugin_anims": {},
       'flushing': false,
+      'hint': false,
       'correct_anim': "",
       'incorrect_anim': "",
       // 'ad_counter' is not included here to avoid resetting it periodically

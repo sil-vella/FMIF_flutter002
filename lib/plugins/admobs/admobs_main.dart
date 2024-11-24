@@ -8,7 +8,8 @@ import '../../utils/consts/config.dart';
 import '../00_base/app_plugin.dart';
 import '../00_base/module_manager.dart';
 import 'modules/banner/banner_ad.dart';
-import 'modules/interstitial/interstitial_ad.dart';  // Import the InterstitialAdModule
+import 'modules/interstitial/interstitial_ad.dart';
+import 'modules/rewarded/rewarded_ad.dart'; // Import the RewardedAdModule
 
 class AdmobsPlugin implements AppPlugin {
   AdmobsPlugin._internal();
@@ -21,21 +22,36 @@ class AdmobsPlugin implements AppPlugin {
     adUnitId: Config.admobsInterstitial01, // Fetch the Ad Unit ID from Config
   );
 
+  final RewardedAdService _rewardedAdService = RewardedAdService(
+    adUnitId: Config.admobsRewarded01, // Fetch the Rewarded Ad Unit ID from Config
+  );
+
   void showInterstitialAd() {
     _interstitialAdService.showAd(); // Show the interstitial ad
   }
 
+  void showRewardedAd({
+    required AppStateProvider appStateProvider,
+    required BuildContext context,
+  }) {
+    _rewardedAdService.showAd(
+      appStateProvider: appStateProvider,
+      context: context,
+    ); // Show the rewarded ad
+  }
+
   @override
   void onStartup() {
-    print("AdmobsPlugin onStartup: Registering modules and preloading interstitial ad.");
+    print("AdmobsPlugin onStartup: Registering modules and preloading ads.");
 
     // Initialize AdMob SDK with test device ID
     _initializeAdMob();
 
     registerModules(); // Register modules at startup
 
-    // Preload the interstitial ad
+    // Preload ads
     _interstitialAdService.loadAd();
+    _rewardedAdService.loadAd();
   }
 
   @override
@@ -53,6 +69,9 @@ class AdmobsPlugin implements AppPlugin {
 
     // Register InterstitialAdService
     ModuleManager().registerModule("InterstitialAdService", () => _interstitialAdService);
+
+    // Register RewardedAdService
+    ModuleManager().registerModule("RewardedAdService", () => _rewardedAdService);
   }
 
   void _initializeAdMob() {

@@ -1,10 +1,10 @@
-import 'package:FMIF/plugins/main_plugin/celeb_components/ribbon_component.dart';
+import 'package:flush_me_im_famous/plugins/main_plugin/celeb_components/ribbon_component.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:FMIF/plugins/main_plugin/celeb_components/celeb_facts_component.dart';
-import 'package:FMIF/plugins/main_plugin/celeb_components/celeb_head_component.dart';
-import 'package:FMIF/plugins/main_plugin/celeb_components/main_background_component.dart';
-import 'package:FMIF/plugins/main_plugin/celeb_components/aftermath_component.dart';
+import 'package:flush_me_im_famous/plugins/main_plugin/celeb_components/celeb_facts_component.dart';
+import 'package:flush_me_im_famous/plugins/main_plugin/celeb_components/celeb_head_component.dart';
+import 'package:flush_me_im_famous/plugins/main_plugin/celeb_components/main_background_component.dart';
+import 'package:flush_me_im_famous/plugins/main_plugin/celeb_components/aftermath_component.dart';
 import '../../../providers/app_state_provider.dart';
 import '../../../screens/base_screen.dart';
 import '../celeb_components/aftermath_anim_component.dart';

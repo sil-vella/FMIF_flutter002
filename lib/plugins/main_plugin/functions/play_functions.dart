@@ -302,6 +302,33 @@ class PlayFunctions extends PluginHelper {
     }
   }
 
+  static Future<void> onRewardEarned(AppStateProvider appStateProvider, BuildContext context) async {
+    // Use MainPlugin's runtimeType for the dynamic key
+    final pluginStateKey = "${MainPlugin().runtimeType}State";
+
+    // Retrieve the current plugin state
+    final pluginState = appStateProvider.getPluginState<Map<String, dynamic>>(pluginStateKey) ?? {};
+
+    // Get the current 'other_celebs' list
+    final List<String> otherCelebs = List<String>.from(pluginState['other_celebs'] ?? []);
+
+    if (otherCelebs.length > 1) {
+      // Randomly remove one of the two strings
+      otherCelebs.removeAt(Random().nextInt(otherCelebs.length));
+    }
+
+    // Update the plugin state with the remaining list and set 'hint' to true
+    appStateProvider.updatePluginState(pluginStateKey, {
+      ...pluginState,
+      'other_celebs': otherCelebs, // Update the 'other_celebs' key with the new list
+      'hint': true,               // Set 'hint' to true
+    });
+
+    print("Updated other_celebs: $otherCelebs");
+    print("'hint' is now set to true.");
+  }
+
+
 }
 
 

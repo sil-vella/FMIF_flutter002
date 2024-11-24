@@ -1,4 +1,3 @@
-// plugins/banner_ad_module.dart
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
@@ -30,12 +29,21 @@ class BannerAdModule extends StatelessWidget {
   Widget build(BuildContext context) {
     _bannerAd.load(); // Load the ad immediately
 
-    return SizedBox(
-      width: _bannerAd.size.width.toDouble(),
-      height: _bannerAd.size.height.toDouble(),
-      child: AdWidget(ad: _bannerAd),
+    return Container(
+      color: Theme.of(context).colorScheme.secondary, // Use the theme's secondary color
+      width: MediaQuery.of(context).size.width, // Set the container to full screen width
+      height: _bannerAd.size.height.toDouble(), // Use the banner's defined height
+      child: Align(
+        alignment: Alignment.center, // Center the ad within the container
+        child: SizedBox(
+          width: _bannerAd.size.width.toDouble(), // Use the ad's actual width
+          height: _bannerAd.size.height.toDouble(), // Use the ad's actual height
+          child: AdWidget(ad: _bannerAd),
+        ),
+      ),
     );
   }
+
 
   void dispose() {
     _bannerAd.dispose(); // Clean up when the widget is disposed

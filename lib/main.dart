@@ -1,5 +1,5 @@
 // main.dart
-import 'package:FMIF/utils/consts/theme_consts.dart';
+import 'package:flush_me_im_famous/utils/consts/theme_consts.dart';
 
 import 'services/shared_preferences_service.dart';
 import 'package:flutter/material.dart';

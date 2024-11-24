@@ -19,7 +19,7 @@ class MainBackgroundOverlayComponent extends StatelessWidget {
       await rootBundle.load(backgroundImagePath);
       return backgroundImagePath;
     } catch (e) {
-      return 'assets/images/main_background_default_003_overlay.png';
+      return 'assets/images/main_background_default_overlay_002.png';
     }
   }
 

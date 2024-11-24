@@ -3,11 +3,19 @@ import 'package:provider/provider.dart';
 import 'dart:math';
 
 import '../../../providers/app_state_provider.dart';
+import '../../00_base/module_manager.dart';
 import '../functions/play_functions.dart';
 import '../main_plugin_main.dart';
 
-class NameButtonsComponent extends StatelessWidget {
+class NameButtonsComponent extends StatefulWidget {
   const NameButtonsComponent({Key? key}) : super(key: key);
+
+  @override
+  State<NameButtonsComponent> createState() => _NameButtonsComponentState();
+}
+
+class _NameButtonsComponentState extends State<NameButtonsComponent> {
+  bool _hasUsedRemoveOption = false; // Tracks if the "Remove one option" button has been used
 
   @override
   Widget build(BuildContext context) {
@@ -20,30 +28,70 @@ class NameButtonsComponent extends StatelessWidget {
       return pluginState['play_state'] as String?;
     });
 
-    // Show name buttons only if play_state is `in_play`
+    // Listen to `other_celebs` for updates
+    final otherCelebs = context.select<AppStateProvider, List<String>>((appStateProvider) {
+      final pluginState = appStateProvider.getPluginState<Map<String, dynamic>>(pluginStateKey) ?? {};
+      return List<String>.from(pluginState['other_celebs'] ?? []);
+    });
+
+    // Listen to `hint` state and reset `_hasUsedRemoveOption` when `hint` changes to `false`
+    final showRemoveOptionButton = context.select<AppStateProvider, bool>((appStateProvider) {
+      final pluginState = appStateProvider.getPluginState<Map<String, dynamic>>(pluginStateKey) ?? {};
+      final hint = pluginState['hint'] as bool? ?? false;
+
+      // Reset _hasUsedRemoveOption if hint is false
+      if (!hint && _hasUsedRemoveOption) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          setState(() {
+            _hasUsedRemoveOption = false;
+          });
+        });
+      }
+
+      return !hint; // Show button only if `hint` is false
+    });
+
+    // Show name buttons only if `play_state` is `in_play`
     final showNameButtons = playState == 'in_play';
 
-    // Show Flush!! button only if play_state is `revealed_correct`
+    // Show Flush!! button only if `play_state` is `revealed_correct`
     final showFlushButton = playState == 'revealed_correct';
 
     // Retrieve celebrity data from plugin state with null checks
-    final pluginState = appStateProvider.getPluginState<Map<String, dynamic>>(pluginStateKey) ?? {};
-    final String? celebName = pluginState['celeb_name'] as String?;
-    final otherNames = List<String>.from(pluginState['other_celebs'] ?? <String>[]);
+    final String? celebName = appStateProvider.getPluginState<Map<String, dynamic>>(pluginStateKey)?['celeb_name'] as String?;
 
-    // Combine celebName and otherNames into one list, then shuffle
+    // Combine celebName and otherCelebs into one list, then shuffle
     final names = [
       if (celebName != null) celebName, // Add celebName only if it’s not null
-      ...otherNames
+      ...otherCelebs,
     ];
     names.shuffle(Random());
 
     return Center(
       child: SingleChildScrollView(
-        padding: EdgeInsets.all(10.0),
+        padding: const EdgeInsets.all(10.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.center, // Center items in the column
           children: [
+            // Full-width button for "Remove one option" (only show if not used yet and `hint` is false)
+            if (!_hasUsedRemoveOption && showRemoveOptionButton)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 20.0),
+                child: SizedBox(
+                  width: double.infinity, // Make the button full width
+                  child: ElevatedButton(
+                    onPressed: () {
+                      // Trigger the rewarded ad to remove one option
+                      _triggerRewardedAdToRemoveOption(
+                        appStateProvider,
+                        pluginStateKey,
+                        names,
+                      );
+                    },
+                    child: const Text("Remove one option"),
+                  ),
+                ),
+              ),
             if (showNameButtons)
               Wrap(
                 alignment: WrapAlignment.center, // Center the wrap
@@ -67,12 +115,45 @@ class NameButtonsComponent extends StatelessWidget {
                     // Define what should happen when "Flush!!" is pressed
                     PlayFunctions.flushAction(appStateProvider, pluginStateKey, context); // Example action
                   },
-                  child: Text("Flush!!"),
+                  child: const Text("Flush!!"),
                 ),
               ),
           ],
         ),
       ),
     );
+  }
+
+  void _triggerRewardedAdToRemoveOption(
+      AppStateProvider appStateProvider,
+      String pluginStateKey,
+      List<String> names,
+      ) {
+    // Retrieve the RewardedAdModule factory from ModuleManager
+    final rewardedModuleFactory = ModuleManager().getModule<Function>("RewardedAdService");
+
+    // If the factory is registered, dynamically call the showAd method
+    if (rewardedModuleFactory != null) {
+      final rewardedAdService = rewardedModuleFactory();
+
+      // Dynamically call the showAd method using Function.apply to avoid requiring the class
+      if (rewardedAdService != null) {
+        Function.apply(
+          rewardedAdService.showAd,
+          [],
+          {
+            #appStateProvider: appStateProvider, // Pass AppStateProvider
+            #context: context,                 // Pass BuildContext
+          },
+        );
+
+        // Hide the button immediately after use
+        setState(() {
+          _hasUsedRemoveOption = true;
+        });
+      }
+    } else {
+      print("RewardedAdService not found or improperly registered in ModuleManager.");
+    }
   }
 }
