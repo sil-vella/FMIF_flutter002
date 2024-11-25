@@ -1,9 +1,9 @@
+import 'dart:developer' as dev;
 import 'dart:math';
 
 import 'package:flutter/material.dart';
 import '../../../providers/app_state_provider.dart';
 import '../../00_base/module_manager.dart';
-import '../../admobs/admobs_main.dart';
 import '../main_plugin_main.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'audio_helper.dart';
@@ -12,53 +12,43 @@ import 'main_plugin_helper.dart';
 
 class PlayFunctions extends PluginHelper {
   static Future<void> handlePlayButton(AppStateProvider appStateProvider, BuildContext context) async {
-    print('Starting handlePlayButton');
+    dev.log('Starting handlePlayButton');
     try {
-      // Retrieve the celeb_category from SharedPreferences
       final prefs = await SharedPreferences.getInstance();
       final celebCategory = prefs.getString('celeb_category');
-      print('Retrieved celeb_category: $celebCategory');
+      dev.log('Retrieved celeb_category: $celebCategory');
 
       if (celebCategory == null || celebCategory.isEmpty) {
-        print('celeb_category is null or empty');
-        showDialog(
-          context: context,
-          builder: (BuildContext context) {
-            return AlertDialog(
-              title: Text("Category Required"),
-              content: Text("Please choose a category to continue."),
-              actions: [
-                TextButton(
-                  onPressed: () {
-                    Navigator.of(context).pop();
-                    Navigator.of(context).pushNamed('/prefs');
-                  },
-                  child: Text("Choose Category"),
-                ),
-              ],
-            );
-          },
-        );
+        // **FIX: Check context.mounted before using context**
+        if (context.mounted) {
+          showDialog(
+            context: context,
+            builder: (BuildContext dialogContext) {
+              return AlertDialog(
+                title: const Text("Category Required"),
+                content: const Text("Please choose a category to continue."),
+                actions: [
+                  TextButton(
+                    onPressed: () {
+                      Navigator.of(dialogContext).pop();
+                      Navigator.of(context).pushNamed('/prefs');
+                    },
+                    child: const Text("Choose Category"),
+                  ),
+                ],
+              );
+            },
+          );
+        }
         return;
       }
 
-      // Use MainPlugin's runtimeType for the dynamic key
       final pluginStateKey = "${MainPlugin().runtimeType}State";
-      print('Using pluginStateKey: $pluginStateKey');
+      dev.log('Using pluginStateKey: $pluginStateKey');
 
-      // Fetch and set celebrity details since a category is set
-      print('Fetching details since celeb_category is set');
       await fetchAndSetCelebDetails(appStateProvider, pluginStateKey);
 
-      // Retrieve updated pluginState to reflect fetched details
-      var pluginState = appStateProvider.getPluginState<Map<String, dynamic>>(pluginStateKey) ?? {};
-      print('pluginState after fetching: $pluginState');
-
-      // Update the main app state to indicate that play has started
       appStateProvider.updateMainAppState('main_state', 'in_play');
-      print('Updated main app state to in_play');
-
-      // Update the play state in the plugin state
       appStateProvider.updatePluginState(pluginStateKey, {
         'play_state': "in_play",
         'plugin_anims': {
@@ -66,40 +56,29 @@ class PlayFunctions extends PluginHelper {
           'ribbon_anims': [],
         },
       });
-      print('Updated plugin state to in_play');
 
-      // Navigate to the /play screen once details are verified and fetched
-      print('Navigating to /play');
-      Navigator.of(context).pushNamed('/play');
+      // **FIX: Check context.mounted before navigating**
+      if (context.mounted) {
+        Navigator.of(context).pushNamed('/play');
+      }
     } catch (error) {
-      print('Error in handlePlayButton: $error');
+      dev.log('Error in handlePlayButton: $error');
     }
   }
 
   static Future<void> fetchAndSetCelebDetails(AppStateProvider appStateProvider, String pluginStateKey) async {
-    print('Fetching celebrity details...');
+    dev.log('Fetching celebrity details...');
     try {
       final pluginState = appStateProvider.getPluginState<Map<String, dynamic>>(pluginStateKey) ?? {};
-      print('Current plugin state before fetching: $pluginState');
-
       final celebCategory = pluginState['celeb_category'];
+
       if (celebCategory == null || celebCategory.isEmpty) {
-        print('No celebrity category found in plugin state.');
+        dev.log('No celebrity category found in plugin state.');
         return;
       }
 
       final celebDetails = await PluginHelper.getCelebDetails(celebCategory);
-      print('Fetched celebrity details: $celebDetails');
-
-      // Log details being updated
-      print('Updating plugin state with: ${{
-        'celeb_name': celebDetails['name'],
-        'celeb_facts': celebDetails['facts'],
-        'celeb_img_url': celebDetails['image'],
-        'other_celebs': celebDetails['other_celebs'],
-        'correct_anim': celebDetails['correct_animation'],
-        'incorrect_anim': celebDetails['incorrect_animation']
-      }}');
+      dev.log('Fetched celebrity details: $celebDetails');
 
       appStateProvider.updatePluginState(pluginStateKey, {
         'celeb_name': celebDetails['name'],
@@ -110,15 +89,12 @@ class PlayFunctions extends PluginHelper {
         'incorrect_anim': celebDetails['incorrect_animation']
       });
 
-      // Print the updated plugin state
       final updatedPluginState = appStateProvider.getPluginState<Map<String, dynamic>>(pluginStateKey) ?? {};
-      print('Updated plugin state after fetching: $updatedPluginState');
+      dev.log('Updated plugin state after fetching: $updatedPluginState');
     } catch (error) {
-      print('Error fetching and setting celebrity details: $error');
+      dev.log('Error fetching and setting celebrity details: $error');
     }
   }
-
-
 
   static Future<void> selectedCeleb(
       AppStateProvider appStateProvider, String pluginStateKey, String selectedName, BuildContext context) async {
@@ -126,7 +102,7 @@ class PlayFunctions extends PluginHelper {
       final pluginState = appStateProvider.getPluginState<Map<String, dynamic>>(pluginStateKey) ?? {};
 
       if (selectedName == pluginState['celeb_name']) {
-        print("Selected name matches celeb_name. Updating to revealed_correct.");
+        dev.log("Selected name matches celeb_name. Updating to revealed_correct.");
         appStateProvider.updatePluginState(pluginStateKey, {
           'play_state': 'revealed_correct',
           'plugin_anims': {
@@ -143,11 +119,11 @@ class PlayFunctions extends PluginHelper {
         if (applausePath != null) {
           AudioHelper().playEffectSound(applausePath, context);
         } else {
-          print("Error: No applause sound found for key '$randomKey'");
+          dev.log("Error: No applause sound found for key '$randomKey'");
         }
 
       } else {
-        print("Selected name does not match celeb_name. Updating to revealed_incorrect.");
+        dev.log("Selected name does not match celeb_name. Updating to revealed_incorrect.");
         appStateProvider.updatePluginState(pluginStateKey, {
           'play_state': 'revealed_incorrect',
           'flushing': 'true',
@@ -156,11 +132,11 @@ class PlayFunctions extends PluginHelper {
             'ribbon_anims': ['cut_tape'],
           }
         });
-        print("Calling activateAftermath for revealed_incorrect.");
+        dev.log("Calling activateAftermath for revealed_incorrect.");
         await activateAftermath(appStateProvider, pluginStateKey, context);
       }
     } catch (error) {
-      print("Error in selectedCeleb: $error");
+      dev.log("Error in selectedCeleb: $error");
     }
   }
 
@@ -190,7 +166,7 @@ class PlayFunctions extends PluginHelper {
       final currentPlayState = pluginState['play_state'];
 
       if (currentPlayState == 'revealed_correct') {
-        print("Play state is revealed_correct. Updating to aftermath_correct.");
+        dev.log("Play state is revealed_correct. Updating to aftermath_correct.");
         appStateProvider.updatePluginState(pluginStateKey, {
           'play_state': 'aftermath_correct',
           'plugin_anims': {
@@ -198,10 +174,10 @@ class PlayFunctions extends PluginHelper {
             'game_screen_anims': ['hue_and_bright']
           },
         });
-        print("Correct anim: ${pluginState['correct_anim']}");
+        dev.log("Correct anim: ${pluginState['correct_anim']}");
 
       } else if (currentPlayState == 'revealed_incorrect') {
-        print("Play state is revealed_incorrect. Updating to aftermath_incorrect.");
+        dev.log("Play state is revealed_incorrect. Updating to aftermath_incorrect.");
         appStateProvider.updatePluginState(pluginStateKey, {
           'flushing': false,
           'play_state': 'aftermath_incorrect',
@@ -212,9 +188,9 @@ class PlayFunctions extends PluginHelper {
         });
       }
 
-      await Future.delayed(Duration(milliseconds: 100));
+      await Future.delayed(const Duration(milliseconds: 100));
     } catch (error) {
-      print("Error in activateAftermath: $error");
+      dev.log("Error in activateAftermath: $error");
     }
   }
 
@@ -223,24 +199,21 @@ class PlayFunctions extends PluginHelper {
 
   static Future<void> resetPluginPlayState(AppStateProvider appStateProvider, String pluginStateKey) async {
     if (_isResetting) {
-      print("resetPluginPlayState is already in progress. Skipping duplicate call.");
+      dev.log("resetPluginPlayState is already in progress. Skipping duplicate call.");
       return;
     }
 
     _isResetting = true; // Set the flag to true at the start of the method
     try {
-      // Retrieve InterstitialAdWidget if it has been registered by AdmobsPlugin
-      final interstitialModuleFactory = ModuleManager().getModule<Function>("InterstitialModule");
-      final interstitialWidget = interstitialModuleFactory != null ? interstitialModuleFactory() as Widget : null;
 
       // Check and update the ad_counter
       final pluginState = appStateProvider.getPluginState<Map<String, dynamic>>(pluginStateKey) ?? {};
       int adCounter = pluginState['ad_counter'] ?? 0;
 
-      print("Current ad_counter: $adCounter"); // Debug: Log current ad_counter
+      dev.log("Current ad_counter: $adCounter"); // Debug: Log current ad_counter
 
       if (adCounter >= 3) {
-        print("ad_counter >= 3, attempting to play interstitial ad."); // Debug: Ad logic triggered
+        dev.log("ad_counter >= 3, attempting to play interstitial ad."); // Debug: Ad logic triggered
 
         // Retrieve the InterstitialAdService instance from ModuleManager
         final interstitialAdServiceFactory = ModuleManager().getModule<Function>("InterstitialAdService");
@@ -250,37 +223,37 @@ class PlayFunctions extends PluginHelper {
           if (interstitialAdService != null) {
             // Show the interstitial ad if it is ready
             interstitialAdService.showAd(); // Show the interstitial ad
-            print("Interstitial ad displayed.");
+            dev.log("Interstitial ad displayed.");
           }
         } catch (e) {
-          print("Error showing interstitial ad: $e");
+          dev.log("Error showing interstitial ad: $e");
         }
 
         // Reset the ad_counter to 0
         appStateProvider.updatePluginState(pluginStateKey, {'ad_counter': 0});
-        print("ad_counter reset to 0 after showing ad.");
+        dev.log("ad_counter reset to 0 after showing ad.");
       } else {
-        print("ad_counter < 4, incrementing ad_counter."); // Debug: Increment logic
+        dev.log("ad_counter < 4, incrementing ad_counter."); // Debug: Increment logic
 
         // Increment the ad_counter
         appStateProvider.updatePluginState(pluginStateKey, {'ad_counter': adCounter + 1});
-        print("ad_counter incremented to ${adCounter + 1}."); // Debug: Log incremented value
+        dev.log("ad_counter incremented to ${adCounter + 1}."); // Debug: Log incremented value
       }
 
-      await Future.delayed(Duration(milliseconds: 100));
+      await Future.delayed(const Duration(milliseconds: 100));
 
       // Reset the plugin state
       final defaultState = MainPlugin().reset();
       appStateProvider.updatePluginState(pluginStateKey, defaultState);
 
-      print("Plugin state reset to default."); // Debug: State reset
+      dev.log("Plugin state reset to default."); // Debug: State reset
 
       // Retrieve and set the saved category
       final savedCategory = await SharedPreferences.getInstance().then((prefs) => prefs.getString("celeb_category") ?? "");
       await fetchAndSetCelebDetails(appStateProvider, pluginStateKey);
       defaultState["celeb_category"] = savedCategory;
 
-      print("Saved category retrieved and set: $savedCategory"); // Debug: Category
+      dev.log("Saved category retrieved and set: $savedCategory"); // Debug: Category
 
       appStateProvider.updatePluginState(pluginStateKey, {
         'plugin_anims': {},
@@ -294,9 +267,9 @@ class PlayFunctions extends PluginHelper {
         },
       });
 
-      print("Plugin state updated with play_state and animations."); // Debug: State updated
+      dev.log("Plugin state updated with play_state and animations."); // Debug: State updated
     } catch (error) {
-      print("Error in resetPluginPlayState: $error"); // Debug: Error handling
+      dev.log("Error in resetPluginPlayState: $error"); // Debug: Error handling
     } finally {
       _isResetting = false; // Ensure the flag is reset even if an error occurs
     }
@@ -324,8 +297,8 @@ class PlayFunctions extends PluginHelper {
       'hint': true,               // Set 'hint' to true
     });
 
-    print("Updated other_celebs: $otherCelebs");
-    print("'hint' is now set to true.");
+    dev.log("Updated other_celebs: $otherCelebs");
+    dev.log("'hint' is now set to true.");
   }
 
 

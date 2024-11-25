@@ -41,27 +41,42 @@ android {
     }
 
     defaultConfig {
-        // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
         applicationId "com.reignofplay.fmif"
-        // You can update the following values to match your application needs.
-        // For more information, see: https://docs.flutter.dev/deployment/android#reviewing-the-gradle-build-configuration.
         minSdkVersion 21
         targetSdkVersion flutter.targetSdkVersion
         versionCode flutterVersionCode.toInteger()
         versionName flutterVersionName
         multiDexEnabled true
     }
+
+    signingConfigs {
+        release {
+            keyAlias localProperties.getProperty('keyAlias') ?: ""
+            keyPassword localProperties.getProperty('keyPassword') ?: ""
+            storeFile file(localProperties.getProperty('storeFile') ?: "")
+            storePassword localProperties.getProperty('storePassword') ?: ""
+        }
+    }
+
+
     buildFeatures {
         buildConfig true
     }
 
     buildTypes {
         release {
-            // Signing configuration (update as needed for release builds)
-            signingConfig signingConfigs.debug
+            // Enable ProGuard to shrink and obfuscate your code
+            minifyEnabled true
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+
+            // Configure signing for release builds
+            signingConfig signingConfigs.release
 
             // Define the placeholder for ${applicationName}
             manifestPlaceholders = [applicationName: "io.flutter.app.FlutterApplication"]
+            ndk {
+                debugSymbolLevel 'FULL' // Generates full debug symbols
+            }
         }
         debug {
             // Optional: Add placeholders for debug builds

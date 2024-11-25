@@ -42,7 +42,6 @@ class RewardedAdService {
       _isAdReady = false;
       loadAd(); // Preload the next ad
     } else {
-      print('RewardedAd is not ready.');
       loadAd(); // Attempt to load a new ad
     }
   }
@@ -53,11 +52,9 @@ class RewardedAdService {
   void _setAdCallbacks(RewardedAd ad) {
     ad.fullScreenContentCallback = FullScreenContentCallback(
       onAdDismissedFullScreenContent: (ad) {
-        print('RewardedAd dismissed.');
         ad.dispose();
       },
       onAdFailedToShowFullScreenContent: (ad, error) {
-        print('Failed to show RewardedAd: $error');
         ad.dispose();
       },
     );

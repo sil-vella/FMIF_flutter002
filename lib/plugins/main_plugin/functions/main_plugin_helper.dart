@@ -15,46 +15,33 @@ import 'audio_helper.dart';
 class PluginHelper {
   /// Fetches categories from the API and returns the response data
   static Future<dynamic> getCategories(AppStateProvider appStateProvider) async {
-    print("getCategories: Starting category retrieval process.");
 
     final createConnectionModule = ModuleManager().getModule<Function>("ConnectionModule");
-    final String baseUrl = Config.apiUrl;
-    print("getCategories: Base URL set to $baseUrl");
+    const String baseUrl = Config.apiUrl;
 
     if (createConnectionModule != null) {
-      print("getCategories: Connection module found, creating connection with base URL.");
       final connectionModule = createConnectionModule(baseUrl);
 
       try {
-        print("getCategories: Sending GET request to /get-categories");
         final response = await connectionModule.sendGetRequest("/get-categories");
-        print("getCategories: Received response - $response");
 
         // Check if response is a list and return it directly
         if (response is List && response.isNotEmpty) {
-          print("getCategories: Response is a non-empty list. Returning response.");
           return response;
         } else {
-          print("getCategories: Response is not a list or is empty.");
         }
       } catch (error) {
-        print("getCategories: Error occurred while fetching categories - $error");
         // Handle error if needed
       }
     } else {
-      print("getCategories: Connection module is null.");
     }
 
-    print("getCategories: Returning an empty list as fallback.");
     return []; // Return an empty list if categories cannot be fetched
   }
 
-
-  /// Updates the selected category in both app state and SharedPreferences
   static Future<void> updateCategory(String category, AppStateProvider appStateProvider, BuildContext context) async {
     final pluginStateKey = "${MainPlugin().runtimeType}State";
 
-    // Update the app state with the new category and clear previous data
     appStateProvider.updatePluginState(pluginStateKey, {
       "celeb_category": category,
       "celeb_name": "",
@@ -62,18 +49,19 @@ class PluginHelper {
       "celeb_facts": []
     });
 
-    // Save the selected category in SharedPreferences
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString("celeb_category", category);
 
-    // Call handlePlayButton with context to initialize the play session
-    await PlayFunctions.handlePlayButton(appStateProvider, context);
+    // **FIX: Use addPostFrameCallback for safe context-dependent operations**
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      PlayFunctions.handlePlayButton(appStateProvider, context);
+    });
   }
 
   /// Fetches celebrity details based on a category from the API and returns the response data
   static Future<dynamic> getCelebDetails(String category) async {
     final createConnectionModule = ModuleManager().getModule<Function>("ConnectionModule");
-    final String baseUrl = Config.apiUrl;
+    const String baseUrl = Config.apiUrl;
 
     if (createConnectionModule != null) {
       final connectionModule = createConnectionModule(baseUrl);

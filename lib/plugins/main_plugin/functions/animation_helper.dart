@@ -7,7 +7,7 @@ class CustomShakeCurve extends Curve {
   final double accelerationFactor; // Controls the acceleration phase
   final double decelerationFactor; // Controls the deceleration phase
 
-  CustomShakeCurve({
+  const CustomShakeCurve({
     this.accelerationFactor = 2.0, // Default values
     this.decelerationFactor = 2.0,
   });

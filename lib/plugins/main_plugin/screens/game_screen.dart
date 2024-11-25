@@ -20,10 +20,10 @@ class GameScreen extends BaseScreen {
   String get title => "Play";
 
   @override
-  _GameScreenState createState() => _GameScreenState();
+  GameScreenState createState() => GameScreenState(); // Updated class name to public
 }
 
-class _GameScreenState extends BaseScreenState<GameScreen> with SingleTickerProviderStateMixin {
+class GameScreenState extends BaseScreenState<GameScreen> with SingleTickerProviderStateMixin {
   late AppStateProvider _appStateProvider;
 
   @override
@@ -56,7 +56,6 @@ class _GameScreenState extends BaseScreenState<GameScreen> with SingleTickerProv
     super.dispose();
   }
 
-
   @override
   Widget buildContent(BuildContext context) {
     return Consumer<AppStateProvider>(
@@ -64,20 +63,20 @@ class _GameScreenState extends BaseScreenState<GameScreen> with SingleTickerProv
         // Adjust volume dynamically based on mute state
         AudioHelper().updateVolumeBasedOnState(context);
 
-        return Column(
+        return const Column(
           children: [
             Expanded(
               child: Stack(
                 children: [
-                  const Positioned.fill(child: MainBackgroundComponent()),
-                  const Positioned.fill(child: AfterMathComponent()),
-                  const Positioned.fill(child: CelebHeadComponent()),
-                  const Positioned.fill(child: MainBackgroundOverlayComponent()),
-                  const Positioned.fill(child: RibbonComponent()),
-                  const Positioned.fill(child: AfterMathAnimComponent()),
+                  Positioned.fill(child: MainBackgroundComponent()),
+                  Positioned.fill(child: AfterMathComponent()),
+                  Positioned.fill(child: CelebHeadComponent()),
+                  Positioned.fill(child: MainBackgroundOverlayComponent()),
+                  Positioned.fill(child: RibbonComponent()),
+                  Positioned.fill(child: AfterMathAnimComponent()),
 
                   // Name buttons component at the top
-                  const Positioned(
+                  Positioned(
                     top: 0,
                     left: 0,
                     right: 0,

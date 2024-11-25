@@ -48,7 +48,8 @@ class _NameButtonsComponentState extends State<NameButtonsComponent> {
         });
       }
 
-      return !hint; // Show button only if `hint` is false
+      // Show button only if `hint` is false and `play_state` is 'in_play'
+      return !hint && playState == 'in_play';
     });
 
     // Show name buttons only if `play_state` is `in_play`
@@ -73,7 +74,7 @@ class _NameButtonsComponentState extends State<NameButtonsComponent> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.center, // Center items in the column
           children: [
-            // Full-width button for "Remove one option" (only show if not used yet and `hint` is false)
+            // Full-width button for "Remove one option" (only show if not used yet and conditions are met)
             if (!_hasUsedRemoveOption && showRemoveOptionButton)
               Padding(
                 padding: const EdgeInsets.only(bottom: 20.0),
@@ -88,7 +89,7 @@ class _NameButtonsComponentState extends State<NameButtonsComponent> {
                         names,
                       );
                     },
-                    child: const Text("Remove one option"),
+                    child: const Text("Help! Remove one option"),
                   ),
                 ),
               ),
@@ -153,7 +154,6 @@ class _NameButtonsComponentState extends State<NameButtonsComponent> {
         });
       }
     } else {
-      print("RewardedAdService not found or improperly registered in ModuleManager.");
     }
   }
 }

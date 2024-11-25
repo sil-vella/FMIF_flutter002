@@ -12,10 +12,11 @@ class PrefScreen extends BaseScreen {
   String get title => "Preferences";
 
   @override
-  _PrefScreenState createState() => _PrefScreenState();
+  PrefScreenState createState() => PrefScreenState();
 }
 
-class _PrefScreenState extends BaseScreenState<PrefScreen> {
+// Rename _PrefScreenState to PrefScreenState
+class PrefScreenState extends BaseScreenState<PrefScreen> {
   bool _isLoading = true; // Track loading state
   List<dynamic> _categories = []; // Store fetched categories
 

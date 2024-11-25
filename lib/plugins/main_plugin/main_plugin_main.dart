@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/app_state_provider.dart';
 import '../../services/shared_preferences_service.dart';
-import '../00_base/module_manager.dart';
 import 'functions/main_plugin_helper.dart';
 import '../00_base/app_plugin.dart';
 
@@ -16,12 +15,10 @@ class MainPlugin implements AppPlugin {
   @override
   void onStartup() {
     // Add any non-context-dependent startup logic here
-    print("MainPlugin onStartup executed.");
   }
 
   @override
   void initialize(BuildContext context) async {
-    print("Initializing MainPlugin...");
 
     // Register modules
     registerModules();
@@ -66,7 +63,6 @@ class MainPlugin implements AppPlugin {
     appStateProvider.registerPluginState(pluginStateKey, resetState);
   }
 
-  @override
   void registerModules() {}
 
   // Default state

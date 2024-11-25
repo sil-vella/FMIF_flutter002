@@ -11,11 +11,10 @@ class AfterMathComponent extends StatefulWidget {
   const AfterMathComponent({Key? key}) : super(key: key);
 
   @override
-  _AfterMathComponentState createState() => _AfterMathComponentState();
+  AfterMathComponentState createState() => AfterMathComponentState();
 }
 
-class _AfterMathComponentState extends State<AfterMathComponent>
-    with TickerProviderStateMixin {
+class AfterMathComponentState extends State<AfterMathComponent> with TickerProviderStateMixin {
   late final AnimationController slideUpAndDownController;
   late final AnimationController flyAwayController;
   late final AnimationHelper animationHelper;
@@ -55,10 +54,8 @@ class _AfterMathComponentState extends State<AfterMathComponent>
 
     if (playState == 'aftermath_correct') {
       if (animation.contains('skib.gif')) {
-        // Play skibidi from correctAfter
         audioHelper.playEffectSound(audioHelper.correctAfter['skibidi']!, context);
       } else {
-        // Randomize from correctAfter excluding skibidi
         final otherAudioKeys = audioHelper.correctAfter.keys
             .where((key) => key != 'skibidi')
             .toList();
@@ -69,13 +66,10 @@ class _AfterMathComponentState extends State<AfterMathComponent>
       }
     } else if (playState == 'aftermath_incorrect') {
       if (animation.contains('rocket.gif')) {
-        // Play specific rocket sound
         audioHelper.playEffectSound(audioHelper.incorrectAfter['aftermath_rocket_001']!, context);
       } else if (animation.contains('angel-wings-white.gif')) {
-        // Play specific wings sound
         audioHelper.playEffectSound(audioHelper.incorrectAfter['aftermath_wings_001']!, context);
       } else {
-        // Randomize from incorrectAfter for other animations
         final incorrectAudioKeys = audioHelper.incorrectAfter.keys
             .where((key) => key != 'aftermath_rocket_001' && key != 'aftermath_wings_001')
             .toList();
@@ -103,7 +97,6 @@ class _AfterMathComponentState extends State<AfterMathComponent>
     if (animationImageUrl != null) {
       _playAudioForAnimation(playState, animationImageUrl!); // Trigger audio for the chosen animation
     }
-    print('Selected animation for play_state "$playState": $animationImageUrl');
   }
 
   @override
@@ -116,19 +109,17 @@ class _AfterMathComponentState extends State<AfterMathComponent>
       return pluginState['play_state'] as String?;
     });
 
-    // Detect when the playState changes from `aftermath_incorrect`
+    // Detect when the playState changes
     if (lastPlayState == 'aftermath_incorrect' && playState != 'aftermath_incorrect') {
-      print("State changed from 'aftermath_incorrect'. Fading out sounds...");
       AudioHelper().fadeOutAndStopEffectSounds(); // Fade out and stop sounds
     }
 
-    // Update the last play state
     lastPlayState = playState;
 
     if (playState == 'aftermath_correct' || playState == 'aftermath_incorrect') {
       _selectRandomAnimation(playState!);
     } else {
-      return SizedBox.shrink();
+      return const SizedBox.shrink();
     }
 
     final screenWidth = MediaQuery.of(context).size.width;
@@ -139,13 +130,13 @@ class _AfterMathComponentState extends State<AfterMathComponent>
       animationImageUrl!,
       width: imageSize,
       height: imageSize,
-      fit: BoxFit.contain, // Adjusted to prevent cropping
+      fit: BoxFit.contain,
     )
         : Container(
       width: imageSize,
       height: imageSize,
       color: Colors.grey,
-      child: Icon(Icons.error, color: Colors.red),
+      child: const Icon(Icons.error, color: Colors.red),
     );
 
     final aftermathAnims = context.select<AppStateProvider, List<String>?>((appStateProvider) {
@@ -157,10 +148,10 @@ class _AfterMathComponentState extends State<AfterMathComponent>
       animatedChild = animationHelper.slideUpAndDown(
         animatedChild,
         controller: slideUpAndDownController,
-        duration: Duration(seconds: 4),
-        begin: Offset(0.0, 1.0),
-        middle: Offset(0.0, -0.3),
-        end: Offset(0.0, 1.0),
+        duration: const Duration(seconds: 4),
+        begin: const Offset(0.0, 1.0),
+        middle: const Offset(0.0, -0.3),
+        end: const Offset(0.0, 1.0),
         infinite: false,
         curve: Curves.easeIn,
         onComplete: () {
@@ -173,12 +164,12 @@ class _AfterMathComponentState extends State<AfterMathComponent>
       animatedChild = animationHelper.flyAway(
         animatedChild,
         controller: flyAwayController,
-        slideUpDuration: Duration(seconds: 2),
-        pauseDuration: Duration(seconds: 2),
-        flyAwayDuration: Duration(milliseconds: 2400),
-        begin: Offset(0.0, 1.0),
-        middle: Offset(0.0, -0.3),
-        end: Offset(0.0, -6.0),
+        slideUpDuration: const Duration(seconds: 2),
+        pauseDuration: const Duration(seconds: 2),
+        flyAwayDuration: const Duration(milliseconds: 2400),
+        begin: const Offset(0.0, 1.0),
+        middle: const Offset(0.0, -0.3),
+        end: const Offset(0.0, -6.0),
         initialSlideCurve: Curves.easeOutCubic,
         flyAwayCurve: Curves.easeInCubic,
         infinite: false,
@@ -188,10 +179,10 @@ class _AfterMathComponentState extends State<AfterMathComponent>
       );
     }
 
-    // Apply Transform for incorrect animations
+    // Adjust position for incorrect animations
     if (playState == 'aftermath_incorrect') {
       animatedChild = Transform.translate(
-        offset: Offset(0, 70), // Move the animation 50 pixels down
+        offset: const Offset(0, 70),
         child: animatedChild,
       );
     }

@@ -18,7 +18,7 @@ class CelebFactsComponent extends StatelessWidget {
 
     // Return an empty container if not in 'in_play' state
     if (!isInPlayState) {
-      return SizedBox.shrink();
+      return const SizedBox.shrink();
     }
 
     // Use select to retrieve celeb_facts and only rebuild when they change

@@ -1,3 +1,4 @@
+import 'dart:developer';
 import 'dart:async';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
@@ -52,7 +53,7 @@ class AudioHelper {
         await _playCurrentTrack(context);
       }
     } catch (e) {
-      print("Error starting background playlist: $e");
+      log('Error: $e');
     }
   }
 
@@ -82,7 +83,7 @@ class AudioHelper {
         });
       }
     } catch (e) {
-      print("Error playing track: $e");
+      log('Error: $e');
     }
   }
 
@@ -123,7 +124,7 @@ class AudioHelper {
         effectPlayer.dispose();
       });
     } catch (e) {
-      print("Error playing effect sound: $e");
+      log('Error details: $e');
     }
   }
 
@@ -162,7 +163,6 @@ class AudioHelper {
 
   /// Disposes all audio resources
   void dispose() {
-    print("Disposing AudioHelper resources...");
     _backgroundPlayer.dispose();
 
     for (final effectPlayer in _effectPlayers) {

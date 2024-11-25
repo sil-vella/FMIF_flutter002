@@ -17,9 +17,7 @@ class BannerAdModule extends StatelessWidget {
     size: AdSize.banner,
     request: const AdRequest(),
     listener: BannerAdListener(
-      onAdLoaded: (Ad ad) => print('Banner Ad loaded.'),
       onAdFailedToLoad: (Ad ad, LoadAdError error) {
-        print('Failed to load Banner Ad: $error');
         ad.dispose();
       },
     ),

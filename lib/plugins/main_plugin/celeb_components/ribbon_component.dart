@@ -13,10 +13,10 @@ class RibbonComponent extends StatefulWidget {
   const RibbonComponent({Key? key}) : super(key: key);
 
   @override
-  _RibbonComponentState createState() => _RibbonComponentState();
+  RibbonComponentState createState() => RibbonComponentState();
 }
 
-class _RibbonComponentState extends State<RibbonComponent>
+class RibbonComponentState extends State<RibbonComponent>
     with TickerProviderStateMixin {
   late final AnimationController leftTapeController;
   late final AnimationController rightTapeController;
@@ -155,7 +155,6 @@ class _RibbonComponentState extends State<RibbonComponent>
               ),
             );
 
-            // Apply individual animations with Y-axis translation and respective pivots
             if (playState == 'revealed_correct' || playState == 'revealed_incorrect') {
               if (ribbonAnims.contains('cut_tape')) {
                 leftTape = animationHelper.cutTape(
@@ -164,10 +163,8 @@ class _RibbonComponentState extends State<RibbonComponent>
                   duration: const Duration(seconds: 1),
                   pivot: Alignment.centerLeft,
                   rotationEnd: 90 * (pi / 180),
-                  translateY: 600.0, // Move to the bottom of the screen
-                  onComplete: () {
-                    print("Left tape animation completed");
-                  },
+                  translateY: 600.0,
+                  onComplete: () {},
                 );
 
                 rightTape = animationHelper.cutTape(
@@ -176,10 +173,8 @@ class _RibbonComponentState extends State<RibbonComponent>
                   duration: const Duration(seconds: 1),
                   pivot: Alignment.centerRight,
                   rotationEnd: -90 * (pi / 180),
-                  translateY: 600.0, // Move to the bottom of the screen
-                  onComplete: () {
-                    print("Right tape animation completed");
-                  },
+                  translateY: 600.0,
+                  onComplete: () {},
                 );
 
                 centerTape = animationHelper.cutTape(
@@ -188,10 +183,8 @@ class _RibbonComponentState extends State<RibbonComponent>
                   duration: const Duration(seconds: 1),
                   pivot: Alignment.centerLeft,
                   rotationEnd: 90 * (pi / 180),
-                  translateY: 600.0, // Move to the bottom of the screen
-                  onComplete: () {
-                    print("Center tape animation completed");
-                  },
+                  translateY: 600.0,
+                  onComplete: () {},
                 );
               }
             }

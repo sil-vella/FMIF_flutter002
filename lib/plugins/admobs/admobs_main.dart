@@ -1,8 +1,5 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
-import 'package:provider/provider.dart';
-
 import '../../providers/app_state_provider.dart';
 import '../../utils/consts/config.dart';
 import '../00_base/app_plugin.dart';
@@ -42,7 +39,6 @@ class AdmobsPlugin implements AppPlugin {
 
   @override
   void onStartup() {
-    print("AdmobsPlugin onStartup: Registering modules and preloading ads.");
 
     // Initialize AdMob SDK with test device ID
     _initializeAdMob();
@@ -56,13 +52,9 @@ class AdmobsPlugin implements AppPlugin {
 
   @override
   void initialize(BuildContext context) {
-    print("AdmobsPlugin initialize: Registering modules and ensuring ad preload.");
     registerModules();
-
-    final appState = Provider.of<AppStateProvider>(context, listen: false);
   }
 
-  @override
   void registerModules() {
     // Register a factory function for BannerModule and InterstitialAdService
     ModuleManager().registerModule("BannerModule", () => BannerAdModule());
@@ -86,6 +78,5 @@ class AdmobsPlugin implements AppPlugin {
       RequestConfiguration(testDeviceIds: [testDeviceId]),
     );
 
-    print("AdMob initialized with test device ID: $testDeviceId");
   }
 }

@@ -11,10 +11,11 @@ class HomeScreen extends BaseScreen {
   String get title => 'Home';
 
   @override
-  _HomeScreenState createState() => _HomeScreenState();
+  HomeScreenState createState() => HomeScreenState();
 }
 
-class _HomeScreenState extends BaseScreenState<HomeScreen> {
+// Rename _HomeScreenState to HomeScreenState
+class HomeScreenState extends BaseScreenState<HomeScreen> {
   @override
   Widget buildContent(BuildContext context) {
     return Stack(

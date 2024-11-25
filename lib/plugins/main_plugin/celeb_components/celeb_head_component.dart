@@ -1,21 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'dart:math';
 
 import '../../../providers/app_state_provider.dart';
 import '../functions/animation_helper.dart';
-import '../main_plugin_main.dart';
 import '../functions/play_functions.dart';
+import '../main_plugin_main.dart';
 
 class CelebHeadComponent extends StatefulWidget {
   const CelebHeadComponent({Key? key}) : super(key: key);
 
   @override
-  _CelebHeadComponentState createState() => _CelebHeadComponentState();
+  CelebHeadComponentState createState() => CelebHeadComponentState();
 }
 
-class _CelebHeadComponentState extends State<CelebHeadComponent>
-    with TickerProviderStateMixin {
+class CelebHeadComponentState extends State<CelebHeadComponent> with TickerProviderStateMixin {
   late final AnimationController bounceController;
   late final AnimationController sideToSideController;
   late final AnimationController pulseController;
@@ -23,7 +21,7 @@ class _CelebHeadComponentState extends State<CelebHeadComponent>
   late final AnimationController dropController;
   late final AnimationController slideUpController;
   late final AnimationController flyAwayController;
-  late final AnimationController flashController; // Controller for flashing text
+  late final AnimationController flashController;
 
   late final AnimationHelper animationHelper;
 
@@ -40,7 +38,7 @@ class _CelebHeadComponentState extends State<CelebHeadComponent>
     flyAwayController = AnimationController(vsync: this);
     flashController = AnimationController(
       vsync: this,
-      duration: Duration(seconds: 1),
+      duration: const Duration(seconds: 1),
     )..repeat(reverse: true); // Repeating for flashing effect
   }
 
@@ -59,12 +57,11 @@ class _CelebHeadComponentState extends State<CelebHeadComponent>
 
   @override
   Widget build(BuildContext context) {
-    final appStateProvider = Provider.of<AppStateProvider>(context, listen: false);
     final pluginStateKey = "${MainPlugin().runtimeType}State";
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
 
-    // Check the play state and determine visibility
+    // Retrieve the play state from the app state provider
     final String? playState = context.select<AppStateProvider, String?>(
           (appStateProvider) {
         final pluginState = appStateProvider.getPluginState<Map<String, dynamic>>(pluginStateKey) ?? {};
@@ -72,14 +69,14 @@ class _CelebHeadComponentState extends State<CelebHeadComponent>
       },
     );
 
-    // Determine when to show the "Incorrect!!" text and celeb image
+    // Determine visibility of text and image
     final bool showText = playState == 'revealed_incorrect' ||
         playState == 'aftermath_incorrect' ||
         playState == 'revealed_correct' ||
         playState == 'aftermath_correct';
     final bool showCelebImage = playState != 'idle' && playState != 'aftermath_correct';
 
-    // Retrieve `headAnims` from `plugin_anims`
+    // Retrieve animation list and image URL
     final List<String>? headAnims = context.select<AppStateProvider, List<String>?>(
           (appStateProvider) {
         final pluginState = appStateProvider.getPluginState<Map<String, dynamic>>(pluginStateKey) ?? {};
@@ -97,7 +94,7 @@ class _CelebHeadComponentState extends State<CelebHeadComponent>
     final screenWidth = MediaQuery.of(context).size.width;
     final imageSize = screenWidth * 0.2;
 
-    // Celeb image container with loading indicator and error handling
+    // Create an animated child for the celeb image
     Widget animatedChild = celebImgUrl != null && celebImgUrl.isNotEmpty
         ? FutureBuilder(
       future: precacheImage(NetworkImage(celebImgUrl), context),
@@ -117,7 +114,7 @@ class _CelebHeadComponentState extends State<CelebHeadComponent>
           return SizedBox(
             width: imageSize,
             height: imageSize,
-            child: Center(
+            child: const Center(
               child: CircularProgressIndicator(),
             ),
           );
@@ -127,8 +124,8 @@ class _CelebHeadComponentState extends State<CelebHeadComponent>
         : Container(
       width: imageSize,
       height: imageSize,
-      color: Colors.grey, // Placeholder color or local asset for missing image
-      child: Icon(Icons.error, color: Colors.red),
+      color: Colors.grey,
+      child: const Icon(Icons.error, color: Colors.red),
     );
 
     // Apply animations based on contents of `headAnims`
@@ -137,9 +134,9 @@ class _CelebHeadComponentState extends State<CelebHeadComponent>
         animatedChild = animationHelper.bounce(
           animatedChild,
           controller: bounceController,
-          duration: Duration(seconds: 2),
-          begin: Offset(0.0, -0.1),
-          end: Offset(0.0, 0.1),
+          duration: const Duration(seconds: 2),
+          begin: const Offset(0.0, -0.1),
+          end: const Offset(0.0, 0.1),
           curve: Curves.easeInOut,
           infinite: true,
         );
@@ -148,9 +145,9 @@ class _CelebHeadComponentState extends State<CelebHeadComponent>
         animatedChild = animationHelper.sideToSide(
           animatedChild,
           controller: sideToSideController,
-          duration: Duration(seconds: 3),
-          begin: Offset(-0.05, 0.0),
-          end: Offset(0.05, 0.0),
+          duration: const Duration(seconds: 3),
+          begin: const Offset(-0.05, 0.0),
+          end: const Offset(0.05, 0.0),
           curve: Curves.easeInOut,
           infinite: true,
         );
@@ -159,7 +156,7 @@ class _CelebHeadComponentState extends State<CelebHeadComponent>
         animatedChild = animationHelper.pulse(
           animatedChild,
           controller: pulseController,
-          duration: Duration(seconds: 1),
+          duration: const Duration(seconds: 1),
           begin: 0.9,
           end: 1.0,
           curve: Curves.easeInOut,
@@ -167,36 +164,44 @@ class _CelebHeadComponentState extends State<CelebHeadComponent>
         );
       }
       if (headAnims.contains('shakeAndDrop')) {
+        final appStateProvider = Provider.of<AppStateProvider>(context, listen: false); // Access AppStateProvider
+
         animatedChild = animationHelper.shakeAndDrop(
           animatedChild,
           shakeController: shakeController,
           dropController: dropController,
-          shakeDuration: Duration(milliseconds: 100),
-          shakeTotalDuration: Duration(seconds: 4),
-          dropDuration: Duration(milliseconds: 1800),
-          dropStartDelay: Duration(milliseconds: 1000),
-          shakeBegin: Offset(-3.0, 0.0),
-          shakeEnd: Offset(3.0, 0.0),
-          dropBegin: Offset(0.0, 0.0),
-          dropEnd: Offset(0.0, 150.0),
-          shakeCurve: CustomShakeCurve(
+          shakeDuration: const Duration(milliseconds: 100),
+          shakeTotalDuration: const Duration(seconds: 4),
+          dropDuration: const Duration(milliseconds: 1800),
+          dropStartDelay: const Duration(milliseconds: 1000),
+          shakeBegin: const Offset(-3.0, 0.0),
+          shakeEnd: const Offset(3.0, 0.0),
+          dropBegin: const Offset(0.0, 0.0),
+          dropEnd: const Offset(0.0, 150.0),
+          shakeCurve: const CustomShakeCurve(
             accelerationFactor: 1.0, // Adjust the acceleration
             decelerationFactor: 0.2, // Adjust the deceleration
           ),
           dropCurve: Curves.easeIn,
           infinite: false,
           onComplete: () {
-            PlayFunctions.activateAftermath(appStateProvider, pluginStateKey, context);
+            // Call activateAftermath when animation completes
+            PlayFunctions.activateAftermath(
+              appStateProvider,
+              pluginStateKey,
+              context,
+            );
           },
         );
       }
+
       if (headAnims.contains('slideUp')) {
         animatedChild = animationHelper.slideUp(
           animatedChild,
           controller: slideUpController,
-          duration: Duration(seconds: 1),
-          begin: Offset(0.0, 1.0),
-          end: Offset(0.0, 0.0),
+          duration: const Duration(seconds: 1),
+          begin: const Offset(0.0, 1.0),
+          end: const Offset(0.0, 0.0),
           infinite: false,
           onComplete: () {},
         );
@@ -205,12 +210,12 @@ class _CelebHeadComponentState extends State<CelebHeadComponent>
         animatedChild = animationHelper.flyAway(
           animatedChild,
           controller: flyAwayController,
-          slideUpDuration: Duration(seconds: 2),
-          pauseDuration: Duration(seconds: 2),
-          flyAwayDuration: Duration(milliseconds: 1500),
-          begin: Offset(0.0, 0.0),
-          middle: Offset(0.0, 0.0),
-          end: Offset(0.0, -6.0),
+          slideUpDuration: const Duration(seconds: 2),
+          pauseDuration: const Duration(seconds: 2),
+          flyAwayDuration: const Duration(milliseconds: 1500),
+          begin: const Offset(0.0, 0.0),
+          middle: const Offset(0.0, 0.0),
+          end: const Offset(0.0, -6.0),
           initialSlideCurve: Curves.easeOutCubic,
           flyAwayCurve: Curves.easeInCubic,
           infinite: false,
@@ -229,32 +234,34 @@ class _CelebHeadComponentState extends State<CelebHeadComponent>
             right: MediaQuery.of(context).size.width * 0.125,
             child: FadeTransition(
               opacity: flashController.drive(
-                Tween(begin: 0.3, end: 1.0).chain(CurveTween(curve: Curves.easeInOut)),
+                Tween(begin: 0.3, end: 1.0)
+                    .chain(CurveTween(curve: Curves.easeInOut)),
               ),
               child: Text(
-                playState == 'revealed_correct' || playState == 'aftermath_correct'
+                playState == 'revealed_correct' ||
+                    playState == 'aftermath_correct'
                     ? "Correct!!"
                     : "Incorrect!!",
                 textAlign: TextAlign.center,
                 style: textTheme.headlineMedium?.copyWith(
                   fontSize: screenWidth * 0.1,
                   fontWeight: FontWeight.bold,
-                  color: playState == 'revealed_correct' || playState == 'aftermath_correct'
+                  color: playState == 'revealed_correct' ||
+                      playState == 'aftermath_correct'
                       ? colorScheme.primary
                       : colorScheme.error,
                   shadows: [
                     Shadow(
                       blurRadius: 20.0,
-                      color: colorScheme.background,
-                      offset: Offset(0, 0),
+                      color: colorScheme.surface,
+                      offset: const Offset(0, 0),
                     ),
                   ],
                 ),
               ),
             ),
           ),
-        if (showCelebImage)
-          Center(child: animatedChild),
+        if (showCelebImage) Center(child: animatedChild),
       ],
     );
   }

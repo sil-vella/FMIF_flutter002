@@ -1,4 +1,3 @@
-// plugins/shared_plugin/admobs_main.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -32,7 +31,7 @@ class Api implements AppPlugin {
     }
   }
 
-  @override
+
   void registerModules() {
     // Register a factory function for ConnectionModule
     ModuleManager().registerModule("ConnectionModule", (String baseUrl) => ConnectionModule(baseUrl));
