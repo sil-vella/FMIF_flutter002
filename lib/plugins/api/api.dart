@@ -31,9 +31,9 @@ class Api implements AppPlugin {
     }
   }
 
-
   void registerModules() {
     // Register a factory function for ConnectionModule
-    ModuleManager().registerModule("ConnectionModule", (String baseUrl) => ConnectionModule(baseUrl));
+    ModuleManager().registerFunction("ConnectionModule", (String baseUrl) => ConnectionModule(baseUrl));
   }
+
 }

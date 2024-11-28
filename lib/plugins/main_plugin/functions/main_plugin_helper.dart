@@ -16,7 +16,7 @@ class PluginHelper {
   /// Fetches categories from the API and returns the response data
   static Future<dynamic> getCategories(AppStateProvider appStateProvider) async {
 
-    final createConnectionModule = ModuleManager().getModule<Function>("ConnectionModule");
+    final createConnectionModule = ModuleManager().getFunction<Function>("ConnectionModule");
     const String baseUrl = Config.apiUrl;
 
     if (createConnectionModule != null) {
@@ -60,7 +60,7 @@ class PluginHelper {
 
   /// Fetches celebrity details based on a category from the API and returns the response data
   static Future<dynamic> getCelebDetails(String category) async {
-    final createConnectionModule = ModuleManager().getModule<Function>("ConnectionModule");
+    final createConnectionModule = ModuleManager().getFunction<Function>("ConnectionModule");
     const String baseUrl = Config.apiUrl;
 
     if (createConnectionModule != null) {

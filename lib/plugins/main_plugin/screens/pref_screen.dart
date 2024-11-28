@@ -9,7 +9,10 @@ class PrefScreen extends BaseScreen {
   const PrefScreen({Key? key}) : super(key: key);
 
   @override
-  String get title => "Preferences";
+  String computeTitle(BuildContext context) {
+    // Return a fixed title for the screen
+    return "Preferences";
+  }
 
   @override
   PrefScreenState createState() => PrefScreenState();

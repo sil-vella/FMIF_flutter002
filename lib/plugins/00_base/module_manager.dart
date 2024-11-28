@@ -1,20 +1,32 @@
-// plugins/base/module_manager.dart
 class ModuleManager {
   static final ModuleManager _instance = ModuleManager._internal();
-  final Map<String, dynamic> _modules = {}; // Store modules by name
+
+  // Separate maps for functions and instances
+  final Map<String, dynamic> _instances = {};
+  final Map<String, Function> _functions = {};
 
   factory ModuleManager() => _instance;
   ModuleManager._internal();
 
-  /// Registers a module with a specified name
-  void registerModule(String name, dynamic module) {
-    _modules[name] = module;
+  /// Registers an instance with a specified name
+  void registerInstance(String name, dynamic instance) {
+    _instances[name] = instance;
   }
 
-  /// Retrieves a registered module by name
-  T? getModule<T>(String name) {
-    final module = _modules[name];
+  /// Registers a function with a specified name
+  void registerFunction(String name, Function function) {
+    _functions[name] = function;
+  }
 
-    return module as T?;
+  /// Retrieves an instance by name
+  T? getInstance<T>(String name) {
+    final instance = _instances[name];
+    return instance as T?;
+  }
+
+  /// Retrieves a function by name
+  T? getFunction<T>(String name) {
+    final function = _functions[name];
+    return function as T?;
   }
 }

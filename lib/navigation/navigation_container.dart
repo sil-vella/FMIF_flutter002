@@ -52,11 +52,8 @@ class NavigationContainer extends ChangeNotifier {
         padding: EdgeInsets.zero,
         children: <Widget>[
           const DrawerHeader(
-            decoration: BoxDecoration(
-              color: Colors.blue,
-            ),
             child: Text(
-              'Navigation Drawer',
+              'Menu',
               style: TextStyle(
                 color: Colors.white,
                 fontSize: 24,

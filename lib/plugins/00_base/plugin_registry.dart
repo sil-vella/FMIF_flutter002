@@ -1,4 +1,6 @@
 // plugins/plugin_registry.dart
+import 'package:flush_me_im_famous/plugins/login_plugin/login_plugin_main.dart';
+
 import '../main_plugin/main_plugin_main.dart';
 
 import '../admobs/admobs_main.dart';
@@ -11,5 +13,6 @@ void registerPlugins() {
   PluginManager().registerPlugin(AdmobsPlugin());
 
   PluginManager().registerPlugin(MainPlugin());
+  PluginManager().registerPlugin(LoginPlugin());
 
 }

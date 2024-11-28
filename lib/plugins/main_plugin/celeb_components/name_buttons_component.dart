@@ -131,29 +131,28 @@ class _NameButtonsComponentState extends State<NameButtonsComponent> {
       List<String> names,
       ) {
     // Retrieve the RewardedAdModule factory from ModuleManager
-    final rewardedModuleFactory = ModuleManager().getModule<Function>("RewardedAdService");
+// Retrieve the RewardedAdService instance dynamically from ModuleManager
+    final rewardedAdService = ModuleManager().getInstance<dynamic>("RewardedAdService");
 
-    // If the factory is registered, dynamically call the showAd method
-    if (rewardedModuleFactory != null) {
-      final rewardedAdService = rewardedModuleFactory();
+    if (rewardedAdService != null) {
+      // Use Function.apply to dynamically call the showAd method
+      Function.apply(
+        rewardedAdService.showAd,
+        [], // No positional arguments
+        {
+          #appStateProvider: appStateProvider, // Pass AppStateProvider
+          #context: context,                  // Pass BuildContext
+        },
+      );
 
-      // Dynamically call the showAd method using Function.apply to avoid requiring the class
-      if (rewardedAdService != null) {
-        Function.apply(
-          rewardedAdService.showAd,
-          [],
-          {
-            #appStateProvider: appStateProvider, // Pass AppStateProvider
-            #context: context,                 // Pass BuildContext
-          },
-        );
-
-        // Hide the button immediately after use
-        setState(() {
-          _hasUsedRemoveOption = true;
-        });
-      }
+      // Hide the button immediately after use
+      setState(() {
+        _hasUsedRemoveOption = true;
+      });
     } else {
+      // Handle case where RewardedAdService is not registered
+      print("RewardedAdService is not registered in ModuleManager.");
     }
+
   }
 }

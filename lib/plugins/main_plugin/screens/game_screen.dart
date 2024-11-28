@@ -13,14 +13,20 @@ import '../celeb_components/main_background_overlay_component.dart';
 import '../functions/play_functions.dart';
 import '../functions/audio_helper.dart';
 
+import 'package:flutter/material.dart';
+import '../../../screens/base_screen.dart';
+
 class GameScreen extends BaseScreen {
   const GameScreen({Key? key}) : super(key: key);
 
   @override
-  String get title => "Play";
+  String computeTitle(BuildContext context) {
+    // Return a fixed title for the screen
+    return "Flush Me I'm Famous";
+  }
 
   @override
-  GameScreenState createState() => GameScreenState(); // Updated class name to public
+  GameScreenState createState() => GameScreenState();
 }
 
 class GameScreenState extends BaseScreenState<GameScreen> with SingleTickerProviderStateMixin {

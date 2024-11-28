@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
+import 'package:provider/provider.dart';
+
 import '../../providers/app_state_provider.dart';
 import '../../utils/consts/config.dart';
 import '../00_base/app_plugin.dart';
@@ -56,15 +58,16 @@ class AdmobsPlugin implements AppPlugin {
   }
 
   void registerModules() {
-    // Register a factory function for BannerModule and InterstitialAdService
-    ModuleManager().registerModule("BannerModule", () => BannerAdModule());
+    // Register a factory function for BannerModule
+    ModuleManager().registerFunction("BannerModule", () => BannerAdModule());
 
-    // Register InterstitialAdService
-    ModuleManager().registerModule("InterstitialAdService", () => _interstitialAdService);
+    // Register InterstitialAdService as an instance
+    ModuleManager().registerInstance("InterstitialAdService", _interstitialAdService);
 
-    // Register RewardedAdService
-    ModuleManager().registerModule("RewardedAdService", () => _rewardedAdService);
+    // Register RewardedAdService as an instance
+    ModuleManager().registerInstance("RewardedAdService", _rewardedAdService);
   }
+
 
   void _initializeAdMob() {
     WidgetsFlutterBinding.ensureInitialized();

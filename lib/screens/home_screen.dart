@@ -8,7 +8,10 @@ class HomeScreen extends BaseScreen {
   const HomeScreen({Key? key}) : super(key: key);
 
   @override
-  String get title => 'Home';
+  String computeTitle(BuildContext context) {
+    // Return a fixed title for the screen
+    return "Home";
+  }
 
   @override
   HomeScreenState createState() => HomeScreenState();

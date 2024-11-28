@@ -1,55 +1,74 @@
-// providers/app_state_provider.dart
 import 'package:flutter/material.dart';
 
 class AppStateProvider with ChangeNotifier {
-  final Map<String, dynamic> _pluginStates = {};
-  Map<String, dynamic> _mainAppState = {'main_state': 'idle'};
+  final Map<String, dynamic> _pluginStates = {}; // Stores states for plugins
+  Map<String, dynamic> _mainAppState = {'main_state': 'idle'}; // Default main app state
 
-  bool isPluginStateRegistered(String pluginKey) {
+  // ------ Plugin State Methods ------
+
+  /// Check if a plugin state is registered
+  bool isPluginStateRegistered(dynamic plugin) {
+    final pluginKey = "${plugin.runtimeType}State";
     return _pluginStates.containsKey(pluginKey);
   }
 
-  void registerPluginState(String pluginKey, dynamic initialState) {
+  /// Register a plugin state dynamically
+  void registerPluginState(dynamic plugin, dynamic initialState) {
+    final pluginKey = "${plugin.runtimeType}State"; // Dynamic key using plugin's class name
     if (!_pluginStates.containsKey(pluginKey)) {
       _pluginStates[pluginKey] = initialState;
+      print("Registered state for key: $pluginKey"); // Debug log
       notifyListeners();
     }
   }
 
-  T? getPluginState<T>(String pluginKey) {
+  /// Retrieve a plugin state dynamically
+  T? getPluginState<T>(dynamic plugin) {
+    final pluginKey = "${plugin.runtimeType}State"; // Dynamic key using plugin's class name
     final pluginState = _pluginStates[pluginKey];
+    print("Retrieved state for key: $pluginKey: $pluginState"); // Debug log
     if (pluginState is Map && T == Map<String, dynamic>) {
       return Map<String, dynamic>.from(pluginState) as T;
     }
     return pluginState as T?;
   }
 
-  // Updated to return Future<void> for async compatibility
-  Future<void> updatePluginState(String pluginKey, Map<String, dynamic> newState) async {
+  /// Update a plugin state dynamically
+  Future<void> updatePluginState(dynamic plugin, Map<String, dynamic> newState) async {
+    final pluginKey = "${plugin.runtimeType}State"; // Dynamic key using plugin's class name
     if (_pluginStates.containsKey(pluginKey)) {
       _pluginStates[pluginKey] = {
         ..._pluginStates[pluginKey],
         ...newState,
       };
+      print("Updated state for key: $pluginKey with $newState"); // Debug log
       notifyListeners();
     }
   }
 
   // ------ Main App State Methods ------
+
+  /// Set the initial main app state
   void setMainAppState(Map<String, dynamic> initialState) {
     _mainAppState = {'main_state': 'idle', ...initialState};
+    print("Main app state initialized: $_mainAppState"); // Debug log
     notifyListeners();
   }
 
+  /// Get the main app state as a whole
   Map<String, dynamic> get mainAppState => _mainAppState;
 
+  /// Update a specific key-value pair in the main app state
   void updateMainAppState(String key, dynamic value) {
     _mainAppState[key] = value;
+    print("Main app state updated: key=$key, value=$value"); // Debug log
     notifyListeners();
   }
 
-  // Method to retrieve a specific value from the main app state
+  /// Retrieve a specific value from the main app state
   T? getMainAppState<T>(String key) {
-    return _mainAppState[key] as T?;
+    final value = _mainAppState[key] as T?;
+    print("Retrieved main app state value for key=$key: $value"); // Debug log
+    return value;
   }
 }

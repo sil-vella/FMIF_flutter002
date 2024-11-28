@@ -47,22 +47,6 @@ class MainPlugin implements AppPlugin {
     }
   }
 
-  // Method to reset the plugin state to default while preserving ad_counter
-  void resetPlayState(BuildContext context) {
-    final appStateProvider = Provider.of<AppStateProvider>(context, listen: false);
-    final pluginStateKey = "${runtimeType}State";
-
-    // Retrieve current ad_counter
-    final pluginState = appStateProvider.getPluginState<Map<String, dynamic>>(pluginStateKey) ?? {};
-    final adCounter = pluginState['ad_counter'] ?? 0;
-
-    // Reset the plugin state while preserving ad_counter
-    final resetState = reset();
-    resetState["ad_counter"] = adCounter;
-
-    appStateProvider.registerPluginState(pluginStateKey, resetState);
-  }
-
   void registerModules() {}
 
   // Default state

@@ -205,7 +205,6 @@ class PlayFunctions extends PluginHelper {
 
     _isResetting = true; // Set the flag to true at the start of the method
     try {
-
       // Check and update the ad_counter
       final pluginState = appStateProvider.getPluginState<Map<String, dynamic>>(pluginStateKey) ?? {};
       int adCounter = pluginState['ad_counter'] ?? 0;
@@ -215,25 +214,29 @@ class PlayFunctions extends PluginHelper {
       if (adCounter >= 3) {
         dev.log("ad_counter >= 3, attempting to play interstitial ad."); // Debug: Ad logic triggered
 
-        // Retrieve the InterstitialAdService instance from ModuleManager
-        final interstitialAdServiceFactory = ModuleManager().getModule<Function>("InterstitialAdService");
-        final interstitialAdService = interstitialAdServiceFactory != null ? interstitialAdServiceFactory() : null;
+        // Retrieve the InterstitialAdService dynamically from ModuleManager
+        final interstitialAdService = ModuleManager().getInstance<dynamic>("InterstitialAdService");
 
-        try {
-          if (interstitialAdService != null) {
-            // Show the interstitial ad if it is ready
-            interstitialAdService.showAd(); // Show the interstitial ad
+        if (interstitialAdService != null) {
+          try {
+            // Use Function.apply to call the showAd method dynamically
+            Function.apply(
+              interstitialAdService.showAd,
+              [],
+            );
             dev.log("Interstitial ad displayed.");
+          } catch (e) {
+            dev.log("Error showing interstitial ad: $e");
           }
-        } catch (e) {
-          dev.log("Error showing interstitial ad: $e");
+        } else {
+          dev.log("InterstitialAdService instance not found in ModuleManager.");
         }
 
         // Reset the ad_counter to 0
         appStateProvider.updatePluginState(pluginStateKey, {'ad_counter': 0});
         dev.log("ad_counter reset to 0 after showing ad.");
       } else {
-        dev.log("ad_counter < 4, incrementing ad_counter."); // Debug: Increment logic
+        dev.log("ad_counter < 3, incrementing ad_counter."); // Debug: Increment logic
 
         // Increment the ad_counter
         appStateProvider.updatePluginState(pluginStateKey, {'ad_counter': adCounter + 1});

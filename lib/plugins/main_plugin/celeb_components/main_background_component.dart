@@ -12,14 +12,14 @@ class MainBackgroundComponent extends StatelessWidget {
   }
 
   Future<String> _getBackgroundImagePath(String category) async {
-    final backgroundImagePath = 'assets/images/main_background_$category.png';
+    final backgroundImagePath = 'assets/images/backgrounds/main_background_$category.png';
 
     // Check if the background image file exists
     try {
       await rootBundle.load(backgroundImagePath);
       return backgroundImagePath;
     } catch (e) {
-      return 'assets/images/main_background_default_001.png';
+      return 'assets/images/backgrounds/main_background_default_001.png';
     }
   }
 
