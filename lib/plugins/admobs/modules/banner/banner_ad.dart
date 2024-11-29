@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import '../../../../utils/consts/config.dart';
+import '../../../../utils/consts/theme_consts.dart';
 import '../../../00_base/module_manager.dart';
 
 class BannerAdModule extends StatelessWidget {
@@ -30,7 +31,7 @@ class BannerAdModule extends StatelessWidget {
     _bannerAd.load(); // Load the ad immediately
 
     return Container(
-      color: Theme.of(context).colorScheme.secondary, // Use the theme's secondary color
+      color: AppColors.accentColor2, // Use the theme's secondary color
       width: MediaQuery.of(context).size.width, // Set the container to full screen width
       height: _bannerAd.size.height.toDouble(), // Use the banner's defined height
       child: Align(

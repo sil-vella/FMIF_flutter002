@@ -1,4 +1,5 @@
 // plugins/shared_plugin/plugin_helper.dart
+import 'dart:developer' as dev;
 import 'package:flush_me_im_famous/plugins/main_plugin/functions/play_functions.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -59,7 +60,7 @@ class PluginHelper {
   }
 
   /// Fetches celebrity details based on a category from the API and returns the response data
-  static Future<dynamic> getCelebDetails(String category) async {
+  static Future<dynamic> getCelebDetails(String category, {required int level}) async {
     final createConnectionModule = ModuleManager().getFunction<Function>("ConnectionModule");
     const String baseUrl = Config.apiUrl;
 
@@ -68,14 +69,19 @@ class PluginHelper {
       try {
         // Encode the category to handle spaces and special characters
         final encodedCategory = Uri.encodeComponent(category);
+
+        // Send GET request with category and level as query parameters
         final response = await connectionModule.sendGetRequest(
-          "/get-celeb-details?category=$encodedCategory",
+          "/get-celeb-details?category=$encodedCategory&level=$level",
         );
+
         return response; // Return the celebrity details response data
       } catch (error) {
+        dev.log("Error in getCelebDetails: $error");
         return {"error": "Failed to fetch celebrity details"};
       }
     } else {
+      dev.log("ConnectionModule not available in getCelebDetails.");
       return {"error": "ConnectionModule not available"};
     }
   }

@@ -6,6 +6,7 @@ import '../00_base/module_manager.dart';
 import '../api/modules/connection_module.dart';
 import 'functions/login_plugin_helper.dart';
 import '../00_base/app_plugin.dart';
+import 'modules/UpdateUser/update_user.dart';
 import 'modules/login/login_module.dart';
 import 'modules/register/register_module.dart';
 
@@ -51,6 +52,25 @@ class LoginPlugin implements AppPlugin {
       "RegisterModule",
           () => RegisterModule(connectionModule: connectionModule), // Factory function that creates a new RegisterModule
     );
+
+    // Register UserUpdateModule as a function (factory function)
+    ModuleManager().registerFunction(
+      "UserUpdateModule",
+          () => UserUpdateModule(connectionModule: connectionModule),  // Factory function for UserUpdateModule
+    );
+
+    // Register the updatePoints function dynamically in ModuleManager
+    ModuleManager().registerFunction(
+      "UserUpdateModule.updatePoints",
+          ({required String username, required int points, required BuildContext context}) =>
+          UserUpdateModule(connectionModule: connectionModule).updatePoints(
+            username: username,
+            points: points,
+            context: context,
+          ),
+    );
+
+
   }
 
 

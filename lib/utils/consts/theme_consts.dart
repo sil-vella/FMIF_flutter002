@@ -3,11 +3,13 @@ import 'package:flutter/material.dart';
 class AppColors {
   static const Color primaryColor = Color(0xFF1C1B2E); // Dark Slate Blue
   static const Color accentColor = Color(0xFF8A4090); // Light Purple (Accent)
+  static const Color accentColor2 = Color(0xFFFBC02D); // Soft Yellowish Accent
   static const Color scaffoldBackgroundColor =
-      Color(0xFF1C1B2E); // Dark Slate Blue for background
+  Color(0xFF1C1B2E); // Dark Slate Blue for background
   static const Color white = Colors.white; // White text
   static const Color lightGray = Color(0xFFB0BEC5);
   static const Color redAccent = Colors.redAccent; // Error text color
+
 }
 
 class AppTextStyles {
@@ -32,7 +34,7 @@ class AppTextStyles {
 class AppPadding {
   static const EdgeInsets defaultPadding = EdgeInsets.all(16.0);
   static const EdgeInsets cardPadding =
-      EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0);
+  EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0);
 }
 
 class AppTheme {

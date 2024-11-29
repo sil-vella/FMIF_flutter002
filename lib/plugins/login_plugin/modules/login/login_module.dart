@@ -24,14 +24,14 @@ class LoginModule {
       await appStateProvider.updatePluginState(pluginStateKey, {
         "logged": true,
         "username": username, // Set the username
-        "level": response['level'], // Set the level from response
+        "level": response['level'].toString(), // Convert to string
         "points": response['points'], // Set the points from response
       });
 
       return {
         'success': true,
         'token': response['token'],
-        'level': response['level'],
+        "level": response['level'].toString(), // Convert to string
         'points': response['points'],
       };
     } else {

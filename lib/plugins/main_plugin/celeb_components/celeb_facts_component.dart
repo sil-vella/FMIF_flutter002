@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../providers/app_state_provider.dart';
+import '../../../utils/consts/theme_consts.dart';
 import '../main_plugin_main.dart';
 
 class CelebFactsComponent extends StatelessWidget {
@@ -30,7 +31,7 @@ class CelebFactsComponent extends StatelessWidget {
     );
 
     return Container(
-      color: Theme.of(context).colorScheme.secondary, // Accent color for the background
+      color: AppColors.accentColor2, // Accent color for the background
       padding: const EdgeInsets.all(16.0),
       child: SizedBox(
         height: MediaQuery.of(context).size.height * 0.2,

@@ -35,6 +35,7 @@ flutter:
     - assets/config/
     - assets/images/
     - assets/images/backgrounds/
+    - assets/images/backgrounds/1/
 
 flutter_native_splash:
   color: "#ffffff" # Background color of the splash screen

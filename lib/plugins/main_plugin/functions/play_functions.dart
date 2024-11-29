@@ -77,9 +77,19 @@ class PlayFunctions extends PluginHelper {
         return;
       }
 
-      final celebDetails = await PluginHelper.getCelebDetails(celebCategory);
+      // Check if the user is logged in
+      final loginState = appStateProvider.getPluginState<Map<String, dynamic>>("LoginPluginState") ?? {};
+      final bool isLoggedIn = loginState['logged'] ?? false;
+
+      // Get the user's level if logged in, otherwise default to level 1
+      final int userLevel = isLoggedIn ? (loginState['level'] ?? 1) : 1;
+      dev.log('User level: $userLevel');
+
+      // Fetch celeb details with category and level
+      final celebDetails = await PluginHelper.getCelebDetails(celebCategory, level: userLevel);
       dev.log('Fetched celebrity details: $celebDetails');
 
+      // Update plugin state with fetched details
       appStateProvider.updatePluginState(pluginStateKey, {
         'celeb_name': celebDetails['name'],
         'celeb_facts': celebDetails['facts'],
@@ -96,6 +106,7 @@ class PlayFunctions extends PluginHelper {
     }
   }
 
+
   static Future<void> selectedCeleb(
       AppStateProvider appStateProvider, String pluginStateKey, String selectedName, BuildContext context) async {
     try {
@@ -111,6 +122,47 @@ class PlayFunctions extends PluginHelper {
           }
         });
 
+        // Check if user is logged in and add points
+        final loginState = appStateProvider.getPluginState<Map<String, dynamic>>("LoginPluginState") ?? {};
+        if (loginState['logged'] == true) {
+          final username = loginState['username'];
+          final currentPoints = loginState['points'] ?? 0;
+
+          // Check the hint state and calculate points to add
+          final hintState = pluginState['hint'] ?? false;
+          final pointsToAdd = hintState == true ? 3 : 5;
+
+          // Update the points
+          final updatedPoints = currentPoints + pointsToAdd;
+
+          // Update local state
+          appStateProvider.updatePluginState("LoginPluginState", {
+            ...loginState,
+            'points': updatedPoints,
+          });
+          dev.log("User is logged in. Added $pointsToAdd points. Total points: $updatedPoints");
+
+          // Dynamically call updatePoints from UserUpdateModule
+          final updatePointsFunction = ModuleManager()
+              .getFunction<Future<Map<String, dynamic>> Function({required String username, required int points, required BuildContext context})>(
+              "UserUpdateModule.updatePoints");
+          if (updatePointsFunction != null) {
+            final response = await updatePointsFunction(
+              username: username,
+              points: updatedPoints,
+              context: context,
+            );
+
+            if (response['success'] == true) {
+              dev.log("Successfully updated points in the backend: ${response['updated_points']}");
+            } else {
+              dev.log("Failed to update points in the backend: ${response['message']}");
+            }
+          } else {
+            dev.log("Error: updatePoints function not found in UserUpdateModule.");
+          }
+        }
+
         // Play a random applause file
         final applauseKeys = AudioHelper().applauseFiles.keys.toList();
         final randomKey = applauseKeys[Random().nextInt(applauseKeys.length)];
@@ -121,7 +173,6 @@ class PlayFunctions extends PluginHelper {
         } else {
           dev.log("Error: No applause sound found for key '$randomKey'");
         }
-
       } else {
         dev.log("Selected name does not match celeb_name. Updating to revealed_incorrect.");
         appStateProvider.updatePluginState(pluginStateKey, {
@@ -139,6 +190,8 @@ class PlayFunctions extends PluginHelper {
       dev.log("Error in selectedCeleb: $error");
     }
   }
+
+
 
   static void flushAction(AppStateProvider appStateProvider, String pluginStateKey, context) {
     // Create an instance of AudioHelper
