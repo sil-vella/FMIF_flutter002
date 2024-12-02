@@ -69,9 +69,11 @@ class PlayFunctions extends PluginHelper {
   static Future<void> fetchAndSetCelebDetails(AppStateProvider appStateProvider, String pluginStateKey) async {
     dev.log('Fetching celebrity details...');
     try {
+      // Fetch the plugin state for the given key
       final pluginState = appStateProvider.getPluginState<Map<String, dynamic>>(pluginStateKey) ?? {};
       final celebCategory = pluginState['celeb_category'];
 
+      // Check if the category is available
       if (celebCategory == null || celebCategory.isEmpty) {
         dev.log('No celebrity category found in plugin state.');
         return;
@@ -80,13 +82,18 @@ class PlayFunctions extends PluginHelper {
       // Check if the user is logged in
       final loginState = appStateProvider.getPluginState<Map<String, dynamic>>("LoginPluginState") ?? {};
       final bool isLoggedIn = loginState['logged'] ?? false;
+      String? username;
 
-      // Get the user's level if logged in, otherwise default to level 1
-      final int userLevel = isLoggedIn ? (loginState['level'] ?? 1) : 1;
-      dev.log('User level: $userLevel');
+      // Get the username if logged in
+      if (isLoggedIn) {
+        username = loginState['username'];
+        dev.log('User is logged in. Username: $username');
+      } else {
+        dev.log('User is not logged in.');
+      }
 
-      // Fetch celeb details with category and level
-      final celebDetails = await PluginHelper.getCelebDetails(celebCategory, level: userLevel);
+      // Get celeb details, pass the username along with the category if user is logged in
+      final celebDetails = await PluginHelper.getCelebDetails(celebCategory, username);
       dev.log('Fetched celebrity details: $celebDetails');
 
       // Update plugin state with fetched details

@@ -10,7 +10,6 @@ class PrefScreen extends BaseScreen {
 
   @override
   String computeTitle(BuildContext context) {
-    // Return a fixed title for the screen
     return "Preferences";
   }
 
@@ -18,10 +17,9 @@ class PrefScreen extends BaseScreen {
   PrefScreenState createState() => PrefScreenState();
 }
 
-// Rename _PrefScreenState to PrefScreenState
 class PrefScreenState extends BaseScreenState<PrefScreen> {
   bool _isLoading = true; // Track loading state
-  List<dynamic> _categories = []; // Store fetched categories
+  List<Map<String, dynamic>> _categoriesWithLevels = []; // Store categories with levels
 
   @override
   void initState() {
@@ -31,11 +29,38 @@ class PrefScreenState extends BaseScreenState<PrefScreen> {
 
   Future<void> _fetchCategories() async {
     final appStateProvider = Provider.of<AppStateProvider>(context, listen: false);
+
+    // Fetch categories using PluginHelper
     final categories = await PluginHelper.getCategories(appStateProvider);
+
+    // Get the logged-in user state
+    final loggedIn = appStateProvider.getPluginState('LoginPluginState')?['logged'] ?? false;
+    final categoryLevels = appStateProvider.getPluginState('LoginPluginState')?['category_levels'] ?? {};
 
     if (categories is List) {
       setState(() {
-        _categories = categories;
+        if (loggedIn) {
+          // Update categories with their levels
+          _categoriesWithLevels = categories.map<Map<String, dynamic>>((category) {
+            // Normalize category key
+            final categoryKey = 'level_${category.replaceAll(' ', '_').toLowerCase()}';
+
+            // Get level or log missing keys
+            final categoryLevel = categoryLevels[categoryKey] ?? 'N/A';
+            if (categoryLevel == 'N/A') {
+              print('Missing level for category: $category (key: $categoryKey)');
+            }
+
+            return {
+              'category': category,
+              'level': categoryLevel,
+            };
+          }).toList();
+        } else {
+          _categoriesWithLevels = categories.map<Map<String, dynamic>>((category) {
+            return {'category': category, 'level': 'N/A'};
+          }).toList();
+        }
         _isLoading = false;
       });
     } else {
@@ -51,14 +76,17 @@ class PrefScreenState extends BaseScreenState<PrefScreen> {
   }
 
   @override
+  @override
   Widget buildContent(BuildContext context) {
+    String? selectedCategory; // Track the currently selected category
+
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         const Padding(
           padding: EdgeInsets.all(16.0),
           child: Text(
-            "Preferences",
+            "Categories",
             style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
           ),
         ),
@@ -66,24 +94,31 @@ class PrefScreenState extends BaseScreenState<PrefScreen> {
           const Center(
             child: CircularProgressIndicator(),
           )
-        else if (_categories.isNotEmpty)
-          Expanded(
-            child: ListView(
-              children: _categories.map<Widget>((category) {
-                return RadioListTile<String>(
-                  title: Text(category.toString()),
-                  value: category.toString(),
-                  groupValue: context.select<AppStateProvider, String?>((appStateProvider) {
-                    final pluginStateKey = "${MainPlugin().runtimeType}State";
-                    return appStateProvider.getPluginState<Map<String, dynamic>>(pluginStateKey)?['celeb_category'];
-                  }),
-                  onChanged: (value) {
-                    if (value != null) {
-                      _handleCategorySelection(value);
-                    }
-                  },
+        else if (_categoriesWithLevels.isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16.0),
+            child: DropdownButtonFormField<String>(
+              decoration: const InputDecoration(
+                border: OutlineInputBorder(),
+                labelText: "Select a category",
+              ),
+              value: selectedCategory,
+              isExpanded: true,
+              items: _categoriesWithLevels.map<DropdownMenuItem<String>>((entry) {
+                final category = entry['category'];
+                final level = entry['level'];
+                return DropdownMenuItem<String>(
+                  value: category, // Use the category as the value
+                  child: Text("$category (Level $level)"),
                 );
               }).toList(),
+              onChanged: (value) async {
+                if (value != null) {
+                  selectedCategory = value;
+                  await _handleCategorySelection(value);
+                  setState(() {}); // Update the UI to reflect the selection
+                }
+              },
             ),
           )
         else
@@ -96,4 +131,5 @@ class PrefScreenState extends BaseScreenState<PrefScreen> {
       ],
     );
   }
+
 }

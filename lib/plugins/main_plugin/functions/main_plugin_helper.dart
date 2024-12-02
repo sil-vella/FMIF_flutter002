@@ -59,8 +59,8 @@ class PluginHelper {
     });
   }
 
-  /// Fetches celebrity details based on a category from the API and returns the response data
-  static Future<dynamic> getCelebDetails(String category, {required int level}) async {
+  /// Fetches celebrity details based on a category (and optionally username) from the API and returns the response data
+  static Future<dynamic> getCelebDetails(String category, [String? username]) async {
     final createConnectionModule = ModuleManager().getFunction<Function>("ConnectionModule");
     const String baseUrl = Config.apiUrl;
 
@@ -70,10 +70,15 @@ class PluginHelper {
         // Encode the category to handle spaces and special characters
         final encodedCategory = Uri.encodeComponent(category);
 
-        // Send GET request with category and level as query parameters
-        final response = await connectionModule.sendGetRequest(
-          "/get-celeb-details?category=$encodedCategory&level=$level",
-        );
+        // Check if the username is provided (not null or empty)
+        String url = "/get-celeb-details?category=$encodedCategory";
+        if (username != null && username.isNotEmpty) {
+          // If username is provided, include it in the request
+          url += "&username=${Uri.encodeComponent(username)}";
+        }
+
+        // Send GET request with the category (and optionally username) as query parameters
+        final response = await connectionModule.sendGetRequest(url);
 
         return response; // Return the celebrity details response data
       } catch (error) {
@@ -85,6 +90,8 @@ class PluginHelper {
       return {"error": "ConnectionModule not available"};
     }
   }
+
+
 
 
   static void registerNavigation(BuildContext context) {

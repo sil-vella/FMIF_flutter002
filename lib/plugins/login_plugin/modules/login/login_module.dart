@@ -21,18 +21,22 @@ class LoginModule {
     if (response['token'] != null) {
       // Update the plugin state with login details
       final appStateProvider = Provider.of<AppStateProvider>(context, listen: false);
+
+      // Prepare the category levels map from response
+      final categoryLevels = response['category_levels'] ?? {};
+
       await appStateProvider.updatePluginState(pluginStateKey, {
         "logged": true,
         "username": username, // Set the username
-        "level": response['level'].toString(), // Convert to string
         "points": response['points'], // Set the points from response
+        "category_levels": categoryLevels, // Store the category levels
       });
 
       return {
         'success': true,
         'token': response['token'],
-        "level": response['level'].toString(), // Convert to string
         'points': response['points'],
+        'category_levels': categoryLevels, // Include the category levels in the return data
       };
     } else {
       return {
@@ -41,6 +45,7 @@ class LoginModule {
       };
     }
   }
+
 
   /// Logs the user out and updates the state
   Future<void> logout(BuildContext context) async {

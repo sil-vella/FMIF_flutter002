@@ -1,3 +1,5 @@
+import 'package:flush_me_im_famous/utils/consts/theme_consts.dart';
+import 'package:flush_me_im_famous/utils/string_extensions.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../providers/app_state_provider.dart';
@@ -78,11 +80,13 @@ class LoginScreenState extends BaseScreenState<LoginScreen> {
     final username = context.select<AppStateProvider, String>(
           (state) => state.getPluginState(pluginStateKey)?['username'] ?? 'Unknown User',
     );
-    final level = context.select<AppStateProvider, String>(
-          (state) => state.getPluginState(pluginStateKey)?['level']?.toString() ?? 'N/A',
-    );
     final points = context.select<AppStateProvider, String>(
           (state) => state.getPluginState(pluginStateKey)?['points']?.toString() ?? '0',
+    );
+
+    // Retrieve the category levels (which is a map)
+    final categoryLevels = context.select<AppStateProvider, Map<String, dynamic>>(
+          (state) => state.getPluginState(pluginStateKey)?['category_levels'] ?? {},
     );
 
     return Column(
@@ -91,12 +95,89 @@ class LoginScreenState extends BaseScreenState<LoginScreen> {
       children: [
         Text(
           'Welcome, $username!',
-          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.accentColor2),
         ),
         const SizedBox(height: 8.0),
-        Text('Level: $level'),
-        Text('Points: $points'),
+        Text('Score: $points'),
         const SizedBox(height: 16.0),
+
+// Dynamically display category levels with headings
+        if (categoryLevels.isNotEmpty)
+          Column(
+            children: [
+              // Heading row
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 8.0),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    // Category Heading
+                    Expanded(
+                      child: Center(
+                        child: Text(
+                          'Category',
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                            color: AppColors.accentColor,
+                          ),
+                        ),
+                      ),
+                    ),
+                    // Level Heading
+                    Expanded(
+                      child: Center(
+                        child: Text(
+                          'Level',
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                            color: AppColors.accentColor,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              // Category and Level Rows
+              ...categoryLevels.entries.map((entry) {
+                String categoryName = entry.key.replaceAll('level_', '').replaceAll('_', ' ').capitalizeFirstOfEach;
+                return Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 4.0),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,  // Center the entire row
+                    children: [
+                      // Category Name Column
+                      Expanded(
+                        child: Center(
+                          child: Text(
+                            categoryName,  // Display the category name
+                            style: const TextStyle(
+                                fontWeight: FontWeight.bold
+                            ),
+                          ),
+                        ),
+                      ),
+                      // Level Column
+                      Expanded(
+                        child: Center(
+                          child: Text(
+                            'Level ${entry.value.toString()}',  // Display the level number
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              }).toList(),
+            ],
+          ),
+
+        const SizedBox(height: 16.0),
+
+        // Logout button
         ElevatedButton(
           onPressed: () async {
             final loginModuleFactory = ModuleManager().getFunction<Function>("LoginModule");
@@ -113,4 +194,5 @@ class LoginScreenState extends BaseScreenState<LoginScreen> {
       ],
     );
   }
+
 }
