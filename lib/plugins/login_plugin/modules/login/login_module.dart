@@ -8,7 +8,7 @@ class LoginModule {
 
   LoginModule({required this.connectionModule});
 
-  final String pluginStateKey = "${LoginModule}State"; // State key for this module
+  final String pluginStateKey = "LoginPluginState"; // State key for this module
 
   /// Sends login data to the backend
   Future<Map<String, dynamic>> login(
@@ -46,6 +46,28 @@ class LoginModule {
     }
   }
 
+  Future<Map<String, dynamic>> getUserDetails({
+    required String username,
+  }) async {
+    // Append the username as a query parameter
+    final route = '/user-details?username=$username';
+
+    // Call the sendGetRequest method with the modified route
+    final response = await connectionModule.sendGetRequest(route);
+
+    if (response['success'] == true) {
+      return {
+        'success': true,
+        'points': response['points'],
+        'category_levels': response['category_levels'],
+      };
+    } else {
+      return {
+        'success': false,
+        'message': response['message'] ?? 'Failed to fetch user details',
+      };
+    }
+  }
 
   /// Logs the user out and updates the state
   Future<void> logout(BuildContext context) async {
@@ -54,7 +76,6 @@ class LoginModule {
     await appStateProvider.updatePluginState(pluginStateKey, {
       "logged": false,
       "username": null, // Clear username
-      "level": null, // Clear level
       "points": null, // Clear points
     });
   }

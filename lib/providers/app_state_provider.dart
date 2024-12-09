@@ -5,16 +5,13 @@ class AppStateProvider with ChangeNotifier {
   Map<String, dynamic> _mainAppState = {'main_state': 'idle'}; // Default main app state
 
   // ------ Plugin State Methods ------
-
   /// Check if a plugin state is registered
-  bool isPluginStateRegistered(dynamic plugin) {
-    final pluginKey = "${plugin.runtimeType}State";
+  bool isPluginStateRegistered(String pluginKey) {
     return _pluginStates.containsKey(pluginKey);
   }
 
   /// Register a plugin state dynamically
-  void registerPluginState(dynamic plugin, dynamic initialState) {
-    final pluginKey = "${plugin.runtimeType}State"; // Dynamic key using plugin's class name
+  void registerPluginState(String pluginKey, dynamic initialState) {
     if (!_pluginStates.containsKey(pluginKey)) {
       _pluginStates[pluginKey] = initialState;
       print("Registered state for key: $pluginKey"); // Debug log
@@ -23,8 +20,7 @@ class AppStateProvider with ChangeNotifier {
   }
 
   /// Retrieve a plugin state dynamically
-  T? getPluginState<T>(dynamic plugin) {
-    final pluginKey = "${plugin.runtimeType}State"; // Dynamic key using plugin's class name
+  T? getPluginState<T>(String pluginKey) {
     final pluginState = _pluginStates[pluginKey];
     print("Retrieved state for key: $pluginKey: $pluginState"); // Debug log
     if (pluginState is Map && T == Map<String, dynamic>) {
@@ -34,17 +30,23 @@ class AppStateProvider with ChangeNotifier {
   }
 
   /// Update a plugin state dynamically
-  Future<void> updatePluginState(dynamic plugin, Map<String, dynamic> newState) async {
-    final pluginKey = "${plugin.runtimeType}State"; // Dynamic key using plugin's class name
+  Future<void> updatePluginState(String pluginKey, Map<String, dynamic> newState) async {
     if (_pluginStates.containsKey(pluginKey)) {
+      print("Existing state for $pluginKey: ${_pluginStates[pluginKey]}");
       _pluginStates[pluginKey] = {
         ..._pluginStates[pluginKey],
         ...newState,
       };
-      print("Updated state for key: $pluginKey with $newState"); // Debug log
-      notifyListeners();
+      print("Updated state for $pluginKey: ${_pluginStates[pluginKey]}");
+    } else {
+      print("No existing state for $pluginKey. Creating new state.");
+      _pluginStates[pluginKey] = newState; // Create new state
+      print("Created new state for $pluginKey: ${_pluginStates[pluginKey]}");
     }
+    notifyListeners();
   }
+
+
 
   // ------ Main App State Methods ------
 

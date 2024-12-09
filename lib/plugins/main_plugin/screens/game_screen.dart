@@ -1,16 +1,17 @@
-import 'package:flush_me_im_famous/plugins/main_plugin/celeb_components/ribbon_component.dart';
+import 'package:flush_me_im_famous/plugins/main_plugin/play_components/timer_clock_component.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:flush_me_im_famous/plugins/main_plugin/celeb_components/celeb_facts_component.dart';
-import 'package:flush_me_im_famous/plugins/main_plugin/celeb_components/celeb_head_component.dart';
-import 'package:flush_me_im_famous/plugins/main_plugin/celeb_components/main_background_component.dart';
-import 'package:flush_me_im_famous/plugins/main_plugin/celeb_components/aftermath_component.dart';
 import '../../../providers/app_state_provider.dart';
 import '../../../screens/base_screen.dart';
 import '../../../utils/consts/theme_consts.dart';
-import '../celeb_components/aftermath_anim_component.dart';
-import '../celeb_components/name_buttons_component.dart';
-import '../celeb_components/main_background_overlay_component.dart';
+import '../play_components/ribbon_component.dart';
+import '../play_components/celeb_facts_component.dart';
+import '../play_components/celeb_head_component.dart';
+import '../play_components/main_background_component.dart';
+import '../play_components/aftermath_component.dart';
+import '../play_components/aftermath_anim_component.dart';
+import '../play_components/name_buttons_component.dart';
+import '../play_components/main_background_overlay_component.dart';
 import '../functions/play_functions.dart';
 import '../functions/audio_helper.dart';
 
@@ -19,20 +20,19 @@ class GameScreen extends BaseScreen {
 
   @override
   String computeTitle(BuildContext context) {
-    // Return a fixed title for the screen
     return "Flush Me I'm Famous";
   }
 
   @override
   GameScreenState createState() => GameScreenState();
 }
+
 class GameScreenState extends BaseScreenState<GameScreen> with SingleTickerProviderStateMixin {
   late AppStateProvider _appStateProvider;
 
   @override
   void initState() {
     super.initState();
-
     _appStateProvider = Provider.of<AppStateProvider>(context, listen: false);
 
     // Auto-play background music playlist
@@ -61,38 +61,54 @@ class GameScreenState extends BaseScreenState<GameScreen> with SingleTickerProvi
 
   @override
   Widget buildContent(BuildContext context) {
-    debugPrint("GameScreenState - buildContent called"); // Debug rebuilds
+    final appStateProvider = Provider.of<AppStateProvider>(context, listen: false);
+    debugPrint("GameScreenState - buildContent called");
+
+    // Listen for `play_state` changes
+    final playState = context.select<AppStateProvider, String?>((appStateProvider) {
+      final mainPluginState = appStateProvider.getPluginState<Map<String, dynamic>>("MainPluginState") ?? {};
+      return mainPluginState['play_state'] as String?;
+    });
+
+    final flushing = context.select<AppStateProvider, bool>((appStateProvider) {
+      final mainPluginState = appStateProvider.getPluginState<Map<String, dynamic>>("MainPluginState") ?? {};
+      return mainPluginState['flushing'] as bool? ?? false;
+    });
+
+
     return Column(
       children: [
-        // Use Selector to display Level and Points
+        // Displaying Category, Level, and Points
         Selector<AppStateProvider, Map<String, dynamic>>(
-          selector: (context, provider) =>
-          provider.getPluginState<Map<String, dynamic>>("LoginPluginState") ?? {},
-          builder: (context, loginState, child) {
-            debugPrint("Selector - LoginPluginState build called"); // Debug rebuilds
-            final level = loginState['level'] ?? "Not signed in.";
-            final points = loginState['points'] ?? "-";
+          selector: (context, provider) {
+            final mainPluginState = provider.getPluginState<Map<String, dynamic>>("MainPluginState") ?? {};
+            final loginPluginState = provider.getPluginState<Map<String, dynamic>>("LoginPluginState") ?? {};
+            return {
+              "celeb_category": mainPluginState['celeb_category'] ?? "Unknown",
+              "category_levels": loginPluginState['category_levels'] ?? {},
+              "points": loginPluginState['points'] ?? "-"
+            };
+          },
+          builder: (context, pluginState, child) {
+            final category = pluginState['celeb_category'] ?? "Unknown";
+            final categoryLevels = pluginState['category_levels'] ?? {};
+            final currentLevelKey = 'level_${category.replaceAll(" ", "_").toLowerCase()}';
+            final level = categoryLevels[currentLevelKey] ?? "N/A";
+            final points = pluginState['points'] ?? "-";
+
             return Container(
               padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-              color: AppColors.accentColor2, // Background color
+              color: AppColors.accentColor2,
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    "Level: $level",
-                    style: const TextStyle(
-                      fontSize: 16.0,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.black,
-                    ),
+                    "$category (Level: $level)",
+                    style: const TextStyle(fontSize: 16.0, fontWeight: FontWeight.bold, color: Colors.black),
                   ),
                   Text(
                     "Points: $points",
-                    style: const TextStyle(
-                      fontSize: 16.0,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.black,
-                    ),
+                    style: const TextStyle(fontSize: 16.0, fontWeight: FontWeight.bold, color: Colors.black),
                   ),
                 ],
               ),
@@ -104,31 +120,44 @@ class GameScreenState extends BaseScreenState<GameScreen> with SingleTickerProvi
         Expanded(
           child: Stack(
             children: [
-              // Background and game components
               Positioned.fill(child: const MainBackgroundComponent()),
-              Positioned.fill(child: const AfterMathComponent()),
+
+              if (playState == 'aftermath_correct' || playState == 'aftermath_incorrect')
+                Positioned.fill(child: const AfterMathComponent()),
+
               Positioned.fill(child: const CelebHeadComponent()),
+
               Positioned.fill(child: const MainBackgroundOverlayComponent()),
-              Positioned.fill(child: const RibbonComponent()),
-              Positioned.fill(child: const AfterMathAnimComponent()),
 
-              // Name buttons component at the top
-              const Positioned(
-                top: 0,
-                left: 0,
-                right: 0,
-                child: NameButtonsComponent(),
-              ),
+              if (!flushing && (playState == 'in_play' || playState == 'revealed_correct' || playState == 'revealed_incorrect'))
+                Positioned.fill(child: const RibbonComponent()),
 
-              // Celeb facts component at the bottom with a scrollable container
-              const Positioned(
-                bottom: 0,
-                left: 0,
-                right: 0,
-                child: SingleChildScrollView(
-                  child: CelebFactsComponent(),
+              if (playState == 'aftermath_correct')
+                Positioned.fill(child: const AfterMathAnimComponent()),
+
+              if (playState == 'in_play' || playState == 'revealed_correct')
+                const Positioned(
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  child: NameButtonsComponent(),
                 ),
-              ),
+
+              if (playState == 'in_play')
+                Positioned(
+                  bottom: 0,
+                  left: 0,
+                  right: 0,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      TimerClockComponent(),
+                      const SingleChildScrollView(
+                        child: CelebFactsComponent(),
+                      ),
+                    ],
+                  ),
+                ),
             ],
           ),
         ),

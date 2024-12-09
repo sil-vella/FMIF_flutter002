@@ -102,25 +102,18 @@ class AfterMathComponentState extends State<AfterMathComponent> with TickerProvi
   @override
   Widget build(BuildContext context) {
     final appStateProvider = Provider.of<AppStateProvider>(context, listen: false);
-    final pluginStateKey = "${MainPlugin().runtimeType}State";
+    final pluginStateKey = "MainPluginState";
 
     final playState = context.select<AppStateProvider, String?>((appStateProvider) {
       final pluginState = appStateProvider.getPluginState<Map<String, dynamic>>(pluginStateKey) ?? {};
       return pluginState['play_state'] as String?;
     });
 
-    // Detect when the playState changes
-    if (lastPlayState == 'aftermath_incorrect' && playState != 'aftermath_incorrect') {
-      AudioHelper().fadeOutAndStopEffectSounds(); // Fade out and stop sounds
-    }
+    AudioHelper().fadeOutAndStopEffectSounds(); // Fade out and stop sounds
 
     lastPlayState = playState;
 
-    if (playState == 'aftermath_correct' || playState == 'aftermath_incorrect') {
-      _selectRandomAnimation(playState!);
-    } else {
-      return const SizedBox.shrink();
-    }
+    _selectRandomAnimation(playState!);
 
     final screenWidth = MediaQuery.of(context).size.width;
     final imageSize = screenWidth * 0.8;
@@ -155,7 +148,7 @@ class AfterMathComponentState extends State<AfterMathComponent> with TickerProvi
         infinite: false,
         curve: Curves.easeIn,
         onComplete: () {
-          PlayFunctions.resetPluginPlayState(appStateProvider, pluginStateKey);
+          PlayFunctions.resetPluginPlayState(appStateProvider, pluginStateKey, context);
         },
       );
     }
@@ -174,7 +167,7 @@ class AfterMathComponentState extends State<AfterMathComponent> with TickerProvi
         flyAwayCurve: Curves.easeInCubic,
         infinite: false,
         onComplete: () {
-          PlayFunctions.resetPluginPlayState(appStateProvider, pluginStateKey);
+          PlayFunctions.resetPluginPlayState(appStateProvider, pluginStateKey, context);
         },
       );
     }

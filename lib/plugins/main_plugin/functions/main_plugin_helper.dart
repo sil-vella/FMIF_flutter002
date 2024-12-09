@@ -1,6 +1,8 @@
 // plugins/shared_plugin/plugin_helper.dart
+import 'dart:async';
 import 'dart:developer' as dev;
 import 'package:flush_me_im_famous/plugins/main_plugin/functions/play_functions.dart';
+import 'package:flush_me_im_famous/plugins/main_plugin/screens/levelup_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -41,9 +43,9 @@ class PluginHelper {
   }
 
   static Future<void> updateCategory(String category, AppStateProvider appStateProvider, BuildContext context) async {
-    final pluginStateKey = "${MainPlugin().runtimeType}State";
+    final pluginStateKey = "MainPlugin";
 
-    appStateProvider.updatePluginState(pluginStateKey, {
+    appStateProvider.updatePluginState("MainPluginState", {
       "celeb_category": category,
       "celeb_name": "",
       "celeb_img_url": "",
@@ -58,9 +60,9 @@ class PluginHelper {
       PlayFunctions.handlePlayButton(appStateProvider, context);
     });
   }
-
   /// Fetches celebrity details based on a category (and optionally username) from the API and returns the response data
   static Future<dynamic> getCelebDetails(String category, [String? username]) async {
+    dev.log('get celeb details reached');
     final createConnectionModule = ModuleManager().getFunction<Function>("ConnectionModule");
     const String baseUrl = Config.apiUrl;
 
@@ -76,10 +78,10 @@ class PluginHelper {
           // If username is provided, include it in the request
           url += "&username=${Uri.encodeComponent(username)}";
         }
-
+        dev.log('before sending get with url $url');
         // Send GET request with the category (and optionally username) as query parameters
         final response = await connectionModule.sendGetRequest(url);
-
+        dev.log('after sending get with response $response');
         return response; // Return the celebrity details response data
       } catch (error) {
         dev.log("Error in getCelebDetails: $error");
@@ -91,32 +93,47 @@ class PluginHelper {
     }
   }
 
-
-
-
-  static void registerNavigation(BuildContext context) {
+  static void registerNavigation(BuildContext context, {List<String> drawerRoutes = const []}) {
     final navigationContainer = Provider.of<NavigationContainer>(context, listen: false);
+
+    // Define route configuration for title and icons
+    final Map<String, Map<String, dynamic>> routeConfig = {
+      '/play': {
+        'icon': const Icon(Icons.play_arrow),
+        'title': 'Play',
+      },
+      '/prefs': {
+        'icon': const Icon(Icons.settings),
+        'title': 'Preferences',
+      },
+      '/levelup': {
+        'icon': const Icon(Icons.arrow_upward),
+        'title': 'Level Up',
+      },
+    };
+
+    // Generate ListTile widgets for the drawer based on the specified routes
+    final drawerLinks = drawerRoutes
+        .where((route) => routeConfig.containsKey(route)) // Ensure route exists in config
+        .map((route) {
+      final config = routeConfig[route]!;
+      return ListTile(
+        leading: config['icon'] as Icon,
+        title: Text(config['title'] as String),
+        onTap: () {
+          NavigationContainer.navigateTo(route);
+        },
+      );
+    }).toList();
+
+    // Register all routes (routes are always registered, regardless of drawer inclusion)
     navigationContainer.registerNavigationLinks(
-      drawerLinks: [
-        ListTile(
-          leading: const Icon(Icons.play_arrow),
-          title: const Text('Play'),
-          onTap: () {
-            NavigationContainer.navigateTo('/play');
-          },
-        ),
-        ListTile(
-          leading: const Icon(Icons.settings),
-          title: const Text('Preferences'),
-          onTap: () {
-            NavigationContainer.navigateTo('/prefs');
-          },
-        ),
-      ],
+      drawerLinks: drawerLinks,
       bottomNavLinks: [],
       routes: {
         '/prefs': (context) => const PrefScreen(),
         '/play': (context) => const GameScreen(),
+        '/levelup': (context) => LevelUpScreen(), // Registered but not in drawer
       },
     );
   }
@@ -149,5 +166,29 @@ class PluginHelper {
     ]);
   }
 
+  static void setTimer(BuildContext context) {
+    final appStateProvider = Provider.of<AppStateProvider>(context, listen: false);
+    final isTimed = appStateProvider.getPluginState("MainPluginState")?["timer"] ?? false;
+
+    if (isTimed) return; // Prevent reinitializing an existing timer
+
+    appStateProvider.updatePluginState("MainPluginState", {
+      "timer": true,
+      "secondsRemaining": 10,
+    });
+
+    Timer.periodic(Duration(seconds: 1), (timer) {
+      final currentSeconds = appStateProvider.getPluginState("MainPluginState")?["secondsRemaining"] ?? 0;
+
+      if (currentSeconds > 0) {
+        appStateProvider.updatePluginState("MainPluginState", {
+          "secondsRemaining": currentSeconds - 1,
+        });
+      } else {
+        appStateProvider.updatePluginState("MainPluginState", {"timer": false});
+        timer.cancel();
+      }
+    });
+  }
 
 }

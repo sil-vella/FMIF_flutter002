@@ -43,10 +43,10 @@ class PlayFunctions extends PluginHelper {
         return;
       }
 
-      final pluginStateKey = "${MainPlugin().runtimeType}State";
+      final pluginStateKey = "MainPluginState";
       dev.log('Using pluginStateKey: $pluginStateKey');
 
-      await fetchAndSetCelebDetails(appStateProvider, pluginStateKey);
+      await fetchAndSetCelebDetails(appStateProvider, context);
 
       appStateProvider.updateMainAppState('main_state', 'in_play');
       appStateProvider.updatePluginState(pluginStateKey, {
@@ -66,12 +66,18 @@ class PlayFunctions extends PluginHelper {
     }
   }
 
-  static Future<void> fetchAndSetCelebDetails(AppStateProvider appStateProvider, String pluginStateKey) async {
+  static Future<void> fetchAndSetCelebDetails(AppStateProvider appStateProvider, BuildContext context) async {
     dev.log('Fetching celebrity details...');
+
+    // Guard against using context after async gaps
+    if (!context.mounted) return;
+
     try {
       // Fetch the plugin state for the given key
-      final pluginState = appStateProvider.getPluginState<Map<String, dynamic>>(pluginStateKey) ?? {};
+      final pluginState = appStateProvider.getPluginState<Map<String, dynamic>>("MainPluginState") ?? {};
+
       final celebCategory = pluginState['celeb_category'];
+      dev.log('ze cate $celebCategory');
 
       // Check if the category is available
       if (celebCategory == null || celebCategory.isEmpty) {
@@ -88,31 +94,69 @@ class PlayFunctions extends PluginHelper {
       if (isLoggedIn) {
         username = loginState['username'];
         dev.log('User is logged in. Username: $username');
+
       } else {
         dev.log('User is not logged in.');
       }
 
-      // Get celeb details, pass the username along with the category if user is logged in
       final celebDetails = await PluginHelper.getCelebDetails(celebCategory, username);
-      dev.log('Fetched celebrity details: $celebDetails');
+      dev.log('after getceleb before !context');
 
-      // Update plugin state with fetched details
-      appStateProvider.updatePluginState(pluginStateKey, {
-        'celeb_name': celebDetails['name'],
-        'celeb_facts': celebDetails['facts'],
-        'celeb_img_url': celebDetails['image'],
-        'other_celebs': celebDetails['other_celebs'],
-        'correct_anim': celebDetails['correct_animation'],
-        'incorrect_anim': celebDetails['incorrect_animation']
-      });
+      dev.log('after !context ');
+      dev.log('User is not logged in.');
+      // Use containsKey to check if the key exists in the Map
+      if (celebDetails.containsKey('level_up')) {
+        // Fetch the `getUserDetails` function dynamically from the ModuleManager
+        final userDetailsFunction = ModuleManager().getFunction<Future<Map<String, dynamic>> Function({required String username})>("LoginModule.getUserDetails");
 
-      final updatedPluginState = appStateProvider.getPluginState<Map<String, dynamic>>(pluginStateKey) ?? {};
-      dev.log('Updated plugin state after fetching: $updatedPluginState');
+        if (userDetailsFunction != null && username != null) {
+          // Await the result of fetching user details
+          final userDetails = await userDetailsFunction(username: username);
+
+          // Check if the user details were successfully fetched
+          if (userDetails['success'] == true) {
+            // Update the LoginPluginState with the fetched user details
+            appStateProvider.updatePluginState('LoginPluginState', {
+              ...loginState, // Keep other existing state
+              'points': userDetails['points'], // Update points
+              'category_levels': userDetails['category_levels'], // Update category levels
+            });
+
+          } else {
+            dev.log('Failed to fetch user details: ${userDetails['message']}');
+          }
+        } else {
+          dev.log('Error: UserDetails function is unavailable or username is null.');
+        }
+
+        // Update the plugin state with the new play_state
+        appStateProvider.updatePluginState("MainPluginState", {
+          ...pluginState, // Keep other existing state
+          'play_state': 'level_up', // Update play_state with the new play_state
+        });
+
+        // Navigate to the Level Up route
+        Navigator.of(context).pushNamed('/levelup');
+      } else {
+        dev.log('Fetched celebrity details: $celebDetails');
+
+        // Update plugin state with fetched details
+        appStateProvider.updatePluginState("MainPluginState", {
+          'celeb_name': celebDetails['name'],
+          'celeb_facts': celebDetails['facts'],
+          'celeb_img_url': celebDetails['image'],
+          'other_celebs': celebDetails['other_celebs'],
+          'correct_anim': celebDetails['correct_animation'],
+          'incorrect_anim': celebDetails['incorrect_animation']
+        });
+
+        final updatedPluginState = appStateProvider.getPluginState<Map<String, dynamic>>("MainPluginState") ?? {};
+        dev.log('Updated plugin state after fetching: $updatedPluginState');
+      }
     } catch (error) {
       dev.log('Error fetching and setting celebrity details: $error');
     }
   }
-
 
   static Future<void> selectedCeleb(
       AppStateProvider appStateProvider, String pluginStateKey, String selectedName, BuildContext context) async {
@@ -121,7 +165,7 @@ class PlayFunctions extends PluginHelper {
 
       if (selectedName == pluginState['celeb_name']) {
         dev.log("Selected name matches celeb_name. Updating to revealed_correct.");
-        appStateProvider.updatePluginState(pluginStateKey, {
+        appStateProvider.updatePluginState("MainPluginState", {
           'play_state': 'revealed_correct',
           'plugin_anims': {
             'head_anims': ['pulse', 'sideToSide', 'bounce'],
@@ -170,6 +214,31 @@ class PlayFunctions extends PluginHelper {
           }
         }
 
+        // Call updateGuessed to update guessed celebrity
+        final guessedCategory = pluginState['celeb_category'];  // Assuming category is stored in pluginState
+        if (guessedCategory != null) {
+          final updateGuessedFunction = ModuleManager()
+              .getFunction<Future<Map<String, dynamic>> Function({required String username, required String guessedName, required String guessedCategory, required BuildContext context})>(
+              "UserUpdateModule.updateGuessed");
+
+          if (updateGuessedFunction != null) {
+            final response = await updateGuessedFunction(
+              username: loginState['username'],
+              guessedName: selectedName,
+              guessedCategory: guessedCategory,
+              context: context,
+            );
+
+            if (response['success'] == true) {
+              dev.log("Successfully updated guessed celebrity: ${response['guessed_name']} in category: ${response['guessed_category']}");
+            } else {
+              dev.log("Failed to update guessed celebrity: ${response['message']}");
+            }
+          } else {
+            dev.log("Error: updateGuessed function not found in UserUpdateModule.");
+          }
+        }
+
         // Play a random applause file
         final applauseKeys = AudioHelper().applauseFiles.keys.toList();
         final randomKey = applauseKeys[Random().nextInt(applauseKeys.length)];
@@ -182,7 +251,7 @@ class PlayFunctions extends PluginHelper {
         }
       } else {
         dev.log("Selected name does not match celeb_name. Updating to revealed_incorrect.");
-        appStateProvider.updatePluginState(pluginStateKey, {
+        appStateProvider.updatePluginState("MainPluginState", {
           'play_state': 'revealed_incorrect',
           'flushing': 'true',
           'plugin_anims': {
@@ -198,8 +267,6 @@ class PlayFunctions extends PluginHelper {
     }
   }
 
-
-
   static void flushAction(AppStateProvider appStateProvider, String pluginStateKey, context) {
     // Create an instance of AudioHelper
     // Access the singleton instance
@@ -207,7 +274,7 @@ class PlayFunctions extends PluginHelper {
 
 
     // Update plugin state
-    appStateProvider.updatePluginState(pluginStateKey, {
+    appStateProvider.updatePluginState("MainPluginState", {
       'flushing': true,
       'plugin_anims': {
         'head_anims': ['shakeAndDrop', 'pulse', 'sideToSide', 'bounce'],
@@ -227,7 +294,7 @@ class PlayFunctions extends PluginHelper {
 
       if (currentPlayState == 'revealed_correct') {
         dev.log("Play state is revealed_correct. Updating to aftermath_correct.");
-        appStateProvider.updatePluginState(pluginStateKey, {
+        appStateProvider.updatePluginState("MainPluginState", {
           'play_state': 'aftermath_correct',
           'plugin_anims': {
             'aftermath_anims': ['slideUpAndDown'],
@@ -238,7 +305,7 @@ class PlayFunctions extends PluginHelper {
 
       } else if (currentPlayState == 'revealed_incorrect') {
         dev.log("Play state is revealed_incorrect. Updating to aftermath_incorrect.");
-        appStateProvider.updatePluginState(pluginStateKey, {
+        appStateProvider.updatePluginState("MainPluginState", {
           'flushing': false,
           'play_state': 'aftermath_incorrect',
           'plugin_anims': {
@@ -257,7 +324,8 @@ class PlayFunctions extends PluginHelper {
 
   static bool _isResetting = false; // Flag to prevent reentrant calls
 
-  static Future<void> resetPluginPlayState(AppStateProvider appStateProvider, String pluginStateKey) async {
+  static Future<void> resetPluginPlayState(AppStateProvider appStateProvider, String pluginStateKey, BuildContext context) async {
+    dev.log("staret of reset.");
     if (_isResetting) {
       dev.log("resetPluginPlayState is already in progress. Skipping duplicate call.");
       return;
@@ -293,13 +361,13 @@ class PlayFunctions extends PluginHelper {
         }
 
         // Reset the ad_counter to 0
-        appStateProvider.updatePluginState(pluginStateKey, {'ad_counter': 0});
+        appStateProvider.updatePluginState("MainPluginState", {'ad_counter': 0});
         dev.log("ad_counter reset to 0 after showing ad.");
       } else {
         dev.log("ad_counter < 3, incrementing ad_counter."); // Debug: Increment logic
 
         // Increment the ad_counter
-        appStateProvider.updatePluginState(pluginStateKey, {'ad_counter': adCounter + 1});
+        appStateProvider.updatePluginState("MainPluginState", {'ad_counter': adCounter + 1});
         dev.log("ad_counter incremented to ${adCounter + 1}."); // Debug: Log incremented value
       }
 
@@ -307,28 +375,39 @@ class PlayFunctions extends PluginHelper {
 
       // Reset the plugin state
       final defaultState = MainPlugin().reset();
-      appStateProvider.updatePluginState(pluginStateKey, defaultState);
+      appStateProvider.updatePluginState("MainPluginState", defaultState);
 
       dev.log("Plugin state reset to default."); // Debug: State reset
 
       // Retrieve and set the saved category
       final savedCategory = await SharedPreferences.getInstance().then((prefs) => prefs.getString("celeb_category") ?? "");
-      await fetchAndSetCelebDetails(appStateProvider, pluginStateKey);
+      dev.log("before fetchceleb");
+      await fetchAndSetCelebDetails(appStateProvider, context);
+      dev.log("after fetch. state: $pluginState");
       defaultState["celeb_category"] = savedCategory;
 
       dev.log("Saved category retrieved and set: $savedCategory"); // Debug: Category
 
-      appStateProvider.updatePluginState(pluginStateKey, {
+      appStateProvider.updatePluginState("MainPluginState", {
         'plugin_anims': {},
       });
+      dev.log("after fetch 2. state: $pluginState");
 
-      appStateProvider.updatePluginState(pluginStateKey, {
-        'play_state': 'in_play',
-        'plugin_anims': {
-          'head_anims': ['slideUp', 'pulse', 'sideToSide', 'bounce'],
-          'game_screen_anims': []
-        },
-      });
+// Assuming `appStateProvider` has a method to get the current plugin state
+      var currentState = appStateProvider.getPluginState(pluginStateKey);
+
+      dev.log("after fetch 3. state: $pluginState and currentate $currentState");
+
+// Check if the current play_state is not 'level_up'
+      if (currentState['play_state'] != 'level_up') {
+        appStateProvider.updatePluginState("MainPluginState", {
+          'play_state': 'in_play',
+          'plugin_anims': {
+            'head_anims': ['slideUp', 'pulse', 'sideToSide', 'bounce'],
+            'game_screen_anims': []
+          },
+        });
+      }
 
       dev.log("Plugin state updated with play_state and animations."); // Debug: State updated
     } catch (error) {
@@ -354,7 +433,7 @@ class PlayFunctions extends PluginHelper {
     }
 
     // Update the plugin state with the remaining list and set 'hint' to true
-    appStateProvider.updatePluginState(pluginStateKey, {
+    appStateProvider.updatePluginState("MainPluginState", {
       ...pluginState,
       'other_celebs': otherCelebs, // Update the 'other_celebs' key with the new list
       'hint': true,               // Set 'hint' to true

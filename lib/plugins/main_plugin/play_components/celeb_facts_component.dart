@@ -9,26 +9,30 @@ class CelebFactsComponent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final pluginStateKey = "${MainPlugin().runtimeType}State";
+    final pluginStateKey = "MainPluginState";
 
-    // Use select to get the play_state and check if it is 'in_play'
-    final isInPlayState = context.select<AppStateProvider, bool>((appStateProvider) {
+    // Listen for changes to celeb_facts
+    final celebFacts = context.select<AppStateProvider, List<String>>((appStateProvider) {
       final pluginState = appStateProvider.getPluginState<Map<String, dynamic>>(pluginStateKey) ?? {};
-      return pluginState['play_state'] == 'in_play';
+      return List<String>.from(pluginState['celeb_facts'] ?? []);
     });
 
-    // Return an empty container if not in 'in_play' state
-    if (!isInPlayState) {
-      return const SizedBox.shrink();
+    // If celeb_facts is empty, display a placeholder message
+    if (celebFacts.isEmpty) {
+      return Container(
+        color: AppColors.accentColor2,
+        padding: const EdgeInsets.all(16.0),
+        child: const Center(
+          child: Text(
+            "No facts available",
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              color: Colors.black,
+            ),
+          ),
+        ),
+      );
     }
-
-    // Use select to retrieve celeb_facts and only rebuild when they change
-    final celebFacts = context.select<AppStateProvider, List<String>>(
-          (appStateProvider) {
-        final pluginState = appStateProvider.getPluginState<Map<String, dynamic>>(pluginStateKey) ?? {};
-        return List<String>.from(pluginState['celeb_facts'] ?? []);
-      },
-    );
 
     return Container(
       color: AppColors.accentColor2, // Accent color for the background

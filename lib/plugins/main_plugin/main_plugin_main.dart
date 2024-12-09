@@ -26,8 +26,8 @@ class MainPlugin implements AppPlugin {
     // Register AppBar items with context
     PluginHelper.registerAppbarItems(context);
 
-    // Register navigation
-    PluginHelper.registerNavigation(context);
+    // Register all routes but include only '/prefs' in the drawer
+    PluginHelper.registerNavigation(context, drawerRoutes: ['/play', '/prefs', '/levelup']);
 
     // Access and initialize app state
     final pluginStateKey = "${runtimeType}State";

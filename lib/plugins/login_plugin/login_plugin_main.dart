@@ -32,9 +32,9 @@ class LoginPlugin implements AppPlugin {
     PluginHelper.registerNavigation(context);
 
     // Access and initialize app state
-    final pluginStateKey = "${runtimeType}State";
+    const pluginKey = "LoginPluginState";
     final appStateProvider = Provider.of<AppStateProvider>(context, listen: false);
-    appStateProvider.updatePluginState(pluginStateKey, reset());
+    appStateProvider.registerPluginState(pluginKey, reset());
 
   }
 
@@ -46,6 +46,14 @@ class LoginPlugin implements AppPlugin {
     ModuleManager().registerFunction(
       "LoginModule",
           () => LoginModule(connectionModule: connectionModule), // Factory function that creates a new LoginModule
+    );
+    // Register the updateGuessed function dynamically in ModuleManager
+    ModuleManager().registerFunction(
+      "LoginModule.getUserDetails",
+          ({required String username}) =>
+              LoginModule(connectionModule: connectionModule).getUserDetails(
+            username: username,
+          ),
     );
 
     ModuleManager().registerFunction(
@@ -70,6 +78,17 @@ class LoginPlugin implements AppPlugin {
           ),
     );
 
+    // Register the updateGuessed function dynamically in ModuleManager
+    ModuleManager().registerFunction(
+      "UserUpdateModule.updateGuessed",
+          ({required String username, required String guessedName, required String guessedCategory, required BuildContext context}) =>
+          UserUpdateModule(connectionModule: connectionModule).updateGuessed(
+            username: username,
+            guessedName: guessedName,
+            guessedCategory: guessedCategory,
+            context: context,
+          ),
+    );
 
   }
 
