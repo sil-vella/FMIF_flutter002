@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../providers/app_state_provider.dart';
+import '../../services/providers/app_state_provider.dart';
 import '../../utils/consts/config.dart';
 import '../00_base/module_manager.dart';
 import '../api/modules/connection_module.dart';
@@ -51,7 +51,7 @@ class LoginPlugin implements AppPlugin {
     ModuleManager().registerFunction(
       "LoginModule.getUserDetails",
           ({required String username}) =>
-              LoginModule(connectionModule: connectionModule).getUserDetails(
+          LoginModule(connectionModule: connectionModule).getUserDetails(
             username: username,
           ),
     );
@@ -92,13 +92,21 @@ class LoginPlugin implements AppPlugin {
 
   }
 
-
-
-
   // Default state
   Map<String, dynamic> reset() {
     return {
       "logged": false,
     };
+  }
+
+  @override
+  void dispose() {
+    // Clean up resources related to this plugin
+    ModuleManager().unregisterFunction("LoginModule");
+    ModuleManager().unregisterFunction("LoginModule.getUserDetails");
+    ModuleManager().unregisterFunction("RegisterModule");
+    ModuleManager().unregisterFunction("UserUpdateModule");
+    ModuleManager().unregisterFunction("UserUpdateModule.updatePoints");
+    ModuleManager().unregisterFunction("UserUpdateModule.updateGuessed");
   }
 }

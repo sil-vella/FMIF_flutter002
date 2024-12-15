@@ -1,7 +1,7 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../../providers/app_state_provider.dart';
+import '../../../services/providers/app_state_provider.dart';
 import '../main_plugin_main.dart';
 
 class AfterMathAnimComponent extends StatelessWidget {

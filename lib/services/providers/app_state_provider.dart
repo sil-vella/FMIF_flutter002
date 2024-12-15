@@ -19,6 +19,17 @@ class AppStateProvider with ChangeNotifier {
     }
   }
 
+  /// Unregister a plugin state dynamically
+  void unregisterPluginState(String pluginKey) {
+    if (_pluginStates.containsKey(pluginKey)) {
+      _pluginStates.remove(pluginKey);
+      print("Unregistered state for key: $pluginKey"); // Debug log
+      notifyListeners();
+    } else {
+      print("No state found for key: $pluginKey to unregister"); // Debug log
+    }
+  }
+
   /// Retrieve a plugin state dynamically
   T? getPluginState<T>(String pluginKey) {
     final pluginState = _pluginStates[pluginKey];
@@ -45,8 +56,6 @@ class AppStateProvider with ChangeNotifier {
     }
     notifyListeners();
   }
-
-
 
   // ------ Main App State Methods ------
 

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../plugins/main_plugin/functions/play_functions.dart';
-import '../providers/app_state_provider.dart';
+import '../services/providers/app_state_provider.dart';
 import 'base_screen.dart';
 
 class HomeScreen extends BaseScreen {

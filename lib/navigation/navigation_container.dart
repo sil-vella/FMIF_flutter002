@@ -6,39 +6,48 @@ typedef BottomNavigationLink = BottomNavigationBarItem;
 class NavigationContainer extends ChangeNotifier {
   static final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
-  final List<NavigationLink> _drawerLinks = [];
-  final List<BottomNavigationLink> _bottomNavLinks = [];
-  final Map<String, WidgetBuilder> _routes = {};
-  final List<Widget> _appBarActions = []; // Store AppBar actions
+  final Map<String, List<NavigationLink>> _pluginDrawerLinks = {};
+  final Map<String, List<BottomNavigationLink>> _pluginBottomNavLinks = {};
+  final Map<String, Map<String, WidgetBuilder>> _pluginRoutes = {};
+  final Map<String, List<Widget>> _pluginAppBarActions = {}; // Store AppBar actions per plugin
 
-  List<NavigationLink> get drawerLinks => _drawerLinks;
-  List<BottomNavigationLink> get bottomNavLinks => _bottomNavLinks;
-  Map<String, WidgetBuilder> get routes => _routes;
-  List<Widget> get appBarActions => _appBarActions; // Expose AppBar actions
+  List<NavigationLink> get drawerLinks => _pluginDrawerLinks.values.expand((e) => e).toList();
+  List<BottomNavigationLink> get bottomNavLinks => _pluginBottomNavLinks.values.expand((e) => e).toList();
+  Map<String, WidgetBuilder> get routes => _pluginRoutes.values.fold({}, (acc, e) => acc..addAll(e));
+  List<Widget> get appBarActions => _pluginAppBarActions.values.expand((e) => e).toList(); // Expose AppBar actions
 
   /// Method for plugins to register navigation links and routes
   void registerNavigationLinks({
+    required String pluginKey,
     required List<NavigationLink> drawerLinks,
     required List<BottomNavigationLink> bottomNavLinks,
     required Map<String, WidgetBuilder> routes,
   }) {
-    _drawerLinks.addAll(drawerLinks);
-    _bottomNavLinks.addAll(bottomNavLinks);
-    _routes.addAll(routes);
+    _pluginDrawerLinks[pluginKey] = drawerLinks;
+    _pluginBottomNavLinks[pluginKey] = bottomNavLinks;
+    _pluginRoutes[pluginKey] = routes;
     notifyListeners(); // Notify listeners after updating navigation links
   }
 
   /// Method for plugins to register AppBar actions
-  void registerAppBarItems(List<Widget> actions) {
-    _appBarActions.addAll(actions);
+  void registerAppBarItems(String pluginKey, List<Widget> actions) {
+    _pluginAppBarActions[pluginKey] = actions;
     notifyListeners(); // Notify listeners about the update
+  }
+
+  /// Method to deregister navigation links and routes dynamically for a specific plugin
+  void deregisterPlugin(String pluginKey) {
+    _pluginDrawerLinks.remove(pluginKey);
+    _pluginBottomNavLinks.remove(pluginKey);
+    _pluginRoutes.remove(pluginKey);
+    _pluginAppBarActions.remove(pluginKey);
+    notifyListeners(); // Notify listeners after removing links and routes for the plugin
   }
 
   @override
   void notifyListeners() {
     super.notifyListeners();
   }
-
 
   /// Static method to navigate to a route
   static void navigateTo(String routeName) {
@@ -68,13 +77,13 @@ class NavigationContainer extends ChangeNotifier {
 
   /// Builds the BottomNavigationBar widget with registered links
   Widget? buildBottomNavigationBar() {
-    if (_bottomNavLinks.isEmpty) return null;
+    if (bottomNavLinks.isEmpty) return null;
 
     return BottomNavigationBar(
-      items: _bottomNavLinks.take(4).toList(),
+      items: bottomNavLinks.take(4).toList(),
       onTap: (index) {
-        if (index < _routes.length) {
-          final selectedRoute = _routes.keys.elementAt(index);
+        if (index < routes.length) {
+          final selectedRoute = routes.keys.elementAt(index);
           navigateTo(selectedRoute);
         }
       },
@@ -83,7 +92,7 @@ class NavigationContainer extends ChangeNotifier {
 
   /// Custom route generator to handle dynamically registered routes
   Route<dynamic>? generateRoute(RouteSettings settings) {
-    final routeBuilder = _routes[settings.name];
+    final routeBuilder = routes[settings.name];
     if (routeBuilder != null) {
       return MaterialPageRoute(
         builder: (context) => routeBuilder(context),

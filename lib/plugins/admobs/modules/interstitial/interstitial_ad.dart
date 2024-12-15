@@ -56,7 +56,7 @@ class InterstitialAdService {
   }
 
   // Dispose the interstitial ad
-  void disposeAd() {
+  void dispose() {
     _interstitialAd?.dispose();
     _interstitialAd = null;
     _isAdReady = false;

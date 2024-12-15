@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../../providers/app_state_provider.dart';
+import '../../../services/providers/app_state_provider.dart';
 
 class AudioHelper {
   // Singleton instance

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../screens/base_screen.dart';
-import '../../../providers/app_state_provider.dart';
+import '../../../services/providers/app_state_provider.dart';
 import '../functions/main_plugin_helper.dart';
 import '../main_plugin_main.dart';
 

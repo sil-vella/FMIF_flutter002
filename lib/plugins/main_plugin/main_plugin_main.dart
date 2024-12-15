@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../providers/app_state_provider.dart';
+import '../../services/providers/app_state_provider.dart';
 import '../../services/shared_preferences_service.dart';
 import 'functions/main_plugin_helper.dart';
 import '../00_base/app_plugin.dart';
@@ -45,6 +45,10 @@ class MainPlugin implements AppPlugin {
       initialState["ad_counter"] = 0; // Initialize ad_counter here
       appStateProvider.registerPluginState(pluginStateKey, initialState);
     }
+  }
+
+  @override
+  void dispose() {
   }
 
   void registerModules() {}

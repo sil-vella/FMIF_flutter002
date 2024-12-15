@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'dart:math';
 import 'package:auto_size_text/auto_size_text.dart';
-import '../../../providers/app_state_provider.dart';
+import '../../../services/providers/app_state_provider.dart';
 import '../../00_base/module_manager.dart';
 import '../functions/play_functions.dart';
 import '../main_plugin_main.dart';

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../../../providers/app_state_provider.dart';
+import '../../../services/providers/app_state_provider.dart';
 import '../functions/animation_helper.dart';
 import '../functions/play_functions.dart';
 import '../main_plugin_main.dart';

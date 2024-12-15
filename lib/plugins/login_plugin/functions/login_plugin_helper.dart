@@ -10,6 +10,7 @@ class PluginHelper {
     final navigationContainer = Provider.of<NavigationContainer>(
         context, listen: false);
     navigationContainer.registerNavigationLinks(
+      pluginKey: 'LoginPlugin',
       drawerLinks: [
         ListTile(
           leading: const Icon(Icons.account_circle), // Updated icon

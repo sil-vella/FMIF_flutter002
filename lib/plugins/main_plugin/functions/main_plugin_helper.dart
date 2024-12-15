@@ -7,7 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../../navigation/navigation_container.dart';
-import '../../../providers/app_state_provider.dart';
+import '../../../services/providers/app_state_provider.dart';
 import '../../../utils/consts/config.dart';
 import '../../00_base/module_manager.dart';
 import '../main_plugin_main.dart';
@@ -128,6 +128,7 @@ class PluginHelper {
 
     // Register all routes (routes are always registered, regardless of drawer inclusion)
     navigationContainer.registerNavigationLinks(
+      pluginKey: 'MainPlugin',
       drawerLinks: drawerLinks,
       bottomNavLinks: [],
       routes: {
@@ -142,29 +143,33 @@ class PluginHelper {
     final appStateProvider = Provider.of<AppStateProvider>(context, listen: false);
     final navigationContainer = Provider.of<NavigationContainer>(context, listen: false);
 
-    navigationContainer.registerAppBarItems([
-      StatefulBuilder(
-        builder: (context, setState) {
-          final isMuted = appStateProvider.getPluginState("MainPluginState")?["sound_muted"] ?? false;
-          return IconButton(
-            icon: Icon(isMuted ? Icons.volume_off : Icons.volume_up),
-            onPressed: () {
-              // Toggle the mute state
-              appStateProvider.updatePluginState("MainPluginState", {
-                "sound_muted": !isMuted,
-              });
+    navigationContainer.registerAppBarItems(
+      'MainPlugin', // Plugin key
+      [
+        StatefulBuilder(
+          builder: (context, setState) {
+            final isMuted = appStateProvider.getPluginState("MainPluginState")?["sound_muted"] ?? false;
+            return IconButton(
+              icon: Icon(isMuted ? Icons.volume_off : Icons.volume_up),
+              onPressed: () {
+                // Toggle the mute state
+                appStateProvider.updatePluginState("MainPluginState", {
+                  "sound_muted": !isMuted,
+                });
 
-              // Update the audio volume based on the mute state
-              AudioHelper().updateVolumeBasedOnState(context);
+                // Update the audio volume based on the mute state
+                AudioHelper().updateVolumeBasedOnState(context);
 
-              // Refresh the icon state
-              setState(() {});
-            },
-          );
-        },
-      ),
-    ]);
+                // Refresh the icon state
+                setState(() {});
+              },
+            );
+          },
+        ),
+      ],
+    );
   }
+
 
   static void setTimer(BuildContext context) {
     final appStateProvider = Provider.of<AppStateProvider>(context, listen: false);

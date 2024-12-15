@@ -1,7 +1,7 @@
 import 'package:flush_me_im_famous/plugins/main_plugin/play_components/timer_clock_component.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../../providers/app_state_provider.dart';
+import '../../../services/providers/app_state_provider.dart';
 import '../../../screens/base_screen.dart';
 import '../../../utils/consts/theme_consts.dart';
 import '../play_components/ribbon_component.dart';

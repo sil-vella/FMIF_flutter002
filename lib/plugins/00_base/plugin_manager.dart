@@ -24,4 +24,20 @@ class PluginManager {
       plugin.initialize(context);
     }
   }
+
+  void disposeAllPlugins() {
+    // Iterate over plugins and call dispose, while deregistering them
+    for (var plugin in List.from(_registeredPlugins)) {
+      plugin.dispose(); // Plugin handles its cleanup and deregisters itself
+      deregisterPlugin(plugin);
+    }
+  }
+
+  void deregisterPlugin(AppPlugin plugin) {
+    _registeredPlugins.remove(plugin);
+  }
+
+  bool isPluginRegistered(AppPlugin plugin) {
+    return _registeredPlugins.contains(plugin);
+  }
 }

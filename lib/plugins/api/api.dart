@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../../providers/app_state_provider.dart';
+import '../../services/providers/app_state_provider.dart';
 import '../00_base/app_plugin.dart';
 import '../00_base/module_manager.dart';
 import 'modules/connection_module.dart';
@@ -21,7 +21,6 @@ class Api implements AppPlugin {
 
   @override
   void initialize(BuildContext context) {
-
     // Access app state if needed after the app context is available
     final appState = Provider.of<AppStateProvider>(context, listen: false);
 
@@ -36,4 +35,9 @@ class Api implements AppPlugin {
     ModuleManager().registerFunction("ConnectionModule", (String baseUrl) => ConnectionModule(baseUrl));
   }
 
+  @override
+  void dispose() {
+    // Unregister modules or clean up resources when disposing the plugin
+    ModuleManager().unregisterFunction("ConnectionModule");
+  }
 }

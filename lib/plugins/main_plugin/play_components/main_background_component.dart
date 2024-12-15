@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:provider/provider.dart';
-import '../../../providers/app_state_provider.dart';
+import '../../../services/providers/app_state_provider.dart';
 
 class MainBackgroundComponent extends StatelessWidget {
   const MainBackgroundComponent({Key? key}) : super(key: key);

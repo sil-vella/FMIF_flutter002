@@ -5,7 +5,7 @@ import 'package:flutter/services.dart' show rootBundle;
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import '../../../providers/app_state_provider.dart';
+import '../../../services/providers/app_state_provider.dart';
 import '../functions/animation_helper.dart';
 import '../main_plugin_main.dart';
 

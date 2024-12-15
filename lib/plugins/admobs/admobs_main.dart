@@ -1,14 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
-import 'package:provider/provider.dart';
-
-import '../../providers/app_state_provider.dart';
+import '../../services/providers/app_state_provider.dart';
 import '../../utils/consts/config.dart';
 import '../00_base/app_plugin.dart';
 import '../00_base/module_manager.dart';
 import 'modules/banner/banner_ad.dart';
 import 'modules/interstitial/interstitial_ad.dart';
-import 'modules/rewarded/rewarded_ad.dart'; // Import the RewardedAdModule
+import 'modules/rewarded/rewarded_ad.dart';
 
 class AdmobsPlugin implements AppPlugin {
   AdmobsPlugin._internal();
@@ -41,7 +39,6 @@ class AdmobsPlugin implements AppPlugin {
 
   @override
   void onStartup() {
-
     // Initialize AdMob SDK with test device ID
     _initializeAdMob();
 
@@ -58,16 +55,10 @@ class AdmobsPlugin implements AppPlugin {
   }
 
   void registerModules() {
-    // Register a factory function for BannerModule
     ModuleManager().registerFunction("BannerModule", () => BannerAdModule());
-
-    // Register InterstitialAdService as an instance
     ModuleManager().registerInstance("InterstitialAdService", _interstitialAdService);
-
-    // Register RewardedAdService as an instance
     ModuleManager().registerInstance("RewardedAdService", _rewardedAdService);
   }
-
 
   void _initializeAdMob() {
     WidgetsFlutterBinding.ensureInitialized();
@@ -80,6 +71,20 @@ class AdmobsPlugin implements AppPlugin {
     MobileAds.instance.updateRequestConfiguration(
       RequestConfiguration(testDeviceIds: [testDeviceId]),
     );
+  }
+
+  @override
+  void dispose() {
+    // Dispose interstitial ad service
+    _interstitialAdService.dispose();
+    // Dispose rewarded ad service
+    _rewardedAdService.dispose();
+
+    // Unregister modules using appropriate unregister methods
+    ModuleManager().unregisterFunction("BannerModule");
+    ModuleManager().unregisterInstance("InterstitialAdService");
+    ModuleManager().unregisterInstance("RewardedAdService");
 
   }
+
 }

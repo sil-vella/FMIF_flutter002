@@ -2,7 +2,7 @@ import 'dart:developer' as dev;
 import 'dart:math';
 
 import 'package:flutter/material.dart';
-import '../../../providers/app_state_provider.dart';
+import '../../../services/providers/app_state_provider.dart';
 import '../../00_base/module_manager.dart';
 import '../main_plugin_main.dart';
 import 'package:shared_preferences/shared_preferences.dart';

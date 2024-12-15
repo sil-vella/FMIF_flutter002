@@ -29,4 +29,22 @@ class ModuleManager {
     final function = _functions[name];
     return function as T?;
   }
+
+  /// Unregisters an instance by name
+  void unregisterInstance(String name) {
+    if (_instances.containsKey(name)) {
+      _instances.remove(name);
+    } else {
+      throw ArgumentError("Instance with name '$name' does not exist.");
+    }
+  }
+
+  /// Unregisters a function by name
+  void unregisterFunction(String name) {
+    if (_functions.containsKey(name)) {
+      _functions.remove(name);
+    } else {
+      throw ArgumentError("Function with name '$name' does not exist.");
+    }
+  }
 }
