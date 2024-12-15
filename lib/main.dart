@@ -76,7 +76,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
 
     // Call disposePlugins when the app is disposed
     debugPrint('Disposing all plugins...');
-    PluginManager().disposeAllPlugins();
+    PluginManager().disposeAllPlugins(context);
     debugPrint('All plugins disposed.');
 
     super.dispose();
@@ -89,7 +89,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
 
     if (state == AppLifecycleState.inactive) {
       debugPrint('App is inactive. Disposing plugins...');
-      PluginManager().disposeAllPlugins();
+      PluginManager().disposeAllPlugins(context);
       debugPrint('Plugins disposed due to inactivity.');
     } else if (state == AppLifecycleState.resumed) {
       debugPrint('App is resumed. You can add logic to reinitialize plugins if needed.');

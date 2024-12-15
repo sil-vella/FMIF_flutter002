@@ -101,6 +101,7 @@ class LoginPlugin implements AppPlugin {
 
   @override
   void dispose() {
+    debugPrint('disposing loginplugin');
     // Clean up resources related to this plugin
     ModuleManager().unregisterFunction("LoginModule");
     ModuleManager().unregisterFunction("LoginModule.getUserDetails");
