@@ -1,7 +1,9 @@
 // plugins/shared_plugin/plugin_helper.dart
 import 'dart:async';
+import 'dart:convert';
 import 'dart:developer' as dev;
 import 'package:flush_me_im_famous/plugins/main_plugin/functions/play_functions.dart';
+import 'package:flush_me_im_famous/plugins/main_plugin/screens/leaderboard_screen.dart';
 import 'package:flush_me_im_famous/plugins/main_plugin/screens/levelup_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -10,15 +12,13 @@ import '../../../navigation/navigation_container.dart';
 import '../../../services/providers/app_state_provider.dart';
 import '../../../utils/consts/config.dart';
 import '../../00_base/module_manager.dart';
-import '../main_plugin_main.dart';
 import '../screens/pref_screen.dart';
 import '../screens/game_screen.dart';
-import 'audio_helper.dart';
 
 class PluginHelper {
   /// Fetches categories from the API and returns the response data
-  static Future<dynamic> getCategories(AppStateProvider appStateProvider) async {
 
+  static Future<dynamic> getCategories(AppStateProvider appStateProvider) async {
     final createConnectionModule = ModuleManager().getFunction<Function>("ConnectionModule");
     const String baseUrl = Config.apiUrl;
 
@@ -28,22 +28,40 @@ class PluginHelper {
       try {
         final response = await connectionModule.sendGetRequest("/get-categories");
 
-        // Check if response is a list and return it directly
+        // Check if response is a list and process it
         if (response is List && response.isNotEmpty) {
+          // Fetch SharedPreferences instance
+          final prefs = await SharedPreferences.getInstance();
+
+          // Retrieve and parse existing category levels from SharedPreferences
+          final categoryLevels = jsonDecode(prefs.getString('category_levels') ?? "{}") as Map<String, dynamic>;
+
+          // Iterate through each category and ensure it has a level set in SharedPreferences
+          for (final category in response) {
+            final normalizedCategoryKey = 'level_${category.replaceAll(' ', '_').toLowerCase()}';
+            if (!categoryLevels.containsKey(normalizedCategoryKey)) {
+              categoryLevels[normalizedCategoryKey] = 1; // Set default level to 1
+            }
+          }
+
+          // Save updated category levels back to SharedPreferences
+          await prefs.setString('category_levels', jsonEncode(categoryLevels));
+
           return response;
-        } else {
         }
       } catch (error) {
         // Handle error if needed
+        print("Error in getCategories: $error");
       }
     } else {
+      print("ConnectionModule not available.");
     }
 
     return []; // Return an empty list if categories cannot be fetched
   }
 
+
   static Future<void> updateCategory(String category, AppStateProvider appStateProvider, BuildContext context) async {
-    final pluginStateKey = "MainPlugin";
 
     appStateProvider.updatePluginState("MainPluginState", {
       "celeb_category": category,
@@ -61,7 +79,7 @@ class PluginHelper {
     });
   }
   /// Fetches celebrity details based on a category (and optionally username) from the API and returns the response data
-  static Future<dynamic> getCelebDetails(String category, [String? username]) async {
+  static Future<dynamic> getCelebDetails(Map<String, dynamic> payload) async {
     dev.log('get celeb details reached');
     final createConnectionModule = ModuleManager().getFunction<Function>("ConnectionModule");
     const String baseUrl = Config.apiUrl;
@@ -69,19 +87,17 @@ class PluginHelper {
     if (createConnectionModule != null) {
       final connectionModule = createConnectionModule(baseUrl);
       try {
-        // Encode the category to handle spaces and special characters
-        final encodedCategory = Uri.encodeComponent(category);
+        // Construct the endpoint with query parameters
+        final category = Uri.encodeComponent(payload['category']);
+        final guessedList = Uri.encodeComponent(jsonEncode(payload['guessed_list']));
+        final level = payload['level'] ?? 1;
+        final url = "/get-celeb-details?category=$category&guessed_list=$guessedList&level=$level";
 
-        // Check if the username is provided (not null or empty)
-        String url = "/get-celeb-details?category=$encodedCategory";
-        if (username != null && username.isNotEmpty) {
-          // If username is provided, include it in the request
-          url += "&username=${Uri.encodeComponent(username)}";
-        }
-        dev.log('before sending get with url $url');
-        // Send GET request with the category (and optionally username) as query parameters
+        dev.log('before sending GET request to $url');
+
+        // Send GET request
         final response = await connectionModule.sendGetRequest(url);
-        dev.log('after sending get with response $response');
+        dev.log('after sending GET with response $response');
         return response; // Return the celebrity details response data
       } catch (error) {
         dev.log("Error in getCelebDetails: $error");
@@ -110,6 +126,10 @@ class PluginHelper {
         'icon': const Icon(Icons.arrow_upward),
         'title': 'Level Up',
       },
+      '/leaderboard': {
+        'icon': const Icon(Icons.arrow_upward),
+        'title': 'Leaderboard',
+      },
     };
 
     // Generate ListTile widgets for the drawer based on the specified routes
@@ -135,6 +155,7 @@ class PluginHelper {
         '/prefs': (context) => const PrefScreen(),
         '/play': (context) => const GameScreen(),
         '/levelup': (context) => LevelUpScreen(), // Registered but not in drawer
+        '/leaderboard': (context) => LeaderboardScreen(), // Registered but not in drawer
       },
     );
   }
@@ -143,31 +164,73 @@ class PluginHelper {
     final appStateProvider = Provider.of<AppStateProvider>(context, listen: false);
     final navigationContainer = Provider.of<NavigationContainer>(context, listen: false);
 
+
     navigationContainer.registerAppBarItems(
       'MainPlugin', // Plugin key
       [
         StatefulBuilder(
           builder: (context, setState) {
-            final isMuted = appStateProvider.getPluginState("MainPluginState")?["sound_muted"] ?? false;
+            final appStateProvider = Provider.of<AppStateProvider>(context, listen: false);
+            final audioHelper = ModuleManager().getInstance<dynamic>("AudioHelper");
+
+            // Retrieve the current mute state
+            bool isMuted = appStateProvider.getPluginState("MainPluginState")?["sound_muted"] ?? false;
+
             return IconButton(
               icon: Icon(isMuted ? Icons.volume_off : Icons.volume_up),
-              onPressed: () {
-                // Toggle the mute state
-                appStateProvider.updatePluginState("MainPluginState", {
-                  "sound_muted": !isMuted,
-                });
+              onPressed: () async {
+                // Immediately toggle the local state
+                isMuted = !isMuted;
 
-                // Update the audio volume based on the mute state
-                AudioHelper().updateVolumeBasedOnState(context);
+                // Update the AppStateProvider asynchronously
+                await audioHelper?.toggleMute(context, isMuted);
 
-                // Refresh the icon state
+                // Refresh the icon immediately
                 setState(() {});
               },
             );
           },
         ),
+
       ],
     );
+  }
+
+  static Future<dynamic> getLeaderboard(AppStateProvider appStateProvider) async {
+    final createConnectionModule = ModuleManager().getFunction<Function>("ConnectionModule");
+    const String baseUrl = Config.apiUrl;
+
+    if (createConnectionModule != null) {
+      final connectionModule = createConnectionModule(baseUrl);
+
+      try {
+        final response = await connectionModule.sendGetRequest("/get-leaderboard");
+
+        // Check if response is a list and contains valid data
+        if (response is List && response.isNotEmpty) {
+          // Ensure each item in the list has required keys
+          final validLeaderboard = response.every((entry) =>
+          entry is Map &&
+              entry.containsKey('username') &&
+              entry.containsKey('points'));
+          if (validLeaderboard) {
+            return response;
+          } else {
+            dev.log("Invalid leaderboard data format received.");
+            return {"error": "Invalid leaderboard data format"};
+          }
+        } else {
+          dev.log("Empty or invalid leaderboard response.");
+          return [];
+        }
+      } catch (error) {
+        dev.log("Error fetching leaderboard: $error");
+        return {"error": "Failed to fetch leaderboard"};
+      }
+    } else {
+      dev.log("ConnectionModule not available for fetching leaderboard.");
+      return {"error": "ConnectionModule not available"};
+    }
   }
 
 

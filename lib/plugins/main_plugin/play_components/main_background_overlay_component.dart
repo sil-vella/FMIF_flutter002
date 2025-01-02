@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:provider/provider.dart';
 import '../../../services/providers/app_state_provider.dart';
+import '../../../services/shared_preferences_service.dart';
 
 class MainBackgroundOverlayComponent extends StatelessWidget {
   const MainBackgroundOverlayComponent({Key? key}) : super(key: key);
@@ -14,24 +15,15 @@ class MainBackgroundOverlayComponent extends StatelessWidget {
     return category;
   }
 
-  /// Get the user level dynamically from the app state
-  Future<String> _getUserLevel(BuildContext context) async {
+  /// Get the user level dynamically from SharedPreferences for the category
+  Future<String> _getUserLevel(String category) async {
     try {
-      final loginPluginState = context.read<AppStateProvider>().getPluginState<Map<String, dynamic>>("LoginPluginState");
-      final isLoggedIn = loginPluginState?['logged'] ?? false;
-      if (!isLoggedIn) {
-        return '1'; // Default level for guest users
-      }
-
-      final userLevel = loginPluginState?['level'];
-      if (userLevel == null || userLevel is! String) {
-        return '1';
-      }
-
-      return userLevel;
+      final levelKey = 'level_${category.replaceAll(" ", "_").toLowerCase()}';
+      final level = SharedPreferencesService().getInt(levelKey) ?? 1; // Default level to 1
+      return level.toString();
     } catch (e) {
-      debugPrint("Error fetching user level: $e");
-      return 'default';
+      debugPrint("Error fetching user level for category $category: $e");
+      return '1';
     }
   }
 
@@ -53,7 +45,7 @@ class MainBackgroundOverlayComponent extends StatelessWidget {
     final category = _getCategoryFromState(context); // Fetch category from MainPluginState
 
     return FutureBuilder<String>(
-      future: _getUserLevel(context), // Step 1: Fetch user level
+      future: _getUserLevel(category), // Step 1: Fetch user level from SharedPreferences
       builder: (context, levelSnapshot) {
         if (levelSnapshot.connectionState == ConnectionState.waiting) {
           return const SizedBox.expand(

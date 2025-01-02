@@ -2,7 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../services/providers/app_state_provider.dart';
-import 'app_plugin.dart';
+import 'app_plugins_base.dart';
 
 class PluginManager {
   static final PluginManager _instance = PluginManager._internal();
@@ -15,19 +15,19 @@ class PluginManager {
     _registeredPlugins.add(plugin);
   }
 
-  void runOnStartup() {
+  Future<void> runOnStartup() async {
     for (var plugin in _registeredPlugins) {
       plugin.onStartup();
     }
   }
 
-  void initializeAllPlugins(BuildContext context) {
+  Future<void> initializeAllPlugins(BuildContext context) async {
     for (var plugin in _registeredPlugins) {
-      plugin.initialize(context);
+      await plugin.initialize(context);
     }
   }
 
-  void disposeAllPlugins(BuildContext context) {
+  Future<void>  disposeAllPlugins(BuildContext context) async {
     print("disposeall is reached"); // Debug log
     final appStateProvider = Provider.of<AppStateProvider>(context, listen: false);
 
@@ -44,7 +44,6 @@ class PluginManager {
       deregisterPlugin(plugin);
     }
   }
-
 
   void deregisterPlugin(AppPlugin plugin) {
     _registeredPlugins.remove(plugin);

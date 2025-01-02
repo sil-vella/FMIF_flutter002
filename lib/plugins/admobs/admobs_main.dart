@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
+import 'package:provider/provider.dart';
 import '../../services/providers/app_state_provider.dart';
 import '../../utils/consts/config.dart';
-import '../00_base/app_plugin.dart';
+import '../00_base/app_plugins_base.dart';
 import '../00_base/module_manager.dart';
 import 'modules/banner/banner_ad.dart';
 import 'modules/interstitial/interstitial_ad.dart';
@@ -23,10 +24,12 @@ class AdmobsPlugin implements AppPlugin {
     adUnitId: Config.admobsRewarded01, // Fetch the Rewarded Ad Unit ID from Config
   );
 
+  /// Displays an interstitial ad
   void showInterstitialAd() {
     _interstitialAdService.showAd(); // Show the interstitial ad
   }
 
+  /// Displays a rewarded ad
   void showRewardedAd({
     required AppStateProvider appStateProvider,
     required BuildContext context,
@@ -37,29 +40,46 @@ class AdmobsPlugin implements AppPlugin {
     ); // Show the rewarded ad
   }
 
+  void _setupAdListeners(AppStateProvider appStateProvider) {
+    _interstitialAdService.isAdDismissed.addListener(() {
+      if (_interstitialAdService.isAdDismissed.value) {
+        // Add a 5-second delay before updating the state
+        Future.delayed(const Duration(seconds: 5), () {
+          appStateProvider.updatePluginState("AdmobsPluginState", {
+            "interstitial01": {"isShowing": false},
+          });
+          // Reset the ValueNotifier to avoid duplicate triggers
+          _interstitialAdService.isAdDismissed.value = false;
+        });
+      }
+    });
+  }
+
   @override
   void onStartup() {
-    // Initialize AdMob SDK with test device ID
-    _initializeAdMob();
 
-    registerModules(); // Register modules at startup
-
-    // Preload ads
-    _interstitialAdService.loadAd();
-    _rewardedAdService.loadAd();
   }
 
   @override
-  void initialize(BuildContext context) {
+  Future<void> initialize(BuildContext context) async {
+    final appStateProvider = Provider.of<AppStateProvider>(context, listen: false);
+    _setupAdListeners(appStateProvider);
+    _initializeAdMob();
     registerModules();
+    _interstitialAdService.loadAd(); // Preloading interstitial ad
+    _rewardedAdService.loadAd();    // Preloading rewarded ad
   }
 
+
+
+  /// Registers modules with the ModuleManager
   void registerModules() {
     ModuleManager().registerFunction("BannerModule", () => BannerAdModule());
     ModuleManager().registerInstance("InterstitialAdService", _interstitialAdService);
     ModuleManager().registerInstance("RewardedAdService", _rewardedAdService);
   }
 
+  /// Initializes AdMob SDK
   void _initializeAdMob() {
     WidgetsFlutterBinding.ensureInitialized();
 
@@ -84,7 +104,5 @@ class AdmobsPlugin implements AppPlugin {
     ModuleManager().unregisterFunction("BannerModule");
     ModuleManager().unregisterInstance("InterstitialAdService");
     ModuleManager().unregisterInstance("RewardedAdService");
-
   }
-
 }

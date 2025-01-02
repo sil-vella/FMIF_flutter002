@@ -1,11 +1,12 @@
 import 'dart:math';
+import 'dart:developer' as dev;
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../services/providers/app_state_provider.dart';
+import '../../00_base/module_manager.dart';
 import '../functions/animation_helper.dart';
-import '../functions/audio_helper.dart';
 import '../functions/play_functions.dart';
-import '../main_plugin_main.dart';
 
 class AfterMathComponent extends StatefulWidget {
   const AfterMathComponent({Key? key}) : super(key: key);
@@ -40,43 +41,45 @@ class AfterMathComponentState extends State<AfterMathComponent> with TickerProvi
     animationHelper = AnimationHelper();
     slideUpAndDownController = AnimationController(vsync: this);
     flyAwayController = AnimationController(vsync: this);
+
+    // Register controllers
+    AnimationHelper.registerController(slideUpAndDownController);
+    AnimationHelper.registerController(flyAwayController);
   }
 
   @override
   void dispose() {
-    slideUpAndDownController.dispose();
-    flyAwayController.dispose();
+    // Dispose controllers safely
+    AnimationHelper.disposeController(slideUpAndDownController);
+    AnimationHelper.disposeController(flyAwayController);
     super.dispose();
   }
 
   void _playAudioForAnimation(String playState, String animation) {
-    final audioHelper = AudioHelper();
+    final audioHelper = ModuleManager().getInstance<dynamic>("AudioHelper");
 
     if (playState == 'aftermath_correct') {
       if (animation.contains('skib.gif')) {
-        audioHelper.playEffectSound(audioHelper.correctAfter['skibidi']!, context);
+        audioHelper?.playSpecific(
+          context,
+          audioHelper.correctAfter,
+          "skibidi",
+        );
       } else {
-        final otherAudioKeys = audioHelper.correctAfter.keys
-            .where((key) => key != 'skibidi')
-            .toList();
-        if (otherAudioKeys.isNotEmpty) {
-          final randomKey = otherAudioKeys[Random().nextInt(otherAudioKeys.length)];
-          audioHelper.playEffectSound(audioHelper.correctAfter[randomKey]!, context);
-        }
+        audioHelper?.playFromList(
+          context,
+          audioHelper.correctAfter,
+        );
       }
     } else if (playState == 'aftermath_incorrect') {
-      if (animation.contains('rocket.gif')) {
-        audioHelper.playEffectSound(audioHelper.incorrectAfter['aftermath_rocket_001']!, context);
-      } else if (animation.contains('angel-wings-white.gif')) {
-        audioHelper.playEffectSound(audioHelper.incorrectAfter['aftermath_wings_001']!, context);
-      } else {
-        final incorrectAudioKeys = audioHelper.incorrectAfter.keys
-            .where((key) => key != 'aftermath_rocket_001' && key != 'aftermath_wings_001')
-            .toList();
-        if (incorrectAudioKeys.isNotEmpty) {
-          final randomKey = incorrectAudioKeys[Random().nextInt(incorrectAudioKeys.length)];
-          audioHelper.playEffectSound(audioHelper.incorrectAfter[randomKey]!, context);
-        }
+      try {
+        audioHelper?.playFromList(
+          context,
+          audioHelper.incorrectAfter,
+        );
+        dev.log('Played aftermath_incorrect sound.');
+      } catch (e, stackTrace) {
+        dev.log('Error playing aftermath_incorrect sound: $e', stackTrace: stackTrace);
       }
     }
   }
@@ -108,8 +111,7 @@ class AfterMathComponentState extends State<AfterMathComponent> with TickerProvi
       final pluginState = appStateProvider.getPluginState<Map<String, dynamic>>(pluginStateKey) ?? {};
       return pluginState['play_state'] as String?;
     });
-
-    AudioHelper().fadeOutAndStopEffectSounds(); // Fade out and stop sounds
+    final audioHelper = ModuleManager().getInstance<dynamic>("AudioHelper");
 
     lastPlayState = playState;
 
@@ -167,6 +169,7 @@ class AfterMathComponentState extends State<AfterMathComponent> with TickerProvi
         flyAwayCurve: Curves.easeInCubic,
         infinite: false,
         onComplete: () {
+          audioHelper?.stopListSounds(audioHelper.incorrectAfter);
           PlayFunctions.resetPluginPlayState(appStateProvider, pluginStateKey, context);
         },
       );

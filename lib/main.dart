@@ -1,6 +1,6 @@
-// main.dart
+import 'package:flush_me_im_famous/plugins/main_plugin/functions/animation_helper.dart';
+import 'package:flush_me_im_famous/plugins/main_plugin/modules/audio_module/audio_module.dart';
 import 'package:flush_me_im_famous/utils/consts/theme_consts.dart';
-
 import 'services/shared_preferences_service.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -27,7 +27,7 @@ void main() async {
 
   // Run the onStartup hook for all registered plugins
   debugPrint('Running onStartup hooks for plugins...');
-  PluginManager().runOnStartup();
+  await PluginManager().runOnStartup();
   debugPrint('onStartup hooks completed.');
 
   runApp(
@@ -59,11 +59,29 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
     debugPrint('Lifecycle observer added.');
 
     // Initialize plugins after the first frame
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
       debugPrint('Initializing all plugins after first frame...');
-      PluginManager().initializeAllPlugins(context);
-      debugPrint('All plugins initialized.');
+      await appInitialization();
+      debugPrint('App initialization complete.');
     });
+  }
+
+  Future<void> appInitialization() async {
+    debugPrint('App Initialization: Starting SharedPreferencesService initialization...');
+    await SharedPreferencesService().init();
+    debugPrint('SharedPreferencesService initialized.');
+
+    debugPrint('Registering plugins...');
+    registerPlugins();
+    debugPrint('Plugins registered.');
+
+    debugPrint('Running onStartup hooks...');
+    await PluginManager().runOnStartup();
+    debugPrint('onStartup hooks completed.');
+
+    debugPrint('Initializing all plugins...');
+    await PluginManager().initializeAllPlugins(context);
+    debugPrint('All plugins initialized.');
   }
 
   @override
@@ -83,25 +101,56 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
   }
 
   @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
-    debugPrint('AppLifecycleState changed: $state');
+  void didChangeAppLifecycleState(AppLifecycleState state) async {
     super.didChangeAppLifecycleState(state);
 
+    final appStateProvider = Provider.of<AppStateProvider>(context, listen: false);
+    debugPrint('AppLifecycleState changed to: \$state');
+
     if (state == AppLifecycleState.inactive) {
-      debugPrint('App is inactive. Disposing plugins...');
-      PluginManager().disposeAllPlugins(context);
-      debugPrint('Plugins disposed due to inactivity.');
-    } else if (state == AppLifecycleState.resumed) {
-      debugPrint('App is resumed. You can add logic to reinitialize plugins if needed.');
+      appStateProvider.updateMainAppState('main_state', 'inactive');
+      final isMuted = context.read<AppStateProvider>().getPluginState<Map<String, dynamic>>("MainPluginState")?["sound_muted"] ?? false;
+      if (!isMuted) {
+        debugPrint('App is inactive. Muting all sounds...');
+        await AudioHelper().toggleMute(context, true);
+      }
+
     } else if (state == AppLifecycleState.paused) {
-      debugPrint('App is paused. Resources can be freed here if necessary.');
-    } else if (state == AppLifecycleState.detached) {
-      debugPrint('App is detached. This is the final cleanup state.');
+      final isAdShowing = context.read<AppStateProvider>().getPluginState<Map<String, dynamic>>("AdmobsPluginState")?['interstitial01']?['isShowing'] ?? false;
+
+      if (!isAdShowing) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          NavigationContainer.navigatorKey.currentState?.pushNamed('/');
+        });
+
+        await AudioHelper().stopAll();
+        await AudioHelper().dispose();
+        AnimationHelper.stopAllAnimations();
+        AnimationHelper.disposeAllControllers();
+        PluginManager().disposeAllPlugins(context);
+      }
+
+    } else if (state == AppLifecycleState.resumed) {
+      final appState = context.read<AppStateProvider>().getMainAppState('main_state');
+      if (appState != 'inactive') {
+        debugPrint('App state is not inactive. Reinitializing app state...');
+        await appInitialization();
+        debugPrint('App reinitialized successfully.');
+      } else {
+        appStateProvider.updateMainAppState('main_state', 'in_play');
+      }
+
     }
+
   }
 
   @override
   Widget build(BuildContext context) {
+    final isAdShowing = context.select<AppStateProvider, bool>(
+          (provider) => provider.getPluginState<Map<String, dynamic>>("AdmobsPluginState")?['interstitial01']?['isShowing'] ?? false,
+    );
+
+    debugPrint('Ad showing state: \$isAdShowing');
     final navigationContainer = Provider.of<NavigationContainer>(context, listen: false);
 
     debugPrint('Building MaterialApp...');

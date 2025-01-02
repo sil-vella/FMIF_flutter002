@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../services/providers/app_state_provider.dart';
 import '../../services/shared_preferences_service.dart';
+import '../00_base/module_manager.dart';
 import 'functions/main_plugin_helper.dart';
-import '../00_base/app_plugin.dart';
+import '../00_base/app_plugins_base.dart';
+import 'modules/audio_module/audio_module.dart';
 
 class MainPlugin implements AppPlugin {
   MainPlugin._internal();
@@ -18,7 +20,7 @@ class MainPlugin implements AppPlugin {
   }
 
   @override
-  void initialize(BuildContext context) async {
+  Future<void> initialize(BuildContext context) async {
 
     // Register modules
     registerModules();
@@ -27,7 +29,7 @@ class MainPlugin implements AppPlugin {
     PluginHelper.registerAppbarItems(context);
 
     // Register all routes but include only '/prefs' in the drawer
-    PluginHelper.registerNavigation(context, drawerRoutes: ['/play', '/prefs', '/levelup']);
+    PluginHelper.registerNavigation(context, drawerRoutes: ['/play', '/prefs', '/levelup', '/leaderboard']);
 
     // Access and initialize app state
     final pluginStateKey = "${runtimeType}State";
@@ -51,7 +53,10 @@ class MainPlugin implements AppPlugin {
   void dispose() {
   }
 
-  void registerModules() {}
+  void registerModules() {
+    ModuleManager().registerInstance("AudioHelper", AudioHelper());
+
+  }
 
   // Default state
   Map<String, dynamic> reset() {

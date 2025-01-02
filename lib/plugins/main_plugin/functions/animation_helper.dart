@@ -1,5 +1,4 @@
 import 'dart:math';
-
 import 'package:flutter/material.dart';
 import 'main_plugin_helper.dart';
 
@@ -20,9 +19,86 @@ class CustomShakeCurve extends Curve {
 }
 
 class AnimationHelper extends PluginHelper {
+  static final Map<AnimationController, bool> _controllerRegistry = {};
+
+  /// Restart all registered animation controllers
+  static Future<void> restartAllControllers() async {
+    for (var controller in _controllerRegistry.keys) {
+      if (!_controllerRegistry[controller]!) { // Ensure the controller is not disposed
+        try {
+          controller.reset(); // Reset the animation
+          controller.forward(); // Start the animation
+          debugPrint("Controller restarted: $controller");
+        } catch (e) {
+          debugPrint("Failed to restart controller (possibly disposed): $e");
+        }
+      } else {
+        debugPrint("Controller is already disposed and cannot be restarted: $controller");
+      }
+    }
+  }
+
+
+  /// Register a controller, ensuring no duplicates
+  static void registerController(AnimationController controller) {
+    if (!_controllerRegistry.containsKey(controller)) {
+      _controllerRegistry[controller] = false; // Not yet disposed
+      debugPrint("Controller registered: $controller");
+    }
+  }
+
+  /// Dispose a controller if it hasn't been disposed
+  static void disposeController(AnimationController controller) {
+    if (_controllerRegistry.containsKey(controller) && !_controllerRegistry[controller]!) {
+      controller.dispose();
+      _controllerRegistry[controller] = true; // Mark as disposed
+      debugPrint("Controller disposed: $controller");
+    } else {
+      debugPrint("Attempted to dispose a controller that is already disposed or not registered: $controller");
+    }
+  }
+
+  /// Dispose all registered controllers
+  static void disposeAllControllers() {
+    _controllerRegistry.forEach((controller, isDisposed) {
+      if (!isDisposed) {
+        controller.dispose();
+        debugPrint("Controller disposed: $controller");
+      }
+    });
+    _controllerRegistry.clear();
+    debugPrint("All controllers disposed.");
+  }
+
+  /// Check if a controller is disposed
+  static bool isDisposed(AnimationController controller) {
+    return _controllerRegistry[controller] ?? true; // Default to true if not found
+  }
+
+  /// Stop all animations for registered controllers
+  static void stopAllAnimations() {
+    for (var controller in _controllerRegistry.keys) {
+      if (controller.isAnimating) {
+        controller.stop();
+        debugPrint("Controller stopped: $controller");
+      }
+    }
+  }
+
+  /// Clear registry after all controllers are disposed
+  static void clearRegistry() {
+    _controllerRegistry.clear();
+    debugPrint("Controller registry cleared.");
+  }
+
   void _resetController(AnimationController controller) {
-    controller.stop();
-    controller.reset();
+    try {
+      controller.stop();
+      controller.reset();
+      debugPrint("Controller reset: $controller");
+    } catch (e) {
+      debugPrint("Failed to reset controller (possibly disposed): $e");
+    }
   }
 
   Widget slideUp(
@@ -77,6 +153,9 @@ class AnimationHelper extends PluginHelper {
     _resetController(controller);
     controller.duration = slideUpDuration + pauseDuration + flyAwayDuration;
 
+    // Register controller globally
+    registerController(controller);
+
     // Define the animation sequence with individual weights for each phase
     final animation = TweenSequence<Offset>([
       TweenSequenceItem(
@@ -110,9 +189,6 @@ class AnimationHelper extends PluginHelper {
     return SlideTransition(position: animation, child: child);
   }
 
-
-
-
   Widget bounce(
       Widget child, {
         required AnimationController controller,
@@ -126,6 +202,9 @@ class AnimationHelper extends PluginHelper {
       }) {
     _resetController(controller); // Stop and reset the controller
     controller.duration = duration;
+
+    // Register controller globally
+    registerController(controller);
 
     if (infinite) {
       controller.repeat(reverse: reverse);
@@ -159,6 +238,9 @@ class AnimationHelper extends PluginHelper {
     _resetController(controller); // Stop and reset the controller
     controller.duration = duration;
 
+    // Register controller globally
+    registerController(controller);
+
     if (infinite) {
       controller.repeat(reverse: reverse);
     } else {
@@ -190,6 +272,9 @@ class AnimationHelper extends PluginHelper {
       }) {
     _resetController(controller); // Stop and reset the controller
     controller.duration = duration;
+
+    // Register controller globally
+    registerController(controller);
 
     if (infinite) {
       controller.repeat(reverse: reverse);
@@ -228,6 +313,10 @@ class AnimationHelper extends PluginHelper {
       }) {
     _resetController(shakeController); // Stop and reset controllers
     _resetController(dropController);
+
+    // Register controller globally
+    registerController(shakeController);
+    registerController(dropController);
 
     shakeController.duration = shakeDuration;
     shakeController.repeat(reverse: true);
@@ -282,6 +371,9 @@ class AnimationHelper extends PluginHelper {
     _resetController(controller); // Stop and reset the controller
     controller.duration = duration;
 
+    // Register controller globally
+    registerController(controller);
+
     final animation = TweenSequence<Offset>([
       TweenSequenceItem(
         tween: Tween<Offset>(begin: begin, end: middle).chain(CurveTween(curve: curve)),
@@ -311,6 +403,7 @@ class AnimationHelper extends PluginHelper {
 
     return SlideTransition(position: animation, child: child);
   }
+
   Widget cutTape(
       Widget child, {
         required AnimationController controller,
@@ -328,6 +421,9 @@ class AnimationHelper extends PluginHelper {
       }) {
     _resetController(controller); // Reset the controller
     controller.duration = duration;
+
+    // Register controller globally
+    registerController(controller);
 
     // Define animations for scale, rotation, and delayed translation
     final scaleAnimation = Tween<double>(begin: scaleBegin, end: scaleEnd)
@@ -370,7 +466,4 @@ class AnimationHelper extends PluginHelper {
       child: child,
     );
   }
-
-
-
 }

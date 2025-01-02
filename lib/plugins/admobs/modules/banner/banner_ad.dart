@@ -31,7 +31,7 @@ class BannerAdModule extends StatelessWidget {
     _bannerAd.load(); // Load the ad immediately
 
     return Container(
-      color: AppColors.accentColor2, // Use the theme's secondary color
+      color: Colors.white, // Set the container's color to white
       width: MediaQuery.of(context).size.width, // Set the container to full screen width
       height: _bannerAd.size.height.toDouble(), // Use the banner's defined height
       child: Align(
@@ -43,6 +43,7 @@ class BannerAdModule extends StatelessWidget {
         ),
       ),
     );
+
   }
 
 

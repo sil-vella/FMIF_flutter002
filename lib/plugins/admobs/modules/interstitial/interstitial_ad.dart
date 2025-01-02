@@ -1,9 +1,12 @@
+import 'package:flutter/material.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 
 class InterstitialAdService {
   InterstitialAd? _interstitialAd;
   final String adUnitId;
   bool _isAdReady = false;
+
+  final ValueNotifier<bool> isAdDismissed = ValueNotifier<bool>(false);
 
   InterstitialAdService({required this.adUnitId});
 
@@ -28,6 +31,7 @@ class InterstitialAdService {
               _interstitialAd = null;
               loadAd(); // Preload another ad
               _isAdReady = false;
+              isAdDismissed.value = true;
             },
             onAdFailedToShowFullScreenContent: (ad, err) {
               ad.dispose();
@@ -49,6 +53,7 @@ class InterstitialAdService {
   // Show the interstitial ad if it is ready
   void showAd() {
     if (_isAdReady) {
+      isAdDismissed.value = false; // Reset flag before showing the ad
       _interstitialAd!.show();
     } else {
       loadAd(); // Reload if the ad is not ready

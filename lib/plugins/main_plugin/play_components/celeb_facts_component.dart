@@ -35,7 +35,7 @@ class CelebFactsComponent extends StatelessWidget {
     }
 
     return Container(
-      color: AppColors.accentColor2, // Accent color for the background
+      color: AppColors.accentColor, // Accent color for the background
       padding: const EdgeInsets.all(16.0),
       child: SizedBox(
         height: MediaQuery.of(context).size.height * 0.2,
@@ -44,12 +44,14 @@ class CelebFactsComponent extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                "Facts:",
+                "Facts about the celeb:",
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                   fontWeight: FontWeight.bold,
-                  color: Colors.black, // Black text
+                  color: AppColors.accentColor2,
+                  fontSize: 20.0, // Set the font size here
                 ),
               ),
+
               const SizedBox(height: 8),
               for (var fact in celebFacts)
                 Padding(
@@ -57,7 +59,8 @@ class CelebFactsComponent extends StatelessWidget {
                   child: Text(
                     "• $fact",
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: Colors.black, // Black text for the facts
+                      color: Colors.white, // Black text for the facts
+                      fontSize: 18.0, // Set the font size here
                     ),
                   ),
                 ),

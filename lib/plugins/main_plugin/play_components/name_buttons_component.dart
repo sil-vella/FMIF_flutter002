@@ -1,12 +1,12 @@
 import 'package:flush_me_im_famous/utils/consts/theme_consts.dart';
 import 'package:flutter/material.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:provider/provider.dart';
 import 'dart:math';
 import 'package:auto_size_text/auto_size_text.dart';
 import '../../../services/providers/app_state_provider.dart';
 import '../../00_base/module_manager.dart';
 import '../functions/play_functions.dart';
-import '../main_plugin_main.dart';
 
 class NameButtonsComponent extends StatefulWidget {
   const NameButtonsComponent({Key? key}) : super(key: key);
@@ -200,29 +200,78 @@ class _NameButtonsComponentState extends State<NameButtonsComponent> {
     );
   }
 
+
   void _triggerRewardedAdToRemoveOption(
       AppStateProvider appStateProvider,
       String pluginStateKey,
       List<String> names,
       ) {
+    // Retrieve the current plugin state to check the hint value
+    final pluginState = appStateProvider.getPluginState<Map<String, dynamic>>(pluginStateKey) ?? {};
+    final hintBefore = pluginState['hint'] as bool? ?? false;
+
+    // Log the hint state before pressing the help button
+    debugPrint("Hint state before pressing Help: $hintBefore");
+
     // Retrieve the RewardedAdModule factory from ModuleManager
     final rewardedAdService = ModuleManager().getInstance<dynamic>("RewardedAdService");
 
     if (rewardedAdService != null) {
-      // Use Function.apply to dynamically call the showAd method
-      Function.apply(
-        rewardedAdService.showAd,
-        [], // No positional arguments
-        {
-          #appStateProvider: appStateProvider, // Pass AppStateProvider
-          #context: context,                  // Pass BuildContext
-        },
+      rewardedAdService.showAd(
+        appStateProvider: appStateProvider,
+        context: context,
       );
 
-      // Hide the button immediately after use
-      setState(() {
-        _hasUsedRemoveOption = true;
-      });
+      // Preload the next ad after showing the current one
+      rewardedAdService.loadAd();
+
+      final rewardedAd = rewardedAdService._rewardedAd as RewardedAd?;
+      if (rewardedAd != null) {
+        rewardedAd.fullScreenContentCallback = FullScreenContentCallback(
+          onAdDismissedFullScreenContent: (ad) {
+            // Ensure the ad is properly typed and disposed
+            if (ad is RewardedAd) {
+              ad.dispose();
+            }
+
+            // Hide the button immediately after use
+            setState(() {
+              _hasUsedRemoveOption = true;
+            });
+
+            // Remove one celebrity name
+            if (names.isNotEmpty) {
+              names.removeAt(Random().nextInt(names.length)); // Remove a random name
+            }
+
+            // Update the hint state in the plugin state
+            appStateProvider.updatePluginState(pluginStateKey, {
+              ...pluginState,
+              'hint': true, // Update hint state
+            });
+
+            // Retrieve the updated plugin state to check the new hint value
+            final updatedPluginState = appStateProvider.getPluginState<Map<String, dynamic>>(pluginStateKey) ?? {};
+            final hintAfter = updatedPluginState['hint'] as bool? ?? false;
+
+            // Log the hint state after pressing the help button
+            debugPrint("Hint state after pressing Help: $hintAfter");
+          },
+          onAdFailedToShowFullScreenContent: (ad, error) {
+            debugPrint("Ad failed to show: $error");
+
+            // Ensure the ad is properly typed and disposed
+            ad.dispose();
+            },
+        );
+      } else {
+        debugPrint("No rewarded ad available.");
+      }
+    } else {
+      // If no rewarded ad service is available, log an error
+      debugPrint("RewardedAdService is not available or ad is not ready.");
     }
   }
+
+
 }
