@@ -7,6 +7,7 @@ import '../../../services/shared_preferences_service.dart';
 import 'package:provider/provider.dart';
 import '../../../services/providers/app_state_provider.dart';
 import '../../00_base/module_manager.dart';
+import '../modules/audio_module/audio_module.dart';
 
 class TimerClockComponent extends StatefulWidget {
   const TimerClockComponent({Key? key}) : super(key: key);
@@ -50,17 +51,24 @@ class _TimerClockComponentState extends State<TimerClockComponent> {
       }
 
       if (mainPluginState['play_state'] == 'in_play') {
-        final audioHelper = ModuleManager().getInstance<dynamic>("AudioHelper");
+        // Retrieve the AudioHelper function and create a new instance
+        final audioHelperFactory = ModuleManager().getFunction<Function>("AudioHelper");
+        if (audioHelperFactory == null) {
+          dev.log("Error: AudioHelper function is not registered.");
+          return;
+        }
+        final audioHelper = audioHelperFactory.call() as AudioHelper;
 
-        audioHelper?.playSpecific(
+        audioHelper.playSpecific(
           context,
           audioHelper.timerSounds,
           "ticking",
         );
+
         _startCountdown(() async {
-          audioHelper?.stopSound(audioHelper.timerSounds, "ticking");
+          audioHelper.stopSound(audioHelper.timerSounds, "ticking");
           // Play time up sound
-          audioHelper?.playSpecific(
+          audioHelper.playSpecific(
             context,
             audioHelper.timerSounds,
             "time_up",

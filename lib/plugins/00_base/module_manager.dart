@@ -11,6 +11,7 @@ class ModuleManager {
 
   ModuleManager._internal();
 
+  /// Registers an instance, ensuring it's only registered once
   void registerInstance(String name, dynamic instance, {void Function(dynamic)? onInit}) {
     if (_instances.containsKey(name)) {
       dev.log(
@@ -19,6 +20,7 @@ class ModuleManager {
       );
       return;
     }
+
     _instances[name] = instance;
     dev.log("Instance registered: $name");
 
@@ -28,8 +30,7 @@ class ModuleManager {
     }
   }
 
-
-  /// Registers a function with a specified name (singleton pattern)
+  /// Registers a function, ensuring it's only registered once
   void registerFunction(String name, Function function) {
     if (_functions.containsKey(name)) {
       dev.log(
@@ -38,6 +39,7 @@ class ModuleManager {
       );
       return;
     }
+
     _functions[name] = function;
     dev.log("Function registered: $name");
   }

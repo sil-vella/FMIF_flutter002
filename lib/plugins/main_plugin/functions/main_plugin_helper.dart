@@ -12,6 +12,7 @@ import '../../../navigation/navigation_container.dart';
 import '../../../services/providers/app_state_provider.dart';
 import '../../../utils/consts/config.dart';
 import '../../00_base/module_manager.dart';
+import '../modules/audio_module/audio_module.dart';
 import '../screens/pref_screen.dart';
 import '../screens/game_screen.dart';
 
@@ -164,14 +165,20 @@ class PluginHelper {
     final appStateProvider = Provider.of<AppStateProvider>(context, listen: false);
     final navigationContainer = Provider.of<NavigationContainer>(context, listen: false);
 
-
     navigationContainer.registerAppBarItems(
       'MainPlugin', // Plugin key
       [
         StatefulBuilder(
           builder: (context, setState) {
             final appStateProvider = Provider.of<AppStateProvider>(context, listen: false);
-            final audioHelper = ModuleManager().getInstance<dynamic>("AudioHelper");
+
+            // Retrieve the AudioHelper function and create a new instance
+            final audioHelperFactory = ModuleManager().getFunction<Function>("AudioHelper");
+            if (audioHelperFactory == null) {
+              dev.log("Error: AudioHelper function is not registered.");
+              return const SizedBox(); // Return an empty widget if the function is not registered
+            }
+            final audioHelper = audioHelperFactory.call() as AudioHelper;
 
             // Retrieve the current mute state
             bool isMuted = appStateProvider.getPluginState("MainPluginState")?["sound_muted"] ?? false;
@@ -183,7 +190,7 @@ class PluginHelper {
                 isMuted = !isMuted;
 
                 // Update the AppStateProvider asynchronously
-                await audioHelper?.toggleMute(context, isMuted);
+                await audioHelper.toggleMute(context, isMuted);
 
                 // Refresh the icon immediately
                 setState(() {});
@@ -191,10 +198,10 @@ class PluginHelper {
             );
           },
         ),
-
       ],
     );
   }
+
 
   static Future<dynamic> getLeaderboard(AppStateProvider appStateProvider) async {
     final createConnectionModule = ModuleManager().getFunction<Function>("ConnectionModule");

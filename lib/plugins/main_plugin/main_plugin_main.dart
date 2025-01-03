@@ -15,7 +15,7 @@ class MainPlugin implements AppPlugin {
   factory MainPlugin() => _instance;
 
   @override
-  void onStartup() {
+  Future<void> onStartup() async {
     // Add any non-context-dependent startup logic here
   }
 
@@ -54,7 +54,7 @@ class MainPlugin implements AppPlugin {
   }
 
   void registerModules() {
-    ModuleManager().registerInstance("AudioHelper", AudioHelper());
+    ModuleManager().registerFunction("AudioHelper", () => AudioHelper());
 
   }
 

@@ -1,7 +1,11 @@
+import 'dart:math';
+import 'dart:developer' as dev;
+
+import 'package:flush_me_im_famous/plugins/00_base/module_manager.dart';
 import 'package:flush_me_im_famous/plugins/main_plugin/functions/animation_helper.dart';
 import 'package:flush_me_im_famous/plugins/main_plugin/modules/audio_module/audio_module.dart';
+import 'package:flush_me_im_famous/services/shared_preferences_service.dart';
 import 'package:flush_me_im_famous/utils/consts/theme_consts.dart';
-import 'services/shared_preferences_service.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'services/providers/app_state_provider.dart';
@@ -81,7 +85,15 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
 
     debugPrint('Initializing all plugins...');
     await PluginManager().initializeAllPlugins(context);
-    debugPrint('All plugins initialized.');
+
+    // Retrieve the AudioHelper function and apply the saved mute state
+    final audioHelperFactory = ModuleManager().getFunction<Function>("AudioHelper");
+    if (audioHelperFactory != null) {
+      final audioHelper = audioHelperFactory.call() as AudioHelper;
+      await audioHelper.applySavedMuteState(context);
+    } else {
+      debugPrint('Error: AudioHelper function is not registered.');
+    }
   }
 
   @override
@@ -105,16 +117,22 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
     super.didChangeAppLifecycleState(state);
 
     final appStateProvider = Provider.of<AppStateProvider>(context, listen: false);
-    debugPrint('AppLifecycleState changed to: \$state');
+    debugPrint('AppLifecycleState changed to: $state');
+
+    // Retrieve the AudioHelper function for lifecycle-related audio handling
+    final audioHelperFactory = ModuleManager().getFunction<Function>("AudioHelper");
+    final audioHelper = audioHelperFactory?.call() as AudioHelper?;
 
     if (state == AppLifecycleState.inactive) {
       appStateProvider.updateMainAppState('main_state', 'inactive');
-      final isMuted = context.read<AppStateProvider>().getPluginState<Map<String, dynamic>>("MainPluginState")?["sound_muted"] ?? false;
-      if (!isMuted) {
-        debugPrint('App is inactive. Muting all sounds...');
-        await AudioHelper().toggleMute(context, true);
+      try {
+        await audioHelper?.stopAll();
+        await audioHelper?.dispose();
+        AnimationHelper.stopAllAnimations();
+        AnimationHelper.disposeAllControllers();
+      } catch (e) {
+        debugPrint('Error during stopAll sounds: $e');
       }
-
     } else if (state == AppLifecycleState.paused) {
       final isAdShowing = context.read<AppStateProvider>().getPluginState<Map<String, dynamic>>("AdmobsPluginState")?['interstitial01']?['isShowing'] ?? false;
 
@@ -123,37 +141,38 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
           NavigationContainer.navigatorKey.currentState?.pushNamed('/');
         });
 
-        await AudioHelper().stopAll();
-        await AudioHelper().dispose();
-        AnimationHelper.stopAllAnimations();
-        AnimationHelper.disposeAllControllers();
-        PluginManager().disposeAllPlugins(context);
+        try {
+          await audioHelper?.stopAll();
+          await audioHelper?.dispose();
+          AnimationHelper.stopAllAnimations();
+          AnimationHelper.disposeAllControllers();
+          PluginManager().disposeAllPlugins(context);
+        } catch (e) {
+          debugPrint('Error during pause cleanup: $e');
+        }
+      } else {
+        await audioHelper?.stopAll();
+        await audioHelper?.dispose();
       }
-
     } else if (state == AppLifecycleState.resumed) {
       final appState = context.read<AppStateProvider>().getMainAppState('main_state');
       if (appState != 'inactive') {
         debugPrint('App state is not inactive. Reinitializing app state...');
-        await appInitialization();
-        debugPrint('App reinitialized successfully.');
+        try {
+          await appInitialization();
+          debugPrint('App reinitialized successfully.');
+        } catch (e) {
+          debugPrint('Error during app reinitialization: $e');
+        }
       } else {
         appStateProvider.updateMainAppState('main_state', 'in_play');
       }
-
     }
-
   }
 
   @override
   Widget build(BuildContext context) {
-    final isAdShowing = context.select<AppStateProvider, bool>(
-          (provider) => provider.getPluginState<Map<String, dynamic>>("AdmobsPluginState")?['interstitial01']?['isShowing'] ?? false,
-    );
-
-    debugPrint('Ad showing state: \$isAdShowing');
     final navigationContainer = Provider.of<NavigationContainer>(context, listen: false);
-
-    debugPrint('Building MaterialApp...');
 
     return MaterialApp(
       title: 'FMIF',

@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 
 // Updated dispose method in AppPlugin
 abstract class AppPlugin {
-  void onStartup();
+  Future<void> onStartup();
   Future<void> initialize(BuildContext context);
   void dispose() {
     // Plugin-specific cleanup

@@ -7,6 +7,7 @@ import '../../../services/providers/app_state_provider.dart';
 import '../../00_base/module_manager.dart';
 import '../functions/animation_helper.dart';
 import '../functions/play_functions.dart';
+import '../modules/audio_module/audio_module.dart';
 
 class AfterMathComponent extends StatefulWidget {
   const AfterMathComponent({Key? key}) : super(key: key);
@@ -56,24 +57,30 @@ class AfterMathComponentState extends State<AfterMathComponent> with TickerProvi
   }
 
   void _playAudioForAnimation(String playState, String animation) {
-    final audioHelper = ModuleManager().getInstance<dynamic>("AudioHelper");
+    // Retrieve the AudioHelper function and create a new instance
+    final audioHelperFactory = ModuleManager().getFunction<Function>("AudioHelper");
+    if (audioHelperFactory == null) {
+      dev.log("Error: AudioHelper function is not registered.");
+      return;
+    }
+    final audioHelper = audioHelperFactory.call() as AudioHelper;
 
     if (playState == 'aftermath_correct') {
       if (animation.contains('skib.gif')) {
-        audioHelper?.playSpecific(
+        audioHelper.playSpecific(
           context,
           audioHelper.correctAfter,
           "skibidi",
         );
       } else {
-        audioHelper?.playFromList(
+        audioHelper.playFromList(
           context,
           audioHelper.correctAfter,
         );
       }
     } else if (playState == 'aftermath_incorrect') {
       try {
-        audioHelper?.playFromList(
+        audioHelper.playFromList(
           context,
           audioHelper.incorrectAfter,
         );
@@ -111,7 +118,6 @@ class AfterMathComponentState extends State<AfterMathComponent> with TickerProvi
       final pluginState = appStateProvider.getPluginState<Map<String, dynamic>>(pluginStateKey) ?? {};
       return pluginState['play_state'] as String?;
     });
-    final audioHelper = ModuleManager().getInstance<dynamic>("AudioHelper");
 
     lastPlayState = playState;
 
@@ -169,7 +175,6 @@ class AfterMathComponentState extends State<AfterMathComponent> with TickerProvi
         flyAwayCurve: Curves.easeInCubic,
         infinite: false,
         onComplete: () {
-          audioHelper?.stopListSounds(audioHelper.incorrectAfter);
           PlayFunctions.resetPluginPlayState(appStateProvider, pluginStateKey, context);
         },
       );

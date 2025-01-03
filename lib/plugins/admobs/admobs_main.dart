@@ -56,7 +56,7 @@ class AdmobsPlugin implements AppPlugin {
   }
 
   @override
-  void onStartup() {
+  Future<void> onStartup() async {
 
   }
 

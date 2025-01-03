@@ -16,7 +16,7 @@ class Api implements AppPlugin {
   factory Api() => _instance;
 
   @override
-  void onStartup() {
+  Future<void> onStartup() async {
     // Register modules at startup
     try {
       registerModules();

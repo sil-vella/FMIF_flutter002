@@ -8,6 +8,7 @@ import '../../../services/shared_preferences_service.dart';
 import '../../00_base/module_manager.dart';
 import '../main_plugin_main.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../modules/audio_module/audio_module.dart';
 import 'main_plugin_helper.dart';
 
 
@@ -51,8 +52,19 @@ class PlayFunctions extends PluginHelper {
 
       await fetchAndSetCelebDetails(appStateProvider, context);
 
-      final audioHelper = ModuleManager().getInstance<dynamic>("AudioHelper");
-      audioHelper?.loopSpecific(context, audioHelper.backgroundSounds, "backsound_1",);
+      // Retrieve the AudioHelper function and create a new instance
+      final audioHelperFactory = ModuleManager().getFunction<Function>("AudioHelper");
+      if (audioHelperFactory == null) {
+        dev.log("Error: AudioHelper function is not registered.");
+        return;
+      }
+
+      final audioHelper = audioHelperFactory.call() as AudioHelper;
+      audioHelper.loopSpecific(
+        context,
+        audioHelper.backgroundSounds,
+        "backsound_1",
+      );
 
       appStateProvider.updateMainAppState('main_state', 'in_play');
       final currentPluginState = appStateProvider.getPluginState<Map<String, dynamic>>(pluginStateKey) ?? {};
@@ -64,7 +76,6 @@ class PlayFunctions extends PluginHelper {
           'ribbon_anims': [],
         },
       });
-
 
       // **FIX: Check context.mounted before navigating**
       if (context.mounted) {
@@ -152,15 +163,22 @@ class PlayFunctions extends PluginHelper {
       AppStateProvider appStateProvider, String pluginStateKey, String selectedName, BuildContext context) async {
     try {
       final pluginState = appStateProvider.getPluginState<Map<String, dynamic>>(pluginStateKey) ?? {};
-      final audioHelper = ModuleManager().getInstance<dynamic>("AudioHelper");
+
+      // Retrieve the AudioHelper function and create a new instance
+      final audioHelperFactory = ModuleManager().getFunction<Function>("AudioHelper");
+      if (audioHelperFactory == null) {
+        dev.log("Error: AudioHelper function is not registered.");
+        return;
+      }
+      final audioHelper = audioHelperFactory.call() as AudioHelper;
 
       if (selectedName == pluginState['celeb_name']) {
-        audioHelper?.playSpecific(
+        audioHelper.playSpecific(
           context,
           audioHelper.correctSounds,
           "correct_1",
         );
-        audioHelper?.stopSound(audioHelper.timerSounds, "ticking");
+        audioHelper.stopSound(audioHelper.timerSounds, "ticking");
         appStateProvider.updatePluginState("MainPluginState", {
           ...pluginState, // Preserve the existing state
           'play_state': 'revealed_correct',
@@ -169,7 +187,6 @@ class PlayFunctions extends PluginHelper {
             'ribbon_anims': ['cut_tape'],
           }
         });
-
 
         // Update points and guessed data in SharedPreferences
         final currentPoints = SharedPreferencesService().getInt('points') ?? 0;
@@ -207,12 +224,12 @@ class PlayFunctions extends PluginHelper {
 
         dev.log("Points updated to $updatedPoints. Guessed celebrities for $category: $guessedList.");
       } else {
-        audioHelper?.playSpecific(
+        audioHelper.playSpecific(
           context,
           audioHelper.incorrectSounds,
           "incorrect_1",
         );
-        audioHelper?.stopSound(audioHelper.timerSounds, "ticking");
+        audioHelper.stopSound(audioHelper.timerSounds, "ticking");
         appStateProvider.updatePluginState("MainPluginState", {
           ...pluginState, // Preserve the existing state
           'play_state': 'revealed_incorrect',
@@ -231,14 +248,22 @@ class PlayFunctions extends PluginHelper {
     }
   }
 
+  static void flushAction(AppStateProvider appStateProvider, String pluginStateKey, BuildContext context) {
+    // Retrieve the AudioHelper function and create a new instance
+    final audioHelperFactory = ModuleManager().getFunction<Function>("AudioHelper");
+    if (audioHelperFactory == null) {
+      dev.log("Error: AudioHelper function is not registered.");
+      return;
+    }
+    final audioHelper = audioHelperFactory.call() as AudioHelper;
 
-  static void flushAction(AppStateProvider appStateProvider, String pluginStateKey, context) {
-    final audioHelper = ModuleManager().getInstance<dynamic>("AudioHelper");
     final pluginState = appStateProvider.getPluginState<Map<String, dynamic>>(pluginStateKey) ?? {};
-    audioHelper?.playFromList(
+
+    audioHelper.playFromList(
       context,
       audioHelper.flushingFiles,
     );
+
     // Update plugin state
     appStateProvider.updatePluginState("MainPluginState", {
       ...pluginState, // Preserve the existing state
@@ -248,7 +273,6 @@ class PlayFunctions extends PluginHelper {
         'ribbon_anims': [],
       },
     });
-
   }
 
   static Future<void> activateAftermath(
@@ -412,8 +436,6 @@ class PlayFunctions extends PluginHelper {
     dev.log("Updated other_celebs: $otherCelebs");
     dev.log("'hint' is now set to true.");
   }
-
-
 }
 
 
