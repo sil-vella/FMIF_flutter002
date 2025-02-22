@@ -3,14 +3,17 @@ import 'dart:math';
 import 'package:provider/provider.dart';
 import '../../../../core/00_base/module_base.dart';
 import '../../../../core/managers/app_manager.dart';
+import '../../../../core/managers/module_manager.dart';
 import '../../../../core/managers/services_manager.dart';
 import '../../../../core/managers/state_manager.dart';
+import '../../../../core/services/shared_preferences.dart';
 import '../../../../tools/logging/logger.dart';
 import '../../../../utils/consts/theme_consts.dart';
 
 class MainHelperModule extends ModuleBase {
-  static final Logger _log = Logger(); // ✅ Use a static logger for static methods
-  final ServicesManager _servicesManager = ServicesManager();
+  static final Logger _log = Logger();
+  final ServicesManager _servicesManager;
+  final ModuleManager _moduleManager;
   static final Random _random = Random();
 
   Timer? _timer;
@@ -18,7 +21,10 @@ class MainHelperModule extends ModuleBase {
   bool _isPaused = false;
 
   /// ✅ Constructor with module key
-  MainHelperModule() : super("main_helper_module") {
+  MainHelperModule()
+      : _moduleManager = ModuleManager(),
+        _servicesManager = ServicesManager(),
+        super("main_helper_module") {
     _log.info('✅ MainHelperModule initialized.');
   }
 

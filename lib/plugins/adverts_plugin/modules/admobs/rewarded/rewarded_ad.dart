@@ -1,17 +1,28 @@
 import 'dart:ui';
 import '../../../../../core/00_base/module_base.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
+import '../../../../../core/managers/module_manager.dart';
+import '../../../../../core/managers/services_manager.dart';
+import '../../../../../core/services/shared_preferences.dart';
 import '../../../../../tools/logging/logger.dart';
+import '../../../../main_plugin/modules/main_helper_module/main_helper_module.dart';
 
 class RewardedAdModule extends ModuleBase {
-  static final Logger _log = Logger(); // ✅ Use a static logger for static methods
+  static final Logger _log = Logger();
+  final ServicesManager _servicesManager;
+  final ModuleManager _moduleManager;
+  final SharedPrefManager? _sharedPref;
   final String adUnitId;
   RewardedAd? _rewardedAd;
   bool _isAdReady = false;
 
   /// ✅ Constructor with module key
-  RewardedAdModule(this.adUnitId) : super("admobs_rewarded_ad_module") {
-    _log.info('RewardedAdModule created for Ad Unit: $adUnitId');
+  RewardedAdModule(this.adUnitId)
+      : _moduleManager = ModuleManager(),
+        _servicesManager = ServicesManager(),
+        _sharedPref = ServicesManager().getService<SharedPrefManager>('shared_pref'),
+        super("admobs_rewarded_ad_module") {
+    _log.info('RewardedAdModule created');
     loadAd(); // ✅ Load ad on initialization
   }
 

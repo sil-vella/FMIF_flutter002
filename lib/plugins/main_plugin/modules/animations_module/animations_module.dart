@@ -1,17 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:confetti/confetti.dart';
 import '../../../../core/00_base/module_base.dart';
+import '../../../../core/managers/module_manager.dart';
+import '../../../../core/managers/services_manager.dart';
+import '../../../../core/services/shared_preferences.dart';
 import '../../../../tools/logging/logger.dart';
 
 class AnimationsModule extends ModuleBase {
   static final Logger _log = Logger(); // ✅ Use a static logger for static methods
-
   // List to store animation controllers for cleanup
   final List<AnimationController> _controllers = [];
   final Map<String, ConfettiController> _confettiControllers = {}; // ✅ Store confetti controllers
 
   /// ✅ Constructor with module key
-  AnimationsModule() : super("animations_module") {
+  AnimationsModule()
+      :  super("animations_module") {
     _log.info('✅ AnimationsModule initialized.');
   }
 

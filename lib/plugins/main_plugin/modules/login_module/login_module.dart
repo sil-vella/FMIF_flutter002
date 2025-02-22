@@ -1,16 +1,22 @@
 import 'package:flush_me_im_famous/core/00_base/module_base.dart';
 import '../../../../core/managers/module_manager.dart';
 import '../../../../core/managers/services_manager.dart';
+import '../../../../core/services/shared_preferences.dart';
 import '../../../../tools/logging/logger.dart';
 import '../connections_module/connections_module.dart';
 
 class LoginModule extends ModuleBase {
   static final Logger _log = Logger(); // ✅ Use a static logger for static methods
-  final ServicesManager servicesManager = ServicesManager();
-  final ModuleManager _moduleManager = ModuleManager();
+  final ServicesManager _servicesManager;
+  final ModuleManager _moduleManager;
+  final SharedPrefManager? _sharedPref;
 
   /// ✅ Constructor with module key
-  LoginModule() : super("login_module") {
+  LoginModule()
+      : _moduleManager = ModuleManager(),
+        _servicesManager = ServicesManager(),
+        _sharedPref = ServicesManager().getService<SharedPrefManager>('shared_pref'),
+        super("login_module") {
     _log.info('✅ LoginModule initialized.');
   }
 
@@ -20,7 +26,7 @@ class LoginModule extends ModuleBase {
     required String password,
   }) async {
     final connectionModule = _moduleManager.getLatestModule<ConnectionsModule>();
-    final sharedPrefService = servicesManager.getService('shared_pref');
+    final sharedPrefService = _servicesManager.getService('shared_pref');
 
     if (connectionModule == null || sharedPrefService == null) {
       _log.error("❌ Missing required modules.");
@@ -104,7 +110,7 @@ class LoginModule extends ModuleBase {
     required String password,
   }) async {
     final connectionModule = _moduleManager.getLatestModule<ConnectionsModule>();
-    final sharedPrefService = servicesManager.getService('shared_pref');
+    final sharedPrefService = _servicesManager.getService('shared_pref');
 
     if (connectionModule == null || sharedPrefService == null) {
       _log.error("❌ Missing required modules.");
@@ -193,7 +199,7 @@ class LoginModule extends ModuleBase {
   /// ✅ Delete User Method
   Future<Map<String, dynamic>> deleteUser() async {
     final connectionModule = _moduleManager.getLatestModule<ConnectionsModule>();
-    final sharedPrefService = servicesManager.getService('shared_pref');
+    final sharedPrefService = _servicesManager.getService('shared_pref');
 
     if (connectionModule == null || sharedPrefService == null) {
       _log.error("❌ Missing required modules.");

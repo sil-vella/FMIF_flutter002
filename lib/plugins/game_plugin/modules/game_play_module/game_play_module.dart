@@ -6,6 +6,7 @@ import '../../../../core/managers/app_manager.dart';
 import '../../../../core/managers/module_manager.dart';
 import '../../../../core/managers/services_manager.dart';
 import '../../../../core/managers/state_manager.dart';
+import '../../../../core/services/shared_preferences.dart';
 import '../../../../tools/logging/logger.dart';
 import '../../../adverts_plugin/modules/admobs/rewarded/rewarded_ad.dart';
 import '../question_module/question_module.dart';
@@ -14,11 +15,20 @@ import 'config/gameplaymodule_config.dart';
 
 class GamePlayModule extends ModuleBase {
   static final Logger _log = Logger(); // ✅ Use a static logger for static methods
-  final ServicesManager _servicesManager = ServicesManager();
-  final MainHelperModule _mainHelperModule = MainHelperModule();
 
-  /// ✅ Call `super` to set moduleKey & auto-register
-  GamePlayModule() : super("game_play_module") {
+  final ServicesManager _servicesManager;
+  final ModuleManager _moduleManager;
+  final SharedPrefManager? _sharedPref;
+  final MainHelperModule? _mainHelperModule;
+
+  /// ✅ No-argument constructor
+  GamePlayModule()
+      : _moduleManager = ModuleManager(),
+        _servicesManager = ServicesManager(),
+        _sharedPref = ServicesManager().getService<SharedPrefManager>('shared_pref'),
+        _mainHelperModule =
+        ModuleManager().getLatestModule<MainHelperModule>(),
+        super("game_play_module") {
     _log.info('📢 GamePlayModule initialized and auto-registered.');
   }
 
@@ -175,7 +185,7 @@ class GamePlayModule extends ModuleBase {
       });
 
       // ✅ Start timer with dynamic duration
-      _mainHelperModule.startTimer(duration, () {
+      _mainHelperModule?.startTimer(duration, () {
         _log.info("⏰ Timer finished! Triggering timeout answer.");
 
         // ✅ Update state when timer stops

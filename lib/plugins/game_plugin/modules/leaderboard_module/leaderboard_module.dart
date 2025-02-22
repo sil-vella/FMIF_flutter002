@@ -3,16 +3,22 @@ import 'package:flutter/material.dart';
 import '../../../../core/00_base/module_base.dart';
 import '../../../../core/managers/module_manager.dart';
 import '../../../../core/managers/services_manager.dart';
+import '../../../../core/services/shared_preferences.dart';
 import '../../../../tools/logging/logger.dart';
 import '../../../../utils/consts/theme_consts.dart'; // ✅ Import Theme
 
 class LeaderboardModule extends ModuleBase {
   static final Logger _log = Logger(); // ✅ Use a static logger for static methods
-  final ServicesManager servicesManager = ServicesManager();
-  final ModuleManager moduleManager = ModuleManager();
+  final ServicesManager _servicesManager;
+  final ModuleManager _moduleManager;
+  final SharedPrefManager? _sharedPref;
 
   /// ✅ Call `super` to set moduleKey & auto-register
-  LeaderboardModule() : super("leaderboard_module") {
+  LeaderboardModule()
+      : _moduleManager = ModuleManager(),
+        _servicesManager = ServicesManager(),
+        _sharedPref = ServicesManager().getService<SharedPrefManager>('shared_pref'),
+        super("leaderboard_module") {
     _log.info('📢 LeaderboardModule initialized and auto-registered.');
   }
 
@@ -20,7 +26,7 @@ class LeaderboardModule extends ModuleBase {
   Future<Map<String, dynamic>> getLeaderboard() async {
     final connectionModule = ModuleManager().getLatestModule<ConnectionsModule>();
 
-    final sharedPrefService = servicesManager.getService('shared_pref');
+    final sharedPrefService = _servicesManager.getService('shared_pref');
 
     if (connectionModule == null) {
       _log.error("❌ ConnectionModule not found!");

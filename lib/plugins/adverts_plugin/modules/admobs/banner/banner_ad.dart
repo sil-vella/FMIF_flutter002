@@ -4,12 +4,13 @@ import 'package:google_mobile_ads/google_mobile_ads.dart';
 import '../../../../../tools/logging/logger.dart';
 
 class BannerAdModule extends ModuleBase {
-  static final Logger _log = Logger(); // ✅ Use a static logger for static methods
   final Map<String, BannerAd?> _banners = {}; // Store multiple ads
+  static final Logger _log = Logger(); // ✅ Use a static logger for static methods
 
-  /// ✅ Call `super` to set moduleKey & auto-register
-  BannerAdModule() : super("banner_ad_module") {
-    _log.info('📢 BannerAdModule initialized and auto-registered.');
+  /// ✅ No-argument constructor
+  BannerAdModule()
+      :  super("admobs_banner_ad_module") {
+    _log.info('📢 GamePlayModule initialized and auto-registered.');
   }
 
   /// ✅ Loads the banner ad with a specified ad unit ID

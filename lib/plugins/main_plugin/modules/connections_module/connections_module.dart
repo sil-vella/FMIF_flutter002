@@ -10,7 +10,8 @@ class ConnectionsModule extends ModuleBase {
   final Map<String, String> _customHeaders = {}; // ✅ Store headers
 
   /// ✅ Constructor - No Singleton, Let ModuleManager Handle Instances
-  ConnectionsModule(this.baseUrl) : super('connections_module') {
+  ConnectionsModule(this.baseUrl)
+      : super('connections_module') {
     _log.info('🔌 ConnectionsModule initialized with baseUrl: $baseUrl');
   }
 

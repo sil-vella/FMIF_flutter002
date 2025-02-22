@@ -1,15 +1,22 @@
 import '../../../../core/00_base/module_base.dart';
 import '../../../../core/managers/module_manager.dart';
 import '../../../../core/managers/services_manager.dart';
+import '../../../../core/services/shared_preferences.dart';
 import '../../../../tools/logging/logger.dart';
 import '../../../main_plugin/modules/connections_module/connections_module.dart';
 
 class QuestionModule extends ModuleBase {
   static final Logger _log = Logger(); // ✅ Use a static logger for static methods
-  final ServicesManager _servicesManager = ServicesManager();
+  final ServicesManager _servicesManager;
+  final ModuleManager _moduleManager;
+  final SharedPrefManager? _sharedPref;
 
   /// ✅ Constructor with module key
-  QuestionModule() : super("question_module") {
+  QuestionModule()
+       : _moduleManager = ModuleManager(),
+        _servicesManager = ServicesManager(),
+        _sharedPref = ServicesManager().getService<SharedPrefManager>('shared_pref'),
+        super("question_module") {
     _log.info('✅ QuestionModule initialized.');
   }
 

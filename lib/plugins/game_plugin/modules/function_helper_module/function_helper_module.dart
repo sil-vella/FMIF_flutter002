@@ -1,15 +1,24 @@
 import 'dart:async';
 import 'dart:convert';
 import '../../../../core/00_base/module_base.dart';
+import '../../../../core/managers/module_manager.dart';
 import '../../../../core/managers/services_manager.dart';
+import '../../../../core/services/shared_preferences.dart';
 import '../../../../tools/logging/logger.dart';
+import '../../../main_plugin/modules/main_helper_module/main_helper_module.dart';
 
 class FunctionHelperModule extends ModuleBase {
-  static final Logger _log = Logger(); // ✅ Use a static logger for static methods
-  final ServicesManager _servicesManager = ServicesManager();
+  static final Logger _log = Logger();
+  final ServicesManager _servicesManager;
+  final ModuleManager _moduleManager;
+  final SharedPrefManager? _sharedPref;
 
   /// ✅ Constructor with module key
-  FunctionHelperModule() : super("game_functions_helper_module") {
+  FunctionHelperModule()
+      : _moduleManager = ModuleManager(),
+        _servicesManager = ServicesManager(),
+        _sharedPref = ServicesManager().getService<SharedPrefManager>('shared_pref'),
+        super("game_functions_helper_module") {
     _log.info('🚀 FunctionHelperModule initialized and auto-registered.');
     cleanupExpiredImages(); // ✅ Run cleanup task
   }

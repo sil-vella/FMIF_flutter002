@@ -1,16 +1,27 @@
 import '../../../../../core/00_base/module_base.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
+import '../../../../../core/managers/module_manager.dart';
+import '../../../../../core/managers/services_manager.dart';
+import '../../../../../core/services/shared_preferences.dart';
 import '../../../../../tools/logging/logger.dart';
 
 class InterstitialAdModule extends ModuleBase {
-  static final Logger _log = Logger(); // ✅ Use a static logger for static methods
+  static final Logger _log = Logger();
+  final ServicesManager _servicesManager;
+  final ModuleManager _moduleManager;
+  final SharedPrefManager? _sharedPref;
+  final Map<String, BannerAd?> _banners = {};
   final String adUnitId;
   InterstitialAd? _interstitialAd;
   bool _isAdReady = false;
 
   /// ✅ Constructor with module key
-  InterstitialAdModule(this.adUnitId) : super("admobs_interstitial_ad_module") {
-    _log.info('InterstitialAdModule created for Ad Unit: $adUnitId');
+  InterstitialAdModule(this.adUnitId)
+      : _moduleManager = ModuleManager(),
+        _servicesManager = ServicesManager(),
+        _sharedPref = ServicesManager().getService<SharedPrefManager>('shared_pref'),
+        super("admobs_interstitial_ad_module") {
+    _log.info('InterstitialAdModule created');
     loadAd(); // ✅ Load ad on initialization
   }
 
