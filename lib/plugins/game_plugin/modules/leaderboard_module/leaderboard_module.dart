@@ -1,3 +1,4 @@
+import 'package:flush_me_im_famous/plugins/main_plugin/modules/connections_module/connections_module.dart';
 import 'package:flutter/material.dart';
 import '../../../../core/00_base/module_base.dart';
 import '../../../../core/managers/module_manager.dart';
@@ -6,33 +7,28 @@ import '../../../../tools/logging/logger.dart';
 import '../../../../utils/consts/theme_consts.dart'; // ✅ Import Theme
 
 class LeaderboardModule extends ModuleBase {
-  final Logger logger = Logger();
+  static final Logger _log = Logger(); // ✅ Use a static logger for static methods
   final ServicesManager servicesManager = ServicesManager();
   final ModuleManager moduleManager = ModuleManager();
 
-  static LeaderboardModule? _instance;
-
-  /// Private constructor for singleton pattern
-  LeaderboardModule._internal();
-
-  /// Factory method to provide a singleton instance
-  factory LeaderboardModule() {
-    _instance ??= LeaderboardModule._internal();
-    return _instance!;
+  /// ✅ Call `super` to set moduleKey & auto-register
+  LeaderboardModule() : super("leaderboard_module") {
+    _log.info('📢 LeaderboardModule initialized and auto-registered.');
   }
 
   /// ✅ Fetch leaderboard data from backend
   Future<Map<String, dynamic>> getLeaderboard() async {
-    final connectionModule = moduleManager.getModule('connection_module');
+    final connectionModule = ModuleManager().getLatestModule<ConnectionsModule>();
+
     final sharedPrefService = servicesManager.getService('shared_pref');
 
     if (connectionModule == null) {
-      logger.error("❌ ConnectionModule not found!");
+      _log.error("❌ ConnectionModule not found!");
       return {};
     }
 
     if (sharedPrefService == null) {
-      logger.error("❌ SharedPrefManager not found!");
+      _log.error("❌ SharedPrefManager not found!");
       return {};
     }
 
@@ -41,15 +37,12 @@ class LeaderboardModule extends ModuleBase {
       final userEmail = await sharedPrefService.callServiceMethod('getString', ['email']);
       final queryParams = userEmail != null ? "?email=$userEmail" : "";
 
-      logger.info("⚡ Fetching leaderboard data from `/get-leaderboard$queryParams`...");
+      _log.info("⚡ Fetching leaderboard data from `/get-leaderboard$queryParams`...");
 
-      // ✅ Send GET request with email (if available)
-      final response = await connectionModule.callMethod(
-        'sendGetRequest',
-        ["/get-leaderboard$queryParams"],
-      );
+// ✅ Send GET request directly
+      final response = await connectionModule.sendGetRequest("/get-leaderboard$queryParams");
 
-      logger.info("✅ Leaderboard response: $response");
+      _log.info("✅ Leaderboard response: $response");
 
       if (response != null && response.containsKey("leaderboard")) {
         return {
@@ -57,11 +50,11 @@ class LeaderboardModule extends ModuleBase {
           "user_rank": response["user_rank"] // ✅ User rank if available
         };
       } else {
-        logger.error("❌ Failed to retrieve leaderboard data.");
+        _log.error("❌ Failed to retrieve leaderboard data.");
         return {};
       }
     } catch (e) {
-      logger.error("❌ Error fetching leaderboard: $e");
+      _log.error("❌ Error fetching leaderboard: $e");
       return {};
     }
   }

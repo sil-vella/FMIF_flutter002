@@ -28,16 +28,14 @@ class _GameImageGridState extends State<GameImageGrid> {
   late List<bool> _isLoaded;
   int _loadedCount = 0;
   bool _callbackFired = false;
-  final ModuleManager moduleManager = ModuleManager();
-  late FunctionHelperModule gameFunctionsHelper;
+  final ModuleManager _moduleManager = ModuleManager();
 
-  String? selectedImage; // ✅ Tracks tapped image
+  String? selectedImage;
 
   @override
   void initState() {
     super.initState();
     _resetLoadingState();
-    gameFunctionsHelper = moduleManager.getModule<FunctionHelperModule>('game_functions_helper_module') ?? FunctionHelperModule();
   }
 
   @override
@@ -58,6 +56,8 @@ class _GameImageGridState extends State<GameImageGrid> {
   }
 
   void _onImageLoaded(int index, String imageUrl) {
+    final gameFunctionsHelper = _moduleManager.getLatestModule<FunctionHelperModule>();
+
     if (mounted && !_isLoaded[index]) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) return;
@@ -68,7 +68,7 @@ class _GameImageGridState extends State<GameImageGrid> {
 
           Logger().info("📸 Image Loaded: $imageUrl [$_loadedCount/${widget.imageOptions.length}]");
 
-          gameFunctionsHelper.storeImageCacheTimestamp(imageUrl);
+          gameFunctionsHelper?.storeImageCacheTimestamp(imageUrl);
 
           if (_loadedCount >= widget.imageOptions.length && !_callbackFired) {
             _callbackFired = true;

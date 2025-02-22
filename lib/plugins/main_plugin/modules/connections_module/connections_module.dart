@@ -5,87 +5,54 @@ import 'dart:convert';
 import '../../../../tools/logging/logger.dart';
 
 class ConnectionsModule extends ModuleBase {
-  static ConnectionsModule? _instance;
+  static final Logger _log = Logger(); // ✅ Use a static logger for static methods
   final String baseUrl;
+  final Map<String, String> _customHeaders = {}; // ✅ Store headers
 
-  // Map to store any active connections or headers for future extensibility
-  final Map<String, String> _customHeaders = {};
-
-  ConnectionsModule._internal(this.baseUrl) {
-    _registerConnectionMethods();
+  /// ✅ Constructor - No Singleton, Let ModuleManager Handle Instances
+  ConnectionsModule(this.baseUrl) : super('connections_module') {
+    _log.info('🔌 ConnectionsModule initialized with baseUrl: $baseUrl');
   }
 
-  /// Factory method to provide the singleton instance
-  factory ConnectionsModule(String baseUrl) {
-    if (_instance == null) {
-      Logger().info('Initializing ConnectionsModule with baseUrl: $baseUrl');
-      _instance = ConnectionsModule._internal(baseUrl);
-    } else {
-      Logger().info('ConnectionsModule instance already exists.');
-    }
-    return _instance!;
-  }
-
-  /// Registers methods with the module
-  void _registerConnectionMethods() {
-    Logger().info('Registering connection methods in ConnectionsModule.');
-    registerMethod('sendGetRequest', sendGetRequest);
-    registerMethod('sendPostRequest', sendPostRequest);
-    registerMethod('sendRequest', sendRequest);
-  }
-
-  /// Dispose method to clean up resources
+  /// ✅ Dispose Method - Clear Resources
   @override
   void dispose() {
-    Logger().info('Cleaning up ConnectionsModule resources.');
-
-    // Clear custom headers or state
+    _log.info('🗑 Disposing ConnectionsModule resources...');
     _customHeaders.clear();
-    Logger().info('Custom headers cleared.');
-
-    // Log if there were any additional cleanup tasks
-    Logger().info('ConnectionsModule disposed successfully.');
-
-    super.dispose(); // Call base dispose logic
+    _log.info('✅ ConnectionsModule disposed.');
+    super.dispose();
   }
 
-  /// Validates URLs
+  /// ✅ Validates URLs
   void validateUrl(String url) {
-    if (!Uri.tryParse(url)!.isAbsolute ?? true) {
-      throw Exception('Invalid URL: $url');
+    if (!Uri.tryParse(url)!.isAbsolute) {
+      throw Exception('❌ Invalid URL: $url');
     }
   }
 
-  /// Method to handle GET requests
+  /// ✅ Handles GET Requests
   Future<dynamic> sendGetRequest(String route) async {
     final url = Uri.parse('$baseUrl$route');
     validateUrl(url.toString());
 
     try {
-      final response = await http.get(
-        url,
-        headers: {"Content-Type": "application/json", ..._customHeaders},
-      );
+      final response = await http.get(url, headers: {"Content-Type": "application/json", ..._customHeaders});
+      _log.info('📡 GET Request: $url | Status: ${response.statusCode}');
 
-      Logger().info('GET $url - Status: ${response.statusCode}');
-
-      if (response.statusCode == 200) {
-        return jsonDecode(response.body);
-      } else {
-        return jsonDecode(response.body);
-      }
+      return _processResponse(response);
     } catch (e) {
-      return {"message": "GET request failed", "error": e.toString()};
+      return _handleError('GET', url, e);
     }
   }
 
+  /// ✅ Handles POST Requests
   Future<dynamic> sendPostRequest(String route, Map<String, dynamic> data) async {
     final url = Uri.parse('$baseUrl$route');
     validateUrl(url.toString());
 
     try {
-      Logger().info(" Sending POST request to: $url");
-      Logger().debug(" Request Body: ${jsonEncode(data)}");
+      _log.info('📡 Sending POST request to: $url');
+      _log.debug('📝 Request Body: ${jsonEncode(data)}');
 
       final response = await http.post(
         url,
@@ -93,27 +60,14 @@ class ConnectionsModule extends ModuleBase {
         body: jsonEncode(data),
       );
 
-      Logger().info(" Response Status: ${response.statusCode}");
-      Logger().debug(" Raw Response Body: ${response.body}");
-
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        return jsonDecode(response.body);
-      } else {
-        Logger().error(" Server returned error: ${response.body}");
-        return jsonDecode(response.body);
-      }
+      return _processResponse(response);
     } catch (e) {
-      Logger().error(" POST request failed: $e", error: e);
-      return {"message": "POST request failed", "error": e.toString()};
+      return _handleError('POST', url, e);
     }
   }
 
-  /// Flexible method to handle various HTTP methods
-  Future<dynamic> sendRequest(
-      String route, {
-        required String method,
-        Map<String, dynamic>? data,
-      }) async {
+  /// ✅ Flexible Method to Handle Any HTTP Request
+  Future<dynamic> sendRequest(String route, {required String method, Map<String, dynamic>? data}) async {
     final url = Uri.parse('$baseUrl$route');
     validateUrl(url.toString());
 
@@ -125,35 +79,41 @@ class ConnectionsModule extends ModuleBase {
           response = await http.get(url, headers: {"Content-Type": "application/json", ..._customHeaders});
           break;
         case 'POST':
-          response = await http.post(
-            url,
-            headers: {"Content-Type": "application/json", ..._customHeaders},
-            body: jsonEncode(data ?? {}),
-          );
+          response = await http.post(url,
+              headers: {"Content-Type": "application/json", ..._customHeaders}, body: jsonEncode(data ?? {}));
           break;
         case 'PUT':
-          response = await http.put(
-            url,
-            headers: {"Content-Type": "application/json", ..._customHeaders},
-            body: jsonEncode(data ?? {}),
-          );
+          response = await http.put(url,
+              headers: {"Content-Type": "application/json", ..._customHeaders}, body: jsonEncode(data ?? {}));
           break;
         case 'DELETE':
           response = await http.delete(url, headers: {"Content-Type": "application/json", ..._customHeaders});
           break;
         default:
-          throw Exception('Unsupported HTTP method: $method');
+          throw Exception('❌ Unsupported HTTP method: $method');
       }
 
-      Logger().info('$method $url - Status: ${response.statusCode}');
-
-      if (response.statusCode >= 200 && response.statusCode < 300) {
-        return jsonDecode(response.body);
-      } else {
-        return jsonDecode(response.body);
-      }
+      _log.info('📡 $method Request: $url | Status: ${response.statusCode}');
+      return _processResponse(response);
     } catch (e) {
-      return {"message": "$method request failed", "error": e.toString()};
+      return _handleError(method, url, e);
     }
+  }
+
+  /// ✅ Process Server Response
+  dynamic _processResponse(http.Response response) {
+    _log.debug('📥 Response Body: ${response.body}');
+    if (response.statusCode >= 200 && response.statusCode < 300) {
+      return jsonDecode(response.body);
+    } else {
+      _log.error('⚠️ Server Error: ${response.statusCode} | Response: ${response.body}');
+      return jsonDecode(response.body);
+    }
+  }
+
+  /// ✅ Handle Errors
+  Map<String, dynamic> _handleError(String method, Uri url, Object e) {
+    _log.error('❌ $method request failed for $url: $e');
+    return {"message": "$method request failed", "error": e.toString()};
   }
 }

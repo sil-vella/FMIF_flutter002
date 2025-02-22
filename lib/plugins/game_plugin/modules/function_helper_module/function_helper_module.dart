@@ -1,25 +1,17 @@
 import 'dart:async';
-import 'dart:convert'; // ✅ Required for JSON encoding/decoding
+import 'dart:convert';
 import '../../../../core/00_base/module_base.dart';
-import '../../../../core/managers/module_manager.dart';
 import '../../../../core/managers/services_manager.dart';
 import '../../../../tools/logging/logger.dart';
-import '../../../main_plugin/modules/connections_module/connections_module.dart';
 
 class FunctionHelperModule extends ModuleBase {
-  static FunctionHelperModule? _instance;
+  static final Logger _log = Logger(); // ✅ Use a static logger for static methods
   final ServicesManager _servicesManager = ServicesManager();
-  final Logger logger = Logger();
 
-  FunctionHelperModule._internal() {
-    logger.info('🚀 FunctionHelperModule initialized.');
+  /// ✅ Constructor with module key
+  FunctionHelperModule() : super("game_functions_helper_module") {
+    _log.info('🚀 FunctionHelperModule initialized and auto-registered.');
     cleanupExpiredImages(); // ✅ Run cleanup task
-  }
-
-  /// ✅ Factory method to ensure singleton
-  factory FunctionHelperModule() {
-    _instance ??= FunctionHelperModule._internal();
-    return _instance!;
   }
 
   /// ✅ Fetches total points from all categories
@@ -27,7 +19,7 @@ class FunctionHelperModule extends ModuleBase {
     final sharedPref = _servicesManager.getService('shared_pref');
 
     if (sharedPref == null) {
-      logger.error('❌ SharedPreferences service not available.');
+      _log.error('❌ SharedPreferences service not available.');
       return 0;
     }
 
@@ -44,7 +36,7 @@ class FunctionHelperModule extends ModuleBase {
       }
     }
 
-    logger.info("🏆 Total Points across all categories: $totalPoints");
+    _log.info("🏆 Total Points across all categories: $totalPoints");
     return totalPoints;
   }
 
@@ -52,7 +44,7 @@ class FunctionHelperModule extends ModuleBase {
     final sharedPref = _servicesManager.getService('shared_pref');
 
     if (sharedPref == null) {
-      logger.error('❌ SharedPreferences service not available.');
+      _log.error('❌ SharedPreferences service not available.');
       return;
     }
 
@@ -72,7 +64,7 @@ class FunctionHelperModule extends ModuleBase {
     final sharedPref = _servicesManager.getService('shared_pref');
 
     if (sharedPref == null) {
-      logger.error('❌ SharedPreferences service not available.');
+      _log.error('❌ SharedPreferences service not available.');
       return;
     }
 
@@ -129,8 +121,6 @@ class FunctionHelperModule extends ModuleBase {
           }
         }
       }
-
-
 
       Logger().info("✅ SharedPreferences values reset successfully.");
     } catch (e) {

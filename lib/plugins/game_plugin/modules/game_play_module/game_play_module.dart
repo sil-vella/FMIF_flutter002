@@ -1,8 +1,6 @@
 import 'dart:math';
-import 'dart:convert'; // ✅ Required for jsonEncode & jsonDecode
 import 'package:flush_me_im_famous/plugins/main_plugin/modules/main_helper_module/main_helper_module.dart';
 import 'package:provider/provider.dart';
-
 import '../../../../core/00_base/module_base.dart';
 import '../../../../core/managers/app_manager.dart';
 import '../../../../core/managers/module_manager.dart';
@@ -10,14 +8,19 @@ import '../../../../core/managers/services_manager.dart';
 import '../../../../core/managers/state_manager.dart';
 import '../../../../tools/logging/logger.dart';
 import '../../../adverts_plugin/modules/admobs/rewarded/rewarded_ad.dart';
+import '../question_module/question_module.dart';
 import '../rewards_module/rewards_module.dart';
 import 'config/gameplaymodule_config.dart';
 
 class GamePlayModule extends ModuleBase {
-  final Logger logger = Logger();
+  static final Logger _log = Logger(); // ✅ Use a static logger for static methods
   final ServicesManager _servicesManager = ServicesManager();
   final MainHelperModule _mainHelperModule = MainHelperModule();
 
+  /// ✅ Call `super` to set moduleKey & auto-register
+  GamePlayModule() : super("game_play_module") {
+    _log.info('📢 GamePlayModule initialized and auto-registered.');
+  }
 
   Map<String, dynamic>? question;
   bool isLoading = true;
@@ -40,7 +43,7 @@ class GamePlayModule extends ModuleBase {
       "endGame": false,
     }, force: true);
 
-    logger.info("✅ Game state reset completed.");
+    _log.info("✅ Game state reset completed.");
 
     // ✅ Wait a frame to ensure updates are reflected before proceeding
     await Future.delayed(Duration(milliseconds: 50));
@@ -50,15 +53,16 @@ class GamePlayModule extends ModuleBase {
   Future<void> roundInit(Function updateState) async {
     final stateManager = Provider.of<StateManager>(AppManager.globalContext, listen: false);
     final sharedPref = _servicesManager.getService('shared_pref');
-    final questionModule = ModuleManager().getModule('question_module');
 
     if (sharedPref == null) {
-      logger.error("❌ SharedPrefManager not found!");
+      _log.error("❌ SharedPrefManager not found!");
       return;
     }
 
+    final questionModule = ModuleManager().getLatestModule<QuestionModule>();
+
     if (questionModule == null) {
-      logger.error("❌ QuestionModule not found!");
+      _log.error("❌ QuestionModule not found!");
       return;
     }
 
@@ -73,22 +77,23 @@ class GamePlayModule extends ModuleBase {
 
     // ✅ Show an ad every 5 rounds
     if (updatedNumber % 5 == 0) {
-      final rewardedAdModule = ModuleManager().getModule<RewardedAdModule>('admobs_rewarded_ad_module');
-      final mainHelper = ModuleManager().getModule<MainHelperModule>('main_helper_module');
+      final rewardedAdModule = ModuleManager().getLatestModule<RewardedAdModule>();
+      final mainHelper = ModuleManager().getLatestModule<MainHelperModule>();
 
       if (rewardedAdModule != null && mainHelper != null) {
         mainHelper.pauseTimer(); // ✅ Pause timer for ad
 
-        rewardedAdModule.showAd([
-              () => Logger().info("Advert Played."),
-              () {
+        rewardedAdModule.showAd(
+          onUserEarnedReward: () => Logger().info("Advert Played."),
+          onAdDismissed: () {
             Future.delayed(const Duration(milliseconds: 500), () {
               mainHelper.resumeTimer(() {
                 Logger().info("⏳ Timer resumed after ad.");
               });
             });
-          }
-        ]);
+          },
+        );
+
       } else {
         Logger().info("❌ RewardedAdModule or MainHelperModule not found!");
       }
@@ -101,22 +106,22 @@ class GamePlayModule extends ModuleBase {
       final category = await sharedPref.callServiceMethod('getString', ['category']) ?? "mixed";
       final int level = await sharedPref.callServiceMethod('getInt', ['level_$category']) ?? 1;
 
-      logger.info("🏆 User category: $category | Level: $level");
+      _log.info("🏆 User category: $category | Level: $level");
 
       final guessedKey = "guessed_${category}_level$level";
       List<String> guessedNames = await sharedPref.callServiceMethod('getStringList', [guessedKey]) ?? [];
 
 // ✅ Log before sending request
-      logger.info("📜 Final guessed names sent to backend: $guessedNames");
+      _log.info("📜 Final guessed names sent to backend: $guessedNames");
 
-// ✅ Fetch question with updated guessed list
-      final response = await questionModule.callMethod('getQuestion', [level, category, guessedNames]);
+      // ✅ Fetch question with updated guessed list
+      final response = await questionModule.getQuestion(level, category, guessedNames);
 
       if (response.containsKey("error")) {
         if (response["error"].contains("No more actors left")) {
-          logger.info("🏆 All celebrities have been guessed! Consider resetting.");
+          _log.info("🏆 All celebrities have been guessed! Consider resetting.");
         } else {
-          logger.error("❌ Error fetching question: ${response['error']}");
+          _log.error("❌ Error fetching question: ${response['error']}");
         }
         return;
       }
@@ -131,10 +136,10 @@ class GamePlayModule extends ModuleBase {
 
       // ✅ Update UI State in GameScreen
       updateState();
-      logger.info("✅ Question retrieved successfully: $response");
+      _log.info("✅ Question retrieved successfully: $response");
 
     } catch (e) {
-      logger.error("❌ Failed to fetch question: $e", error: e);
+      _log.error("❌ Failed to fetch question: $e", error: e);
     }
   }
 
@@ -142,7 +147,7 @@ class GamePlayModule extends ModuleBase {
     final sharedPref = _servicesManager.getService('shared_pref');
 
     if (sharedPref == null) {
-      logger.error("❌ SharedPrefManager not found!");
+      _log.error("❌ SharedPrefManager not found!");
       return;
     }
 
@@ -152,14 +157,14 @@ class GamePlayModule extends ModuleBase {
 
       // ✅ Don't set a timer if level is 2 or less
       if (level <= 2) {
-        logger.info("⏳ Skipping timer. Level is $level.");
+        _log.info("⏳ Skipping timer. Level is $level.");
         return;
       }
 
       // ✅ Get the corresponding timer duration for the level (default to 10s if not set)
       final int duration = (GamePlayConfig.levelTimers[level] ?? 10).toInt();
 
-      logger.info("⏳ Starting timer for Level $level: $duration seconds");
+      _log.info("⏳ Starting timer for Level $level: $duration seconds");
 
       final stateManager = Provider.of<StateManager>(AppManager.globalContext, listen: false);
 
@@ -171,7 +176,7 @@ class GamePlayModule extends ModuleBase {
 
       // ✅ Start timer with dynamic duration
       _mainHelperModule.startTimer(duration, () {
-        logger.info("⏰ Timer finished! Triggering timeout answer.");
+        _log.info("⏰ Timer finished! Triggering timeout answer.");
 
         // ✅ Update state when timer stops
         stateManager.updatePluginState("game_timer", {
@@ -183,19 +188,19 @@ class GamePlayModule extends ModuleBase {
       });
 
     } catch (e) {
-      logger.error("❌ Failed to start timer: $e", error: e);
+      _log.error("❌ Failed to start timer: $e", error: e);
     }
   }
 
   void checkAnswer(String selectedImage, Function updateState, {bool timeUp = false}) async {
-    logger.info("🏆 Checking answer...");
+    _log.info("🏆 Checking answer...");
 
     final correctImage = question?['image_url'] ?? "";
-    final rewardsModule = ModuleManager().getModule<RewardsModule>('rewards_module');
+    final rewardsModule = ModuleManager().getLatestModule<RewardsModule>();
     final stateManager = Provider.of<StateManager>(AppManager.globalContext, listen: false);
 
     if (rewardsModule == null || stateManager == null) {
-      logger.error("❌ RewardsModule or StateManager not found.");
+      _log.error("❌ RewardsModule or StateManager not found.");
       return;
     }
 
@@ -204,8 +209,8 @@ class GamePlayModule extends ModuleBase {
     int level = int.tryParse(question?["level"]?.toString() ?? "1") ?? 1;
     String correctActor = question?["actor"] ?? "";
 
-    logger.info("📌 Checking answer for: $correctActor (Category: $category, Level: $level)");
-    logger.forceLog("📌 Checking answer for: $correctActor (Category: $category, Level: $level)");
+    _log.info("📌 Checking answer for: $correctActor (Category: $category, Level: $level)");
+    _log.forceLog("📌 Checking answer for: $correctActor (Category: $category, Level: $level)");
 
     if (selectedImage == correctImage) {
       feedbackMessage = "🎉 Correct!";
@@ -214,13 +219,13 @@ class GamePlayModule extends ModuleBase {
       final gameRoundState = stateManager.getPluginState<Map<String, dynamic>>('game_round');
       final bool hintUsed = gameRoundState?['hint'] ?? false;
 
-      logger.forceLog("📌 hint: $hintUsed ");
+      _log.forceLog("📌 hint: $hintUsed ");
 
       // ✅ Determine points based on hint usage
       String pointsKey = hintUsed ? 'hint' : 'no_hint';
       int points = await rewardsModule.getPoints(pointsKey, category, level);
 
-      logger.forceLog("📌 hint: $points ");
+      _log.forceLog("📌 hint: $points ");
 
       // ✅ Call saveReward with all necessary data
       final rewardData = await rewardsModule.saveReward(
@@ -230,7 +235,7 @@ class GamePlayModule extends ModuleBase {
         guessedActor: correctActor,
       );
       Logger().forceLog("📜 reward data if correct ${rewardData}");
-      logger.info("🏆 Updated Rewards: ${rewardData}");
+      _log.info("🏆 Updated Rewards: ${rewardData}");
 
       // ✅ Update game state with level-up or end-game status
       stateManager.updatePluginState("game_round", {
@@ -243,11 +248,11 @@ class GamePlayModule extends ModuleBase {
     }
 
     updateState();
-    logger.info("✅ User selected: $selectedImage | Correct: ${question?['image_url']}");
+    _log.info("✅ User selected: $selectedImage | Correct: ${question?['image_url']}");
   }
 
 void showGameOverScreen() {
-  logger.info("🎯 Game over! Player reached max level.");
+  _log.info("🎯 Game over! Player reached max level.");
 }
 
 }

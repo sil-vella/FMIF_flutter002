@@ -2,16 +2,18 @@ import '../managers/module_manager.dart';
 import '../managers/hooks_manager.dart';
 import '../managers/state_manager.dart';
 import '../../tools/logging/logger.dart';
+import '../00_base/module_base.dart';
 
 abstract class PluginBase {
   final HooksManager hooksManager;
   final ModuleManager moduleManager;
-
-  /// Map for modules
-  final Map<String, Function> moduleMap = {};
+  final Logger log = Logger();
 
   /// Map for hooks
   final Map<String, HookCallback> hookMap = {};
+
+  /// Stores instance keys for modules registered by this plugin
+  final List<String> registeredModuleKeys = [];
 
   PluginBase(this.hooksManager, this.moduleManager);
 
@@ -29,13 +31,24 @@ abstract class PluginBase {
     });
   }
 
-  /// Register modules dynamically from the moduleMap
+  /// ✅ Register modules with hardcoded or dynamic instance keys
   void registerModules() {
-    moduleMap.forEach((moduleKey, createModule) {
-      final module = createModule();
-      moduleManager.registerModule(moduleKey, module);
-    });
+    final modules = createModules();
+    for (var entry in modules.entries) {
+      final module = entry.value;
+      final instanceKey = entry.key ?? "${module.moduleKey}_${DateTime.now().millisecondsSinceEpoch}";
+
+      registeredModuleKeys.add(instanceKey);
+      moduleManager.registerModule(module, instanceKey: instanceKey);
+      log.info('✅ Plugin registered module: ${module.moduleKey} with instance key: $instanceKey');
+    }
   }
+
+  /// ✅ Plugins must override this method to define their modules
+  /// Returns a `Map<String?, ModuleBase>` where:
+  /// - The key is the instance key (null = auto-generate)
+  /// - The value is the module instance
+  Map<String?, ModuleBase> createModules();
 
   /// ✅ Each plugin must override this to define its states
   Map<String, Map<String, dynamic>> getInitialStates();
@@ -48,14 +61,21 @@ abstract class PluginBase {
 
       if (!stateManager.isPluginStateRegistered(stateKey)) {
         stateManager.registerPluginState(stateKey, stateData);
-        Logger().info("✅ Registered plugin state: $stateKey");
+        log.info("✅ Registered plugin state: $stateKey");
       }
     }
   }
 
   /// Dispose the plugin (removes modules and hooks)
   void dispose() {
-    moduleMap.keys.forEach(moduleManager.deregisterModule);
+    // ✅ Remove all module instances registered by this plugin
+    for (var instanceKey in registeredModuleKeys) {
+      moduleManager.deregisterModule(instanceKey);
+      log.info('🗑 Plugin deregistered module instance: $instanceKey');
+    }
+    registeredModuleKeys.clear(); // ✅ Ensure the list is emptied
+
+    // ✅ Remove hooks
     hookMap.keys.forEach(hooksManager.deregisterHook);
   }
 }

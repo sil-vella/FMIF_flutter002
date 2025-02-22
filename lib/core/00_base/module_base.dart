@@ -1,36 +1,24 @@
-import '../../tools/logging/logger.dart';
+import '../managers/module_manager.dart';
 
 abstract class ModuleBase {
-  final Map<String, Function> _methodMap = {};
+  final String moduleKey;
 
-  /// Initialize the module
-  void initialize() {
-    Logger().info('${this.runtimeType} initialized.');
+  /// ✅ Access `ModuleManager` singleton
+  static final ModuleManager _moduleManager = ModuleManager();
+
+  /// ✅ Auto-register module on creation
+  ModuleBase([String? key])
+      : moduleKey = key ?? 'module_${DateTime.now().millisecondsSinceEpoch}' {
+    _registerModule(); // ✅ Auto-register on instantiation
   }
 
-  /// Register a method with a name
-  void registerMethod(String methodName, Function method) {
-    _methodMap[methodName] = method;
+  /// ✅ Auto-register the module in `ModuleManager`
+  void _registerModule() {
+    _moduleManager.registerModule(this);
   }
 
-  /// Dynamically calls a registered method with support for any kind of args
-  dynamic callMethod(String methodName, [dynamic args, Map<String, dynamic>? namedArgs]) {
-    if (_methodMap.containsKey(methodName)) {
-      final method = _methodMap[methodName]!;
-
-      // Ensure args is always a List
-      final List<dynamic> positionalArgs = (args is List) ? args : (args != null ? [args] : []);
-
-      return Function.apply(method, positionalArgs, namedArgs?.map((key, value) => MapEntry(Symbol(key), value)));
-    } else {
-      throw Exception('Method "$methodName" not found in ${this.runtimeType}.');
-    }
-  }
-
-
-
-  /// Dispose method to clean up resources
+  /// ✅ Dispose method to clean up resources
   void dispose() {
-    Logger().info('${this.runtimeType} disposed.');
+    _moduleManager.deregisterModule(moduleKey); // ✅ Auto-deregister on dispose
   }
 }

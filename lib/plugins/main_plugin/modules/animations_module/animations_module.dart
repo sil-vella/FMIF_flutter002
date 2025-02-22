@@ -4,42 +4,21 @@ import '../../../../core/00_base/module_base.dart';
 import '../../../../tools/logging/logger.dart';
 
 class AnimationsModule extends ModuleBase {
-  static AnimationsModule? _instance;
+  static final Logger _log = Logger(); // ✅ Use a static logger for static methods
 
   // List to store animation controllers for cleanup
   final List<AnimationController> _controllers = [];
   final Map<String, ConfettiController> _confettiControllers = {}; // ✅ Store confetti controllers
 
-  AnimationsModule._internal() {
-    Logger().info('AnimationsModule instance created.');
-    _registerAnimationMethods();
+  /// ✅ Constructor with module key
+  AnimationsModule() : super("animations_module") {
+    _log.info('✅ AnimationsModule initialized.');
   }
 
-  /// Factory method to provide the singleton instance
-  factory AnimationsModule() {
-    if (_instance == null) {
-      Logger().info('Initializing AnimationsModule for the first time.');
-      _instance = AnimationsModule._internal();
-    } else {
-      Logger().info('AnimationsModule instance already exists.');
-    }
-    return _instance!;
-  }
-
-  void _registerAnimationMethods() {
-    Logger().info('Registering animation methods in AnimationsModule.');
-    registerMethod('applyFadeAnimation', applyFadeAnimation);
-    registerMethod('applyScaleAnimation', applyScaleAnimation);
-    registerMethod('applySlideAnimation', applySlideAnimation);
-    registerMethod('applyBounceAnimation', applyBounceAnimation);
-    registerMethod('playConfetti', (String key) => playConfetti(key: key)); // ✅ Correct function signature
-    Logger().info('Animation methods registered successfully.');
-  }
-
-  /// Cleanup logic for AnimationsModule
+  /// ✅ Cleanup logic for AnimationsModule
   @override
   void dispose() {
-    Logger().info('Cleaning up AnimationsModule resources.');
+    _log.info('Cleaning up AnimationsModule resources.');
 
     // Dispose all animation controllers
     for (final controller in _controllers) {
@@ -56,13 +35,14 @@ class AnimationsModule extends ModuleBase {
     }
     _confettiControllers.clear();
 
+    _log.info('AnimationsModule fully disposed.');
     super.dispose();
   }
 
-  /// Registers an AnimationController for later cleanup
+  /// ✅ Registers an AnimationController for later cleanup
   void registerController(AnimationController controller) {
     _controllers.add(controller);
-    Logger().info('Registered AnimationController: $controller');
+    _log.info('Registered AnimationController: $controller');
   }
 
   /// ✅ Method to trigger confetti animation
@@ -72,17 +52,16 @@ class AnimationsModule extends ModuleBase {
     }
 
     _confettiControllers[key]!.play();
-    Logger().info('🎉 Confetti started: $key');
+    _log.info('🎉 Confetti started: $key');
   }
 
-
-  /// Applies fade animation to the provided widget
+  /// ✅ Applies fade animation to the provided widget
   Widget applyFadeAnimation({
     required Widget child,
     required AnimationController controller,
   }) {
     registerController(controller);
-    Logger().info('Applying fade animation.');
+    _log.info('Applying fade animation.');
     return AnimatedBuilder(
       animation: controller,
       builder: (context, _) {
@@ -94,7 +73,7 @@ class AnimationsModule extends ModuleBase {
     );
   }
 
-  /// Applies scale animation to the provided widget
+  /// ✅ Applies scale animation to the provided widget
   Widget applyScaleAnimation({
     required Widget child,
     required AnimationController controller,
@@ -102,7 +81,7 @@ class AnimationsModule extends ModuleBase {
     double end = 1.2,
   }) {
     registerController(controller);
-    Logger().info('Applying scale animation.');
+    _log.info('Applying scale animation.');
     final scaleAnimation = Tween<double>(begin: begin, end: end).animate(
       CurvedAnimation(parent: controller, curve: Curves.easeInOut),
     );
@@ -117,7 +96,7 @@ class AnimationsModule extends ModuleBase {
     );
   }
 
-  /// Applies slide animation to the provided widget
+  /// ✅ Applies slide animation to the provided widget
   Widget applySlideAnimation({
     required Widget child,
     required AnimationController controller,
@@ -125,7 +104,7 @@ class AnimationsModule extends ModuleBase {
     Offset end = const Offset(0, 0),
   }) {
     registerController(controller);
-    Logger().info('Applying slide animation.');
+    _log.info('Applying slide animation.');
     final slideAnimation = Tween<Offset>(begin: begin, end: end).animate(
       CurvedAnimation(parent: controller, curve: Curves.easeInOut),
     );
@@ -140,13 +119,13 @@ class AnimationsModule extends ModuleBase {
     );
   }
 
-  /// Applies bounce animation to the provided widget
+  /// ✅ Applies bounce animation to the provided widget
   Widget applyBounceAnimation({
     required Widget child,
     required AnimationController controller,
   }) {
     registerController(controller);
-    Logger().info('Applying bounce animation.');
+    _log.info('Applying bounce animation.');
     final bounceAnimation = Tween<double>(begin: 0.0, end: 20.0).animate(
       CurvedAnimation(parent: controller, curve: Curves.bounceOut),
     );

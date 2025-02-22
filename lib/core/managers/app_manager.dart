@@ -1,6 +1,7 @@
 import 'package:flush_me_im_famous/core/managers/plugin_manager.dart';
 import 'package:flutter/material.dart';
 import '../../plugins/plugin_registry.dart';
+import '../../tools/logging/logger.dart'; // ✅ Import Logger
 import '../services/shared_preferences.dart';
 import 'hooks_manager.dart';
 import 'module_manager.dart';
@@ -9,6 +10,8 @@ import 'services_manager.dart';
 import 'state_manager.dart'; // ✅ Import StateManager
 
 class AppManager extends ChangeNotifier {
+  static final Logger _log = Logger(); // ✅ Use a static logger for static methods
+
   static final AppManager _instance = AppManager._internal();
 
   static late BuildContext globalContext;
@@ -18,7 +21,7 @@ class AppManager extends ChangeNotifier {
   final ModuleManager moduleManager;
   final HooksManager hooksManager;
   final ServicesManager servicesManager;
-  final StateManager stateManager; // ✅ Add StateManager instance
+  final StateManager stateManager;
 
   bool _isInitialized = false;
   bool get isInitialized => _isInitialized;
@@ -47,23 +50,39 @@ class AppManager extends ChangeNotifier {
 
   /// Initializes plugins and services
   Future<void> _initializePlugins() async {
-    final plugins = PluginRegistry.getPlugins(pluginManager, navigationContainer, stateManager); // ✅ Pass StateManager
+    _log.info('Initializing plugins...');
+
+    final plugins = PluginRegistry.getPlugins(pluginManager, navigationContainer, stateManager);
+
     for (var entry in plugins.entries) {
-      pluginManager.registerPlugin(entry.key, entry.value);
+      final pluginKey = entry.key;
+      final plugin = entry.value;
+
+      _log.info('Registering plugin: $pluginKey');
+      pluginManager.registerPlugin(pluginKey, plugin);
+
+      // ✅ Let PluginBase handle module registration
+      plugin.registerModules();
     }
 
     hooksManager.triggerHook('app_startup');
     hooksManager.triggerHook('reg_nav');
+
     _isInitialized = true;
     notifyListeners();
+    _log.info('Plugins initialized successfully.');
   }
+
 
   /// Cleans up app resources
   void _disposeApp() {
+    _log.info('Disposing app resources...'); // ✅ Use local reference
+
     moduleManager.dispose();
     pluginManager.dispose();
     servicesManager.dispose();
+
     notifyListeners();
-    debugPrint('App resources disposed successfully.');
+    _log.info('App resources disposed successfully.'); // ✅ Use local reference
   }
 }

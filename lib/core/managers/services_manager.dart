@@ -3,10 +3,9 @@ import '../00_base/service_base.dart';
 import '../services/shared_preferences.dart'; // Import your services here
 
 class ServicesManager {
+  static final Logger _log = Logger(); // ✅ Use a static logger for static methods
   static final ServicesManager _instance = ServicesManager._internal();
-
   factory ServicesManager() => _instance;
-
   ServicesManager._internal();
 
   final Map<String, ServicesBase> _services = {};
@@ -25,14 +24,14 @@ class ServicesManager {
       if (!_services.containsKey(serviceKey)) {
         _services[serviceKey] = service;
         service.initialize();
-        Logger().info('Service registered and initialized: $serviceKey');
+        _log.info('Service registered and initialized: $serviceKey');
       }
     }
   }
 
   /// Fetch a service by key
   T? getService<T extends ServicesBase>(String serviceKey) {
-    Logger().info('Fetching service: $serviceKey');
+    _log.info('Fetching service: $serviceKey');
     return _services[serviceKey] as T?;
   }
 
@@ -46,18 +45,18 @@ class ServicesManager {
     final service = _services.remove(serviceKey);
     if (service != null) {
       service.dispose();
-      Logger().info('Service deregistered and disposed: $serviceKey');
+      _log.info('Service deregistered and disposed: $serviceKey');
     }
   }
 
   /// Dispose all services
   void dispose() {
-    Logger().info('Disposing all services.');
+    _log.info('Disposing all services.');
     for (var entry in _services.entries) {
       entry.value.dispose();
-      Logger().info('Disposed service: ${entry.key}');
+      _log.info('Disposed service: ${entry.key}');
     }
     _services.clear();
-    Logger().info('All services have been disposed.');
+    _log.info('All services have been disposed.');
   }
 }

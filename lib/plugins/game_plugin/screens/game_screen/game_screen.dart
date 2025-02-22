@@ -33,7 +33,6 @@ class GameScreen extends BaseScreen {
 }
 
 class GameScreenState extends BaseScreenState<GameScreen> {
-  late final GamePlayModule gamePlayModule;
   bool _showFeedback = false;
   String _feedbackText = "";
   String _correctName = "";
@@ -42,6 +41,8 @@ class GameScreenState extends BaseScreenState<GameScreen> {
   int _points = 0;
   String _backgroundImage = "";
   final ServicesManager _servicesManager = ServicesManager();
+  final ModuleManager _moduleManager = ModuleManager();
+  late final GamePlayModule gamePlayModule;
   final Random _random = Random();
   Set<String> fadedImages = {}; // ✅ Tracks faded images
   CachedNetworkImageProvider? _cachedSelectedImage;
@@ -50,10 +51,14 @@ class GameScreenState extends BaseScreenState<GameScreen> {
   void initState() {
     super.initState();
     Logger().info("Initializing GameScreen...");
-    gamePlayModule = moduleManager.getModule('game_play_module') ?? GamePlayModule();
+
+    // ✅ Assign gamePlayModule before use
+    gamePlayModule = _moduleManager.getLatestModule<GamePlayModule>() ?? GamePlayModule();
+
     _initializeGame();
     _loadLevelAndPoints();
   }
+
 
   void _onImagesLoaded() {
     Logger().info("🖼️ ALL images loaded. Updating game state...");
@@ -82,8 +87,8 @@ class GameScreenState extends BaseScreenState<GameScreen> {
   /// ✅ Handles "Help" button click with Rewarded Ad
   void _useHelp() {
     final stateManager = Provider.of<StateManager>(AppManager.globalContext, listen: false);
-    final rewardedAdModule = ModuleManager().getModule<RewardedAdModule>('admobs_rewarded_ad_module');
-    final mainHelper = ModuleManager().getModule<MainHelperModule>('main_helper_module');
+    final rewardedAdModule = _moduleManager.getLatestModule<RewardedAdModule>();
+    final mainHelper = _moduleManager.getLatestModule<MainHelperModule>();
 
     if (rewardedAdModule != null && mainHelper != null) {
       mainHelper.pauseTimer(); // ✅ Pause timer when ad starts
@@ -92,21 +97,20 @@ class GameScreenState extends BaseScreenState<GameScreen> {
         "hint": true,
       });
 
-      rewardedAdModule.showAd([
-            () {
-          _fadeOutIncorrectImage(); // ✅ Only fade image after reward, NOT resume timer here
+      rewardedAdModule.showAd(
+        onUserEarnedReward: () {
+          _fadeOutIncorrectImage(); // ✅ Only fade image after reward
         },
-            () {
+        onAdDismissed: () {
           // ✅ Resume timer only after ad is fully dismissed
           Future.delayed(const Duration(milliseconds: 500), () {
             mainHelper.resumeTimer(() {
               Logger().info("⏳ Timer resumed after ad was closed.");
             });
           });
-        }
-      ]);
-
-
+        },
+      );
+      
     } else {
       Logger().info("❌ RewardedAdModule or MainHelperModule not found!");
     }

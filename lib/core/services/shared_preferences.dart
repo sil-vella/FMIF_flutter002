@@ -5,6 +5,8 @@ import '../00_base/service_base.dart';
 import '../managers/services_manager.dart'; // Import ServicesManager
 
 class SharedPrefManager extends ServicesBase {
+  static final Logger _log = Logger(); // ✅ Use a static logger for static methods
+
   static final SharedPrefManager _instance = SharedPrefManager._internal();
   SharedPreferences? _prefs;
 
@@ -16,7 +18,7 @@ class SharedPrefManager extends ServicesBase {
   @override
   Future<void> initialize() async {
     _prefs = await SharedPreferences.getInstance();
-    Logger().info('✅ SharedPreferences initialized.');
+    _log.info('✅ SharedPreferences initialized.');
 
     // ✅ Register Setter Methods
     registerServiceMethod('setString', setString);
@@ -63,17 +65,17 @@ class SharedPrefManager extends ServicesBase {
     final allKeys = _prefs?.getKeys() ?? {};
 
     if (allKeys.isEmpty) {
-      Logger().info("⚠️ SharedPreferences is empty.");
+      _log.info("⚠️ SharedPreferences is empty.");
       return;
     }
 
-    Logger().info("📜 SharedPreferences Data Dump:");
+    _log.info("📜 SharedPreferences Data Dump:");
     for (String key in allKeys) {
       final value = _prefs?.get(key);
       if (value is String && _isJson(value)) {
-        Logger().info("📌 $key: ${jsonDecode(value)} (List<String>)");
+        _log.info("📌 $key: ${jsonDecode(value)} (List<String>)");
       } else {
-        Logger().info("📌 $key: $value");
+        _log.info("📌 $key: $value");
       }
     }
   }
@@ -92,7 +94,7 @@ class SharedPrefManager extends ServicesBase {
 
   Future<void> createString(String key, String value) async {
     if (_prefs?.containsKey(key) == true) {
-      Logger().info('⚠️ Skipped creating String: $key already exists with value ${_prefs?.getString(key)}');
+      _log.info('⚠️ Skipped creating String: $key already exists with value ${_prefs?.getString(key)}');
       return;
     }
     await setString(key, value);
@@ -100,7 +102,7 @@ class SharedPrefManager extends ServicesBase {
 
   Future<void> createInt(String key, int value) async {
     if (_prefs?.containsKey(key) == true) {
-      Logger().info('⚠️ Skipped creating Int: $key already exists with value ${_prefs?.getInt(key)}');
+      _log.info('⚠️ Skipped creating Int: $key already exists with value ${_prefs?.getInt(key)}');
       return;
     }
     await setInt(key, value);
@@ -108,7 +110,7 @@ class SharedPrefManager extends ServicesBase {
 
   Future<void> createBool(String key, bool value) async {
     if (_prefs?.containsKey(key) == true) {
-      Logger().info('⚠️ Skipped creating Bool: $key already exists with value ${_prefs?.getBool(key)}');
+      _log.info('⚠️ Skipped creating Bool: $key already exists with value ${_prefs?.getBool(key)}');
       return;
     }
     await setBool(key, value);
@@ -116,7 +118,7 @@ class SharedPrefManager extends ServicesBase {
 
   Future<void> createDouble(String key, double value) async {
     if (_prefs?.containsKey(key) == true) {
-      Logger().info('⚠️ Skipped creating Double: $key already exists with value ${_prefs?.getDouble(key)}');
+      _log.info('⚠️ Skipped creating Double: $key already exists with value ${_prefs?.getDouble(key)}');
       return;
     }
     await setDouble(key, value);
@@ -124,7 +126,7 @@ class SharedPrefManager extends ServicesBase {
 
   Future<void> createStringList(String key, List<String> value) async {
     if (_prefs?.containsKey(key) == true) {
-      Logger().info('⚠️ Skipped creating String List: $key already exists with value ${getStringList(key)}');
+      _log.info('⚠️ Skipped creating String List: $key already exists with value ${getStringList(key)}');
       return;
     }
     await setStringList(key, value);
@@ -134,31 +136,31 @@ class SharedPrefManager extends ServicesBase {
 
   Future<void> setString(String key, String value) async {
     await _prefs?.setString(key, value);
-    Logger().info('✅ Set String: $key = $value');
+    _log.info('✅ Set String: $key = $value');
   }
 
   Future<void> setInt(String key, int value) async {
     await _prefs?.setInt(key, value);
-    Logger().info('✅ Set Int: $key = $value');
+    _log.info('✅ Set Int: $key = $value');
   }
 
   Future<void> setBool(String key, bool value) async {
     await _prefs?.setBool(key, value);
-    Logger().info('✅ Set Bool: $key = $value');
+    _log.info('✅ Set Bool: $key = $value');
   }
 
   Future<void> setDouble(String key, double value) async {
     await _prefs?.setDouble(key, value);
-    Logger().info('✅ Set Double: $key = $value');
+    _log.info('✅ Set Double: $key = $value');
   }
 
   /// ✅ Store list as JSON string safely
   Future<void> setStringList(String key, List<String> value) async {
     if (value.isEmpty) {
-      Logger().error("⚠️ Attempted to store an empty list in SharedPreferences: $key");
+      _log.error("⚠️ Attempted to store an empty list in SharedPreferences: $key");
     }
     await _prefs?.setString(key, jsonEncode(value));
-    Logger().info('✅ Set String List: $key = $value');
+    _log.info('✅ Set String List: $key = $value');
   }
 
 
@@ -175,14 +177,14 @@ class SharedPrefManager extends ServicesBase {
     String? jsonString = _prefs?.getString(key);
 
     if (jsonString == null || jsonString.isEmpty) {
-      Logger().error("⚠️ SharedPreferences contains empty data for key: $key. Returning empty list.");
+      _log.error("⚠️ SharedPreferences contains empty data for key: $key. Returning empty list.");
       return [];
     }
 
     try {
       return List<String>.from(jsonDecode(jsonString)); // ✅ Convert JSON back to List<String>
     } catch (e) {
-      Logger().error("❌ JSON decoding error in getStringList for key: $key | Error: $e");
+      _log.error("❌ JSON decoding error in getStringList for key: $key | Error: $e");
       return []; // ✅ Return an empty list instead of crashing
     }
   }
@@ -192,17 +194,17 @@ class SharedPrefManager extends ServicesBase {
 
   Future<void> remove(String key) async {
     await _prefs?.remove(key);
-    Logger().info('🗑️ Removed key: $key');
+    _log.info('🗑️ Removed key: $key');
   }
 
   Future<void> clear() async {
     await _prefs?.clear();
-    Logger().info('🗑️ Cleared all preferences');
+    _log.info('🗑️ Cleared all preferences');
   }
 
   @override
   void dispose() {
     super.dispose();
-    Logger().info('🛑 SharedPrefManager disposed.');
+    _log.info('🛑 SharedPrefManager disposed.');
   }
 }

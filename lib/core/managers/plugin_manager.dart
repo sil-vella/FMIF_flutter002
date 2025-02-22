@@ -5,6 +5,7 @@ import 'module_manager.dart';
 import 'state_manager.dart'; // ✅ Import StateManager
 
 class PluginManager {
+  static final Logger _log = Logger(); // ✅ Use a static logger for static methods
   final HooksManager hooksManager;
   final ModuleManager moduleManager = ModuleManager();
   final StateManager stateManager; // ✅ Pass StateManager
@@ -17,14 +18,14 @@ class PluginManager {
   /// Register and initialize a plugin
   void registerPlugin(String pluginKey, PluginBase plugin) {
     if (_plugins.containsKey(pluginKey)) {
-      Logger().info('Plugin with key "$pluginKey" is already registered. Skipping initialization.');
+      _log.info('Plugin with key "$pluginKey" is already registered. Skipping initialization.');
       return; // Prevent duplicate registration
     }
 
     _plugins[pluginKey] = plugin;
-    Logger().info('Initializing plugin: $pluginKey');
+    _log.info('Initializing plugin: $pluginKey');
     plugin.initialize(stateManager); // ✅ Pass StateManager here
-    Logger().info('Plugin initialized: $pluginKey');
+    _log.info('Plugin initialized: $pluginKey');
   }
 
   /// Deregister a plugin
@@ -32,7 +33,7 @@ class PluginManager {
     final plugin = _plugins.remove(pluginKey);
     if (plugin != null) {
       plugin.dispose();
-      Logger().info('Plugin deregistered: $pluginKey');
+      _log.info('Plugin deregistered: $pluginKey');
     }
     _pluginStates.remove(pluginKey);
   }
@@ -47,25 +48,23 @@ class PluginManager {
     return _pluginStates[pluginKey] as T?;
   }
 
-
-
   /// Clear all plugins
   void clearPlugins() {
     _plugins.clear();
     _pluginStates.clear();
-    Logger().info('All plugins and their states have been cleared.');
+    _log.info('All plugins and their states have been cleared.');
   }
 
   /// Dispose all plugins
   void dispose() {
-    Logger().info('Disposing all plugins.');
+    _log.info('Disposing all plugins.');
     for (final plugin in _plugins.values) {
       if (plugin is PluginBase) {
         plugin.dispose();
-        Logger().info('Disposed plugin: ${plugin.runtimeType}');
+        _log.info('Disposed plugin: ${plugin.runtimeType}');
       }
     }
     clearPlugins(); // Clear the plugins and their states
-    Logger().info('All plugins disposed and cleared.');
+    _log.info('All plugins disposed and cleared.');
   }
 }

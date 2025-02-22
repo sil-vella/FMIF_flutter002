@@ -2,6 +2,7 @@ import 'package:flush_me_im_famous/plugins/adverts_plugin/modules/admobs/banner/
 import 'package:flush_me_im_famous/plugins/adverts_plugin/modules/admobs/interstitial/interstitial_ad.dart';
 import 'package:flush_me_im_famous/plugins/adverts_plugin/modules/admobs/rewarded/rewarded_ad.dart';
 import 'package:flutter/material.dart';
+import '../../core/00_base/module_base.dart';
 import '../../core/00_base/plugin_base.dart';
 import '../../core/managers/hooks_manager.dart';
 import '../../core/managers/module_manager.dart';
@@ -23,12 +24,7 @@ class AdvertsPlugin extends PluginBase {
       : servicesManager = ServicesManager(),
         super(hooksManager, moduleManager) {
 
-    moduleMap.addAll({
-      'admobs_banner_ad_module': () => BannerAdModule(),
-      'admobs_interstitial_ad_module': () => InterstitialAdModule(interstitialAdUnitId),
-      'admobs_rewarded_ad_module': () => RewardedAdModule(rewardedAdUnitId),
-    });
-
+    // ✅ Register hooks
     hookMap.addAll({
       'app_startup': () {
         _preLoadAds(); // ✅ Initialize ads on startup
@@ -39,38 +35,48 @@ class AdvertsPlugin extends PluginBase {
   /// ✅ Define initial states for this plugin
   @override
   Map<String, Map<String, dynamic>> getInitialStates() {
-    return {
+    return {};
+  }
 
+  /// ✅ Register Ad-related modules with specific instance keys
+  @override
+  Map<String?, ModuleBase> createModules() {
+    return {
+      'admobs_banner_ad_module': BannerAdModule(), // ✅ Hardcoded key
+      null: InterstitialAdModule(interstitialAdUnitId), // ✅ Pass `adUnitId`
+      null: RewardedAdModule(rewardedAdUnitId), // ✅ Pass `adUnitId`
     };
   }
 
   /// ✅ Preload all ads to ensure fast loading
+  /// ✅ Preload all ads to ensure fast loading
   Future<void> _preLoadAds() async {
-    final bannerAdModule = moduleManager.getModule('admobs_banner_ad_module');
-    final interstitialAdModule = moduleManager.getModule('admobs_interstitial_ad_module');
-    final rewardedAdModule = moduleManager.getModule('admobs_rewarded_ad_module');
+    final bannerAdModule = moduleManager.getModuleInstance<BannerAdModule>('admobs_banner_ad_module');
+    final interstitialAdModule = moduleManager.getLatestModule<InterstitialAdModule>(); // ✅ Works for auto keys
+    final rewardedAdModule = moduleManager.getLatestModule<RewardedAdModule>(); // ✅ Works for auto keys
 
     if (bannerAdModule != null) {
-      await bannerAdModule.callMethod("loadBannerAd", Config.admobsTopBanner);
-      await bannerAdModule.callMethod("loadBannerAd", Config.admobsBottomBanner);
-      Logger().info('✅ Banner Ads preloaded.');
+      await bannerAdModule.loadBannerAd(Config.admobsTopBanner);
+      await bannerAdModule.loadBannerAd(Config.admobsBottomBanner);
+      log.info('✅ Banner Ads preloaded.');
     } else {
-      Logger().error('❌ Failed to preload Banner Ads: Module not found.');
+      log.error('❌ Failed to preload Banner Ads: Module not found.');
     }
 
-
     if (interstitialAdModule != null) {
-      await interstitialAdModule.callMethod("loadInterstitialAd");
-      Logger().info('✅ Interstitial Ad preloaded.');
+      await interstitialAdModule.loadAd();
+      log.info('✅ Interstitial Ad preloaded.');
     } else {
-      Logger().error('❌ Failed to preload Interstitial Ad: Module not found.');
+      log.error('❌ Failed to preload Interstitial Ad: Module not found.');
     }
 
     if (rewardedAdModule != null) {
-      await rewardedAdModule.callMethod("loadRewardedAd");
-      Logger().info('✅ Rewarded Ad preloaded.');
+      await rewardedAdModule.loadAd();
+      log.info('✅ Rewarded Ad preloaded.');
     } else {
-      Logger().error('❌ Failed to preload Rewarded Ad: Module not found.');
+      log.error('❌ Failed to preload Rewarded Ad: Module not found.');
     }
   }
+
+
 }

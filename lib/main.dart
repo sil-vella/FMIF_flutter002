@@ -1,5 +1,3 @@
-import 'package:flush_me_im_famous/core/managers/services_manager.dart';
-import 'package:flush_me_im_famous/plugins/main_plugin/screens/home_screen.dart';
 import 'package:flush_me_im_famous/utils/consts/theme_consts.dart';
 import 'package:flush_me_im_famous/utils/consts/config.dart';
 import 'package:flutter/material.dart';
@@ -7,10 +5,13 @@ import 'package:provider/provider.dart';
 import 'core/managers/app_manager.dart';
 import 'core/managers/navigation_manager.dart';
 import 'core/managers/state_manager.dart';
+import 'tools/logging/logger.dart'; // ✅ Import Logger
 
 Future<void> main() async {
   await WidgetsFlutterBinding.ensureInitialized();
-  final appManager = AppManager(); // Instantiate AppManager to access navigationContainer
+
+  final logger = Logger(); // ✅ Initialize Logger first
+  final appManager = AppManager(); // ✅ Pass Logger to AppManager
 
   runApp(
     MultiProvider(
@@ -23,8 +24,6 @@ Future<void> main() async {
     ),
   );
 }
-
-
 
 class MyApp extends StatefulWidget {
   const MyApp({super.key});
@@ -61,10 +60,7 @@ class _MyAppState extends State<MyApp> {
           initialRoute: '/',
           routes: navContainer.routes,
         );
-
       },
     );
   }
 }
-
-

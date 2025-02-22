@@ -1,3 +1,4 @@
+import 'package:flush_me_im_famous/plugins/main_plugin/modules/animations_module/animations_module.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/animation.dart';
 import 'package:provider/provider.dart';
@@ -9,6 +10,7 @@ import '../modules/main_helper_module/main_helper_module.dart'; // ✅ Import He
 
 class HomeScreen extends BaseScreen {
   const HomeScreen({Key? key}) : super(key: key);
+
 
   @override
   String computeTitle(BuildContext context) {
@@ -23,6 +25,7 @@ class HomeScreenState extends BaseScreenState<HomeScreen>
     with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late String _backgroundImage; // ✅ Stores the background image
+  final ModuleManager _moduleManager = ModuleManager();
 
   @override
   void initState() {
@@ -45,7 +48,8 @@ class HomeScreenState extends BaseScreenState<HomeScreen>
 
   @override
   Widget buildContent(BuildContext context) {
-    final animationsModule = ModuleManager().getModule('animations_module');
+    final animationsModule = _moduleManager.getLatestModule<AnimationsModule>();
+
     final stateManager = Provider.of<StateManager>(context, listen: false);
 
     // Update state and navigate when Play button is pressed
@@ -74,17 +78,13 @@ class HomeScreenState extends BaseScreenState<HomeScreen>
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              animationsModule.callMethod(
-                'applyBounceAnimation',
-                [],
-                {
-                  'child': Image.asset(
-                    'assets/images/icon_foreground.png', // Replace with your actual asset path
-                    width: 300, // Adjust size as needed
-                    height: 300,
-                  ),
-                  'controller': _controller,
-                },
+              animationsModule.applyBounceAnimation(
+                child: Image.asset(
+                  'assets/images/icon_foreground.png', // Replace with your actual asset path
+                  width: 300, // Adjust size as needed
+                  height: 300,
+                ),
+                controller: _controller,
               ),
               const SizedBox(height: 20),
               ElevatedButton(
@@ -92,6 +92,7 @@ class HomeScreenState extends BaseScreenState<HomeScreen>
                 child: const Text('Play'),
               ),
             ],
+
           ),
         ),
 

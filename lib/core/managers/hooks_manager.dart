@@ -3,6 +3,8 @@ import '../../tools/logging/logger.dart';
 typedef HookCallback = void Function();
 
 class HooksManager {
+  static final Logger _log = Logger(); // ✅ Use a static logger for static methods
+
   static final HooksManager _instance = HooksManager._internal();
 
   factory HooksManager() => _instance;
@@ -14,29 +16,29 @@ class HooksManager {
 
   /// Register a hook callback with an optional priority (default: 10)
   void registerHook(String hookName, HookCallback callback, {int priority = 10}) {
-    Logger().info('Registering hook: $hookName with priority $priority');
+    _log.info('Registering hook: $hookName with priority $priority');
     _hooks.putIfAbsent(hookName, () => []).add(MapEntry(priority, callback));
     _hooks[hookName]!.sort((a, b) => a.key.compareTo(b.key)); // Sort by priority
-    Logger().info('Current hooks: $hookName - ${_hooks[hookName]}'); // Log hooks to verify registration
+    _log.info('Current hooks: $hookName - ${_hooks[hookName]}'); // Log hooks to verify registration
   }
 
   /// Trigger a hook by name, executing all its callbacks in priority order
   void triggerHook(String hookName) {
     if (_hooks.containsKey(hookName)) {
-      Logger().info('Triggering hook: $hookName with ${_hooks[hookName]!.length} callbacks');
+      _log.info('Triggering hook: $hookName with ${_hooks[hookName]!.length} callbacks');
       for (final entry in _hooks[hookName]!) {
-        Logger().info('Executing callback for hook: $hookName with priority ${entry.key}');
+        _log.info('Executing callback for hook: $hookName with priority ${entry.key}');
         entry.value(); // Execute the callback
       }
     } else {
-      Logger().info('No callbacks registered for hook: $hookName');
+      _log.info('No callbacks registered for hook: $hookName');
     }
   }
 
   /// Deregister all hooks for a specific event
   void deregisterHook(String hookName) {
     _hooks.remove(hookName);
-    Logger().info('Deregistered all callbacks for hook: $hookName');
+    _log.info('Deregistered all callbacks for hook: $hookName');
   }
 
   /// Deregister a specific callback from a hook
@@ -45,6 +47,6 @@ class HooksManager {
     if (_hooks[hookName]?.isEmpty ?? true) {
       _hooks.remove(hookName);
     }
-    Logger().info('Deregistered a callback for hook: $hookName');
+    _log.info('Deregistered a callback for hook: $hookName');
   }
 }

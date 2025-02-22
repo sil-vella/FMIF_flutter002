@@ -2,32 +2,28 @@ import 'package:flush_me_im_famous/core/00_base/module_base.dart';
 import '../../../../core/managers/module_manager.dart';
 import '../../../../core/managers/services_manager.dart';
 import '../../../../tools/logging/logger.dart';
+import '../connections_module/connections_module.dart';
 
 class LoginModule extends ModuleBase {
-  final Logger logger = Logger();
+  static final Logger _log = Logger(); // ✅ Use a static logger for static methods
   final ServicesManager servicesManager = ServicesManager();
-  final ModuleManager moduleManager = ModuleManager();
+  final ModuleManager _moduleManager = ModuleManager();
 
-  static LoginModule? _instance;
-
-  /// Factory method for Singleton instance
-  factory LoginModule() {
-    _instance ??= LoginModule._internal();
-    return _instance!;
+  /// ✅ Constructor with module key
+  LoginModule() : super("login_module") {
+    _log.info('✅ LoginModule initialized.');
   }
-
-  LoginModule._internal();
 
   Future<Map<String, dynamic>> registerUser({
     required String username,
     required String email,
     required String password,
   }) async {
-    final connectionModule = moduleManager.getModule('connection_module');
+    final connectionModule = _moduleManager.getLatestModule<ConnectionsModule>();
     final sharedPrefService = servicesManager.getService('shared_pref');
 
     if (connectionModule == null || sharedPrefService == null) {
-      logger.error("❌ Missing required modules.");
+      _log.error("❌ Missing required modules.");
       return {"error": "Service not available."};
     }
 
@@ -35,7 +31,7 @@ class LoginModule extends ModuleBase {
     List<String> categories = await sharedPrefService.callServiceMethod('getStringList', ['available_categories']) ?? [];
 
     if (categories.isEmpty) {
-      logger.error("⚠️ No categories found in SharedPreferences. Defaulting to 'mixed'.");
+      _log.error("⚠️ No categories found in SharedPreferences. Defaulting to 'mixed'.");
       categories = ['mixed']; // ✅ Ensure at least one category exists
     }
 
@@ -75,9 +71,11 @@ class LoginModule extends ModuleBase {
     }
 
     try {
-      logger.info("⚡ Sending registration request to `/register` with category-based data...");
+      _log.info("⚡ Sending registration request to `/register` with category-based data...");
+      _log.info("📝 Registering user with password: $password"); // 🔥 Debug log
 
-      final response = await connectionModule.callMethod('sendPostRequest', [
+
+      final response = await connectionModule.sendPostRequest(
         "/register",
         {
           "username": username,
@@ -85,17 +83,17 @@ class LoginModule extends ModuleBase {
           "password": password,
           "category_progress": categoryProgress, // ✅ Points & levels per category
           "guessed_names": guessedNames, // ✅ Guessed names per category & level
-        }
-      ]);
+        },
+      );
 
       if (response != null && response['message'] == "User registered successfully") {
-        logger.info("✅ User registered successfully. Auto logging in...");
+        _log.info("✅ User registered successfully. Auto logging in...");
         return await loginUser(email: email, password: password);
       } else {
         return {"error": response?["error"] ?? "Failed to register user."};
       }
     } catch (e) {
-      logger.error("❌ Registration error: $e");
+      _log.error("❌ Registration error: $e");
       return {"error": "Server error. Check network connection."};
     }
   }
@@ -105,28 +103,28 @@ class LoginModule extends ModuleBase {
     required String email,
     required String password,
   }) async {
-    final connectionModule = moduleManager.getModule('connection_module');
+    final connectionModule = _moduleManager.getLatestModule<ConnectionsModule>();
     final sharedPrefService = servicesManager.getService('shared_pref');
 
     if (connectionModule == null || sharedPrefService == null) {
-      logger.error("❌ Missing required modules.");
+      _log.error("❌ Missing required modules.");
       return {"error": "Service not available."};
     }
 
     try {
-      logger.info("⚡ Sending login request...");
+      _log.info("⚡ Sending login request...");
 
-      final response = await connectionModule.callMethod('sendPostRequest', [
+      final response = await connectionModule.sendPostRequest(
         "/login",
         {
           "email": email,
           "password": password,
-        }
-      ]);
+        },
+      );
 
       // ✅ Log the full server response for debugging
-      logger.info("📡 Server Response: $response");
-      logger.forceLog("📡 Server Response: $response");
+      _log.info("📡 Server Response: $response");
+      _log.forceLog("📡 Server Response: $response");
 
       if (response != null && response.containsKey('message') && response['message'] == "Login successful") {
         if (!response.containsKey("user") || !response["user"].containsKey("id")) {
@@ -142,7 +140,7 @@ class LoginModule extends ModuleBase {
         await sharedPrefService.callServiceMethod('setInt', ['user_id', user["id"]]);  // ✅ Save user ID
         await sharedPrefService.callServiceMethod('setBool', ['is_logged_in', true]);
 
-        logger.info("✅ User login successful. User ID: ${user["id"]}");
+        _log.info("✅ User login successful. User ID: ${user["id"]}");
 
         // ✅ Fetch and update category-based progress
         if (user.containsKey("category_progress") && user["category_progress"] is Map<String, dynamic>) {
@@ -156,10 +154,10 @@ class LoginModule extends ModuleBase {
             await sharedPrefService.callServiceMethod('setInt', ['points_${category}_level$level', points]);
             await sharedPrefService.callServiceMethod('setInt', ['level_$category', level]);
 
-            logger.info("📊 Updated progress for $category Level $level: Points=$points | Level=$level");
+            _log.info("📊 Updated progress for $category Level $level: Points=$points | Level=$level");
           }
         } else {
-          logger.error("⚠️ No category progress found in the login response.");
+          _log.error("⚠️ No category progress found in the login response.");
         }
 
         // ✅ Fetch and update guessed names from the backend
@@ -175,12 +173,12 @@ class LoginModule extends ModuleBase {
                 String guessedKey = "guessed_${category}_${levelKey.replaceAll("level_", "level")}";
                 await sharedPrefService.callServiceMethod('setStringList', [guessedKey, namesList]);
 
-                logger.info("📜 Updated guessed names for $category $levelKey: $namesList");
+                _log.info("📜 Updated guessed names for $category $levelKey: $namesList");
               }
             }
           }
         } else {
-          logger.error("⚠️ No guessed names found in the login response.");
+          _log.error("⚠️ No guessed names found in the login response.");
         }
 
         return {"success": "Login Successful!"};
@@ -188,36 +186,36 @@ class LoginModule extends ModuleBase {
         return {"error": response?["error"] ?? "Invalid email or password."};
       }
     } catch (e) {
-      logger.error("❌ Login error: $e");
+      _log.error("❌ Login error: $e");
       return {"error": "Server error. Check network connection."};
     }
   }
   /// ✅ Delete User Method
   Future<Map<String, dynamic>> deleteUser() async {
-    final connectionModule = moduleManager.getModule('connection_module');
+    final connectionModule = _moduleManager.getLatestModule<ConnectionsModule>();
     final sharedPrefService = servicesManager.getService('shared_pref');
 
     if (connectionModule == null || sharedPrefService == null) {
-      logger.error("❌ Missing required modules.");
+      _log.error("❌ Missing required modules.");
       return {"error": "Service not available."};
     }
 
     int? userId = await sharedPrefService.callServiceMethod('getInt', ['user_id']);
 
     if (userId == null) {
-      logger.error("❌ No user ID found. Cannot delete account.");
+      _log.error("❌ No user ID found. Cannot delete account.");
       return {"error": "User not logged in or ID missing."};
     }
 
     try {
-      logger.info("⚡ Sending delete request for User ID: $userId...");
+      _log.info("⚡ Sending delete request for User ID: $userId...");
 
-      final response = await connectionModule.callMethod('sendPostRequest', [
+      final response = await connectionModule.sendPostRequest(
         "/delete-user",
         {"user_id": userId},
-      ]);
+      );
 
-      logger.info("📡 Server Response: $response");
+      _log.info("📡 Server Response: $response");
 
       if (response == null) {
         return {"error": "No response from server. Check network connection."};
@@ -234,7 +232,7 @@ class LoginModule extends ModuleBase {
         return {"error": response?["error"] ?? "Failed to delete account."};
       }
     } catch (e) {
-      logger.error("❌ Error deleting user: $e");
+      _log.error("❌ Error deleting user: $e");
       return {"error": "Server error. Check network connection."};
     }
   }

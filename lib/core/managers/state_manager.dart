@@ -19,15 +19,16 @@ class PluginState {
   }
 }
 
-
 class StateManager with ChangeNotifier {
+  static final Logger _log = Logger(); // ✅ Use a static logger for static methods
   static StateManager? _instance;
 
   final Map<String, PluginState> _pluginStates = {}; // Stores structured plugin states
   Map<String, dynamic> _mainAppState = {'main_state': 'idle'}; // Default main app state
 
+
   StateManager._internal() {
-    Logger().info('StateManager instance created.');
+    _log.info('StateManager instance created.');
   }
 
   /// Factory method to provide the singleton instance
@@ -46,10 +47,10 @@ class StateManager with ChangeNotifier {
   void registerPluginState(String pluginKey, Map<String, dynamic> initialState) {
     if (!_pluginStates.containsKey(pluginKey)) {
       _pluginStates[pluginKey] = PluginState(state: initialState);
-      Logger().info("✅ Registered plugin state for key: $pluginKey");
+      _log.info("✅ Registered plugin state for key: $pluginKey");
       notifyListeners();
     } else {
-      Logger().error("⚠️ Plugin state for '$pluginKey' is already registered.");
+      _log.error("⚠️ Plugin state for '$pluginKey' is already registered.");
     }
   }
 
@@ -57,10 +58,10 @@ class StateManager with ChangeNotifier {
   void unregisterPluginState(String pluginKey) {
     if (_pluginStates.containsKey(pluginKey)) {
       _pluginStates.remove(pluginKey);
-      Logger().info("🗑 Unregistered state for key: $pluginKey");
+      _log.info("🗑 Unregistered state for key: $pluginKey");
       notifyListeners();
     } else {
-      Logger().error("⚠️ Plugin state for '$pluginKey' does not exist.");
+      _log.error("⚠️ Plugin state for '$pluginKey' does not exist.");
     }
   }
 
@@ -80,14 +81,13 @@ class StateManager with ChangeNotifier {
       return storedState.state as T;
     }
 
-    Logger().error("❌ Type mismatch: Requested '$T' but found '${storedState.state.runtimeType}' for plugin '$pluginKey'");
+    _log.error("❌ Type mismatch: Requested '$T' but found '${storedState.state.runtimeType}' for plugin '$pluginKey'");
     return null;
   }
 
-
   void updatePluginState(String pluginKey, Map<String, dynamic> newState, {bool force = false}) {
     if (!_pluginStates.containsKey(pluginKey)) {
-      Logger().error("❌ Cannot update state for '$pluginKey' - it is not registered.");
+      _log.error("❌ Cannot update state for '$pluginKey' - it is not registered.");
       return;
     }
 
@@ -99,7 +99,7 @@ class StateManager with ChangeNotifier {
       // ✅ Force update if 'force' is true, or only update if there's a real change
       if (force || newMergedState.state.toString() != existingState.state.toString()) {
         _pluginStates[pluginKey] = newMergedState;
-        Logger().info("✅ Updated state for '$pluginKey': ${_pluginStates[pluginKey]!.state} (force: $force)");
+        _log.info("✅ Updated state for '$pluginKey': ${_pluginStates[pluginKey]!.state} (force: $force)");
 
         // ✅ Defer `notifyListeners()` to the next frame
         WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -107,17 +107,16 @@ class StateManager with ChangeNotifier {
         });
 
       } else {
-        Logger().info("🔁 No change detected for '$pluginKey', skipping notify. (force: $force)");
+        _log.info("🔁 No change detected for '$pluginKey', skipping notify. (force: $force)");
       }
     }
   }
-
 
   // ------ Main App State Methods ------
 
   void setMainAppState(Map<String, dynamic> initialState) {
     _mainAppState = {'main_state': 'idle', ...initialState};
-    Logger().info("📌 Main app state initialized: $_mainAppState");
+    _log.info("📌 Main app state initialized: $_mainAppState");
     notifyListeners();
   }
 
@@ -125,7 +124,7 @@ class StateManager with ChangeNotifier {
 
   void updateMainAppState(String key, dynamic value) {
     _mainAppState[key] = value;
-    Logger().info("📌 Main app state updated: key=$key, value=$value");
+    _log.info("📌 Main app state updated: key=$key, value=$value");
     notifyListeners();
   }
 

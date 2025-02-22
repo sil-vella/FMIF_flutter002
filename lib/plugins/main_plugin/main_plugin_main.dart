@@ -5,6 +5,7 @@ import 'package:flush_me_im_famous/plugins/main_plugin/modules/main_helper_modul
 import 'package:flush_me_im_famous/plugins/main_plugin/screens/home_screen.dart';
 import 'package:flush_me_im_famous/plugins/main_plugin/screens/preferences_screen/preferences_screen.dart';
 import 'package:flutter/material.dart';
+import '../../core/00_base/module_base.dart';
 import '../../core/00_base/plugin_base.dart';
 import '../../core/managers/module_manager.dart';
 import '../../core/managers/hooks_manager.dart';
@@ -22,12 +23,6 @@ class MainPlugin extends PluginBase {
   this.stateManager) // ✅ Pass StateManager
       : servicesManager = ServicesManager(),
   super(hooksManager, moduleManager) {
-    moduleMap.addAll({
-      'connection_module': () => ConnectionsModule(Config.apiUrl),
-      'animations_module': () => AnimationsModule(),
-      'main_helper_module': () => MainHelperModule(),
-      'login_module': () => LoginModule(),
-    });
 
     // Add hooks directly in hookMap
     hookMap.addAll({
@@ -63,6 +58,17 @@ class MainPlugin extends PluginBase {
   Map<String, Map<String, dynamic>> getInitialStates() {
     return {
 
+    };
+  }
+
+  /// ✅ Register Ad-related modules with specific instance keys
+  @override
+  Map<String?, ModuleBase> createModules() {
+    return {
+      null: ConnectionsModule(Config.apiUrl),
+      null: AnimationsModule(),
+      null: MainHelperModule(),
+      null: LoginModule(),
     };
   }
 

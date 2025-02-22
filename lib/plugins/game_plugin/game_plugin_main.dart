@@ -7,6 +7,7 @@ import 'package:flush_me_im_famous/plugins/game_plugin/screens/leaderboard_scree
 import 'package:flush_me_im_famous/plugins/game_plugin/screens/level_up_screen/level_up_screen.dart';
 import 'package:flush_me_im_famous/plugins/game_plugin/screens/progress_screen/progress_screen.dart';
 
+import '../../core/00_base/module_base.dart';
 import '../../core/00_base/plugin_base.dart';
 import '../../core/managers/hooks_manager.dart';
 import '../../core/managers/module_manager.dart';
@@ -19,7 +20,8 @@ import 'modules/question_module/question_module.dart';
 
 class GamePlugin extends PluginBase {
   final ServicesManager servicesManager;
-  final StateManager stateManager; // ✅ Add StateManager
+  final StateManager stateManager;
+  final ModuleManager _moduleManager = ModuleManager();
 
   GamePlugin(
       HooksManager hooksManager,
@@ -28,12 +30,6 @@ class GamePlugin extends PluginBase {
       this.stateManager) // ✅ Pass StateManager
       : servicesManager = ServicesManager(),
         super(hooksManager, moduleManager) {
-    moduleMap.addAll({
-      'question_module': () => QuestionModule(),
-      'rewards_module': () => RewardsModule(),
-      'leaderboard_module': () => LeaderboardModule(),
-      'functions_helper_module': () => FunctionHelperModule(),
-    });
 
     hookMap.addAll({
       'app_startup': () async {
@@ -83,6 +79,17 @@ class GamePlugin extends PluginBase {
     };
   }
 
+  /// ✅ Register Ad-related modules with specific instance keys
+  @override
+  Map<String?, ModuleBase> createModules() {
+    return {
+      null: QuestionModule(),
+      null: RewardsModule(),
+      null: LeaderboardModule(),
+      null: FunctionHelperModule(),
+    };
+  }
+
   /// ✅ Register game timer state in StateManager
   void _registerGameTimerState() {
     if (!stateManager.isPluginStateRegistered("game_timer")) {
@@ -97,7 +104,7 @@ class GamePlugin extends PluginBase {
 
 
   Future<void> getCategories() async {
-    final connectionModule = ModuleManager().getModule<ConnectionsModule>('connection_module');
+    final connectionModule = _moduleManager.getLatestModule<ConnectionsModule>();
     final sharedPref = ServicesManager().getService('shared_pref');
 
     if (connectionModule == null) {

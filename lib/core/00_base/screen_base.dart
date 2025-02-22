@@ -1,3 +1,4 @@
+import 'package:flush_me_im_famous/plugins/adverts_plugin/modules/admobs/banner/banner_ad.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../tools/logging/logger.dart';
@@ -19,8 +20,11 @@ abstract class BaseScreen extends StatefulWidget {
 
 abstract class BaseScreenState<T extends BaseScreen> extends State<T> {
   late final AppManager appManager;
-  late final ModuleManager moduleManager;
-  late final dynamic bannerAdModule;
+  final ModuleManager _moduleManager = ModuleManager();
+
+  // ✅ Define logger instance
+  final Logger log = Logger();
+  BannerAdModule? bannerAdModule; // ✅ Store instance
 
   @override
   void initState() {
@@ -28,18 +32,16 @@ abstract class BaseScreenState<T extends BaseScreen> extends State<T> {
 
     // ✅ Retrieve AppManager from Provider
     appManager = Provider.of<AppManager>(context, listen: false);
-    moduleManager = appManager.moduleManager; // ✅ Use existing instance
 
-    // ✅ Fetch the BannerAdModule **once**
-    bannerAdModule = moduleManager.getModule('admobs_banner_ad_module');
+    // ✅ Fetch the latest BannerAdModule
+    bannerAdModule = _moduleManager.getLatestModule<BannerAdModule>();
 
-    // ✅ Preload top and bottom banners with correct argument passing
     if (bannerAdModule != null) {
-      bannerAdModule.callMethod("loadBannerAd", Config.admobsTopBanner);
-      bannerAdModule.callMethod("loadBannerAd", Config.admobsBottomBanner);
-      Logger().info('✅ Banner Ads preloaded.');
+      bannerAdModule!.loadBannerAd(Config.admobsTopBanner);
+      bannerAdModule!.loadBannerAd(Config.admobsBottomBanner);
+      log.info('✅ Banner Ads preloaded.');
     } else {
-      Logger().error("❌ BannerAdModule not found.");
+      log.error("❌ BannerAdModule not found.");
     }
   }
 
@@ -55,7 +57,6 @@ abstract class BaseScreenState<T extends BaseScreen> extends State<T> {
         backgroundColor: AppColors.accentColor, // ✅ Themed Gold Background
         iconTheme: IconThemeData(color: AppColors.darkGray), // ✅ Change Burger Menu Color
       ),
-
 
       drawer: Drawer(
         child: Container(
@@ -98,43 +99,42 @@ abstract class BaseScreenState<T extends BaseScreen> extends State<T> {
           ),
         ),
       ),
+
       body: Column(
         children: [
-          // ✅ Top Banner Ad (Placed Under the AppBar)
+          // ✅ Top Banner Ad (Ensure Unique Key)
           if (bannerAdModule != null)
             Container(
               height: 50,
               alignment: Alignment.center,
               color: Colors.black,
-              child: bannerAdModule.callMethod(
-                "getBannerWidget",
-                [Config.admobsTopBanner, context],
-              ) ??
-                  const SizedBox(),
+              child: bannerAdModule!.getBannerWidget(
+                Config.admobsTopBanner,
+                context,
+                widgetKey: 'topBanner_${UniqueKey().toString()}', // 🔥 Unique Key
+              ) ?? const SizedBox(),
             ),
-
-
 
           // ✅ Main Content
           Expanded(
             child: buildContent(context),
           ),
 
-          // ✅ Bottom Banner Ad
+          // ✅ Bottom Banner Ad (Ensure Unique Key)
           if (bannerAdModule != null)
             Container(
               height: 50,
               alignment: Alignment.center,
               color: Colors.black,
-              child: bannerAdModule.callMethod(
-                "getBannerWidget",
-                [Config.admobsBottomBanner, context],
-              ) ??
-                  const SizedBox(),
+              child: bannerAdModule!.getBannerWidget(
+                Config.admobsBottomBanner,
+                context,
+                widgetKey: 'bottomBanner_${UniqueKey().toString()}', // 🔥 Unique Key
+              ) ?? const SizedBox(),
             ),
-
         ],
       ),
+
     );
   }
 

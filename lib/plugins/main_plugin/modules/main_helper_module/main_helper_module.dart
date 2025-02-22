@@ -9,29 +9,24 @@ import '../../../../tools/logging/logger.dart';
 import '../../../../utils/consts/theme_consts.dart';
 
 class MainHelperModule extends ModuleBase {
-  static MainHelperModule? _instance;
+  static final Logger _log = Logger(); // ✅ Use a static logger for static methods
   final ServicesManager _servicesManager = ServicesManager();
   static final Random _random = Random();
-  static final Logger _logger = Logger(); // Use a single logger instance
 
-  Timer? _timer; // ✅ Store active timer instance
-  int _remainingTime = 0; // ✅ Store remaining time when paused
-  bool _isPaused = false; // ✅ Track pause state
+  Timer? _timer;
+  int _remainingTime = 0;
+  bool _isPaused = false;
 
-  MainHelperModule._internal() {
-    _logger.info('MainHelperModule initialized.');
+  /// ✅ Constructor with module key
+  MainHelperModule() : super("main_helper_module") {
+    _log.info('✅ MainHelperModule initialized.');
   }
 
-  /// Factory method to ensure singleton
-  factory MainHelperModule() {
-    _instance ??= MainHelperModule._internal();
-    return _instance!;
-  }
 
   /// Retrieve background by index (looping if out of range)
   static String getBackground(int index) {
     if (AppBackgrounds.backgrounds.isEmpty) {
-      _logger.error('No backgrounds available.');
+      _log.error('No backgrounds available.');
       return ''; // Return an empty string or a default background
     }
     return AppBackgrounds.backgrounds[index % AppBackgrounds.backgrounds.length];
@@ -40,7 +35,7 @@ class MainHelperModule extends ModuleBase {
   /// Retrieve a random background
   static String getRandomBackground() {
     if (AppBackgrounds.backgrounds.isEmpty) {
-      _logger.error('No backgrounds available.');
+      _log.error('No backgrounds available.');
       return ''; // Return an empty string or a default background
     }
     return AppBackgrounds.backgrounds[_random.nextInt(AppBackgrounds.backgrounds.length)];
@@ -61,15 +56,15 @@ class MainHelperModule extends ModuleBase {
         } else if (value is double) {
           await sharedPref.callServiceMethod('setDouble', [key, value]);
         } else {
-          _logger.error('Unsupported value type for key: $key');
+          _log.error('Unsupported value type for key: $key');
           return;
         }
-        _logger.info('Updated $key: $value');
+        _log.info('Updated $key: $value');
       } catch (e) {
-        _logger.error('Error updating user info: $e');
+        _log.error('Error updating user info: $e');
       }
     } else {
-      _logger.error('SharedPrefManager not available.');
+      _log.error('SharedPrefManager not available.');
     }
   }
 
@@ -85,13 +80,13 @@ class MainHelperModule extends ModuleBase {
         } else {
           value = await sharedPref.callServiceMethod('getString', [key]);
         }
-        _logger.info('Retrieved $key: $value');
+        _log.info('Retrieved $key: $value');
         return value;
       } catch (e) {
-        _logger.error('Error retrieving user info: $e');
+        _log.error('Error retrieving user info: $e');
       }
     } else {
-      _logger.error('SharedPrefManager not available.');
+      _log.error('SharedPrefManager not available.');
     }
     return null;
   }
@@ -100,7 +95,7 @@ class MainHelperModule extends ModuleBase {
   void startTimer(int seconds, Function callback) {
     final stateManager = Provider.of<StateManager>(AppManager.globalContext, listen: false);
 
-    _logger.info("⏳ Timer started for $seconds seconds...");
+    _log.info("⏳ Timer started for $seconds seconds...");
 
     _remainingTime = seconds; // ✅ Initialize remaining time
     _isPaused = false;
@@ -128,7 +123,7 @@ class MainHelperModule extends ModuleBase {
 
       if (_remainingTime <= 0) {
         timer.cancel();
-        _logger.info("✅ Timer completed.");
+        _log.info("✅ Timer completed.");
 
         // ✅ Set final state: timer stopped
         stateManager.updatePluginState("game_timer", {
@@ -146,7 +141,7 @@ class MainHelperModule extends ModuleBase {
     if (_timer != null && !_isPaused) {
       _isPaused = true;
       _timer?.cancel();
-      _logger.info("⏸ Timer paused at $_remainingTime seconds.");
+      _log.info("⏸ Timer paused at $_remainingTime seconds.");
 
       // ✅ Update state to reflect the pause
       final stateManager = Provider.of<StateManager>(AppManager.globalContext, listen: false);
@@ -161,7 +156,7 @@ class MainHelperModule extends ModuleBase {
   void resumeTimer(Function callback) {
     if (_isPaused && _remainingTime > 0) {
       _isPaused = false;
-      _logger.info("▶ Timer resumed with $_remainingTime seconds left.");
+      _log.info("▶ Timer resumed with $_remainingTime seconds left.");
 
       // ✅ Update state: Mark timer as running again
       final stateManager = Provider.of<StateManager>(AppManager.globalContext, listen: false);
@@ -187,7 +182,7 @@ class MainHelperModule extends ModuleBase {
 
         if (_remainingTime <= 0) {
           timer.cancel();
-          _logger.info("✅ Timer completed.");
+          _log.info("✅ Timer completed.");
 
           // ✅ Mark timer as stopped
           stateManager.updatePluginState("game_timer", {
@@ -208,7 +203,7 @@ class MainHelperModule extends ModuleBase {
     _remainingTime = 0;
     _isPaused = false;
 
-    _logger.info("⏹ Timer stopped.");
+    _log.info("⏹ Timer stopped.");
 
     // ✅ Update state to reflect the stop
     final stateManager = Provider.of<StateManager>(AppManager.globalContext, listen: false);
