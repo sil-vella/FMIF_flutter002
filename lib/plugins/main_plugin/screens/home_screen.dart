@@ -1,6 +1,7 @@
 import 'package:flush_me_im_famous/plugins/main_plugin/modules/animations_module/animations_module.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/animation.dart';
+import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../../../core/00_base/screen_base.dart';
 import '../../../core/managers/app_manager.dart';
@@ -55,8 +56,9 @@ class HomeScreenState extends BaseScreenState<HomeScreen>
     // Update state and navigate when Play button is pressed
     void onPlayPressed() {
       stateManager.updateMainAppState('main_state', 'in_play');
-      Navigator.pushNamed(context, '/game'); // ✅ Navigate to GameScreen
+      context.go('/game'); // ✅ Use GoRouter navigation
     }
+
 
     if (animationsModule == null) {
       return const Center(child: Text("Required modules are not available."));

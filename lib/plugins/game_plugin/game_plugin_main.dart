@@ -83,6 +83,12 @@ class GamePlugin extends PluginBase {
 
   void _registerNavigation() {
     navigationManager.registerRoute(
+      path: '/game',
+      screen: (context) => const GameScreen(),
+      drawerTitle: 'Play', // ✅ Add to drawer
+      drawerIcon: Icons.leaderboard,
+    );
+    navigationManager.registerRoute(
       path: '/leaderboard',
       screen: (context) => const LeaderboardScreen(),
       drawerTitle: 'Leaderboard', // ✅ Add to drawer

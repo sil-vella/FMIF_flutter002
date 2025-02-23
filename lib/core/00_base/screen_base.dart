@@ -8,6 +8,7 @@ import '../managers/module_manager.dart';
 import '../managers/navigation_manager.dart';
 import '../../utils/consts/config.dart';
 import '../../utils/consts/theme_consts.dart';
+import 'drawer_base.dart';
 
 abstract class BaseScreen extends StatefulWidget {
   const BaseScreen({Key? key}) : super(key: key);
@@ -43,6 +44,7 @@ abstract class BaseScreenState<T extends BaseScreen> extends State<T> {
   }
 
   @override
+  @override
   Widget build(BuildContext context) {
     final navigationManager = Provider.of<NavigationManager>(context);
 
@@ -57,36 +59,7 @@ abstract class BaseScreenState<T extends BaseScreen> extends State<T> {
         iconTheme: IconThemeData(color: AppColors.darkGray),
       ),
 
-      drawer: Drawer(
-        child: Container(
-          color: AppColors.scaffoldBackgroundColor,
-          child: ListView(
-            children: [
-              DrawerHeader(
-                decoration: BoxDecoration(color: AppColors.accentColor),
-                child: Center(
-                  child: Text(
-                    'Menu',
-                    style: TextStyle(
-                      color: AppColors.primaryColor,
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-              ),
-              ...navigationManager.routes.map((route) => ListTile(
-                leading: Icon(Icons.circle, color: AppColors.accentColor),
-                title: Text(route.path.replaceAll("/", "")),
-                onTap: () {
-                  Navigator.pop(context);
-                  context.go(route.path); // ✅ Use GoRouter navigation
-                },
-              )),
-            ],
-          ),
-        ),
-      ),
+      drawer: CustomDrawer(), // ✅ Use the correct drawer
 
       body: Column(
         children: [
@@ -111,6 +84,7 @@ abstract class BaseScreenState<T extends BaseScreen> extends State<T> {
       ),
     );
   }
+
 
   /// Abstract method to be implemented in subclasses
   Widget buildContent(BuildContext context);

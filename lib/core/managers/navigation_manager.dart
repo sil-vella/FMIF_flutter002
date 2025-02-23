@@ -23,6 +23,11 @@ class RegisteredRoute {
       builder: (context, state) => screen(context),
     );
   }
+
+  /// ✅ Helper method to check if route should appear in the drawer
+  bool get shouldAppearInDrawer {
+    return drawerTitle != null && drawerIcon != null;
+  }
 }
 
 class NavigationManager extends ChangeNotifier {
@@ -36,8 +41,11 @@ class NavigationManager extends ChangeNotifier {
   List<GoRoute> get routes => _routes.map((r) => r.toGoRoute()).toList();
 
   /// ✅ Getter for routes that should be in the drawer
-  List<RegisteredRoute> get drawerRoutes =>
-      _routes.where((r) => r.drawerTitle != null && r.drawerIcon != null).toList();
+  List<RegisteredRoute> get drawerRoutes {
+    final filteredRoutes = _routes.where((r) => r.shouldAppearInDrawer).toList();
+    print("Drawer Routes: ${filteredRoutes.map((r) => r.path).toList()}");
+    return filteredRoutes;
+  }
 
   /// ✅ Register a new route dynamically
   void registerRoute({
@@ -48,12 +56,15 @@ class NavigationManager extends ChangeNotifier {
   }) {
     if (_routes.any((r) => r.path == path)) return; // Prevent duplicates
 
-    _routes.add(RegisteredRoute(
+    final newRoute = RegisteredRoute(
       path: path,
       screen: screen,
       drawerTitle: drawerTitle,
       drawerIcon: drawerIcon,
-    ));
+    );
+
+    _routes.add(newRoute);
+    print("Registered Route: $path with drawerTitle: $drawerTitle");
 
     notifyListeners();
   }

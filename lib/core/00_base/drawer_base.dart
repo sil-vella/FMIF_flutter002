@@ -8,6 +8,9 @@ class CustomDrawer extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final navigationManager = Provider.of<NavigationManager>(context);
+    final drawerRoutes = navigationManager.drawerRoutes;
+
+    print("Rendering Drawer Items: ${drawerRoutes.map((r) => r.path).toList()}");
 
     return Drawer(
       child: ListView(
@@ -24,11 +27,13 @@ class CustomDrawer extends StatelessWidget {
             title: Text('Home', style: AppTextStyles.bodyLarge),
             onTap: () => context.go('/'), // ✅ Navigate to home
           ),
-          ...navigationManager.drawerRoutes.map((route) => ListTile(
-            leading: Icon(route.drawerIcon, color: AppColors.accentColor),
-            title: Text(route.drawerTitle ?? '', style: AppTextStyles.bodyLarge),
-            onTap: () => context.go(route.path), // ✅ Navigate via GoRouter
-          )),
+          ...drawerRoutes.map((route) {
+            return ListTile(
+              leading: Icon(route.drawerIcon, color: AppColors.accentColor),
+              title: Text(route.drawerTitle ?? '', style: AppTextStyles.bodyLarge),
+              onTap: () => context.go(route.path), // ✅ Navigate via GoRouter
+            );
+          }),
         ],
       ),
     );
