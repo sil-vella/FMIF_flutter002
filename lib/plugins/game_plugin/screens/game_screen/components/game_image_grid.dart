@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:provider/provider.dart';
 import 'package:flush_me_im_famous/plugins/game_plugin/modules/function_helper_module/function_helper_module.dart';
 import 'package:flush_me_im_famous/utils/consts/theme_consts.dart';
 import '../../../../../tools/logging/logger.dart';
@@ -28,13 +29,17 @@ class _GameImageGridState extends State<GameImageGrid> {
   late List<bool> _isLoaded;
   int _loadedCount = 0;
   bool _callbackFired = false;
-  final ModuleManager _moduleManager = ModuleManager();
-
+  FunctionHelperModule? _gameFunctionsHelper; // ✅ Retrieved from ModuleManager
   String? selectedImage;
 
   @override
   void initState() {
     super.initState();
+
+    // ✅ Retrieve ModuleManager via Provider
+    final moduleManager = Provider.of<ModuleManager>(context, listen: false);
+    _gameFunctionsHelper = moduleManager.getLatestModule<FunctionHelperModule>();
+
     _resetLoadingState();
   }
 
@@ -56,8 +61,6 @@ class _GameImageGridState extends State<GameImageGrid> {
   }
 
   void _onImageLoaded(int index, String imageUrl) {
-    final gameFunctionsHelper = _moduleManager.getLatestModule<FunctionHelperModule>();
-
     if (mounted && !_isLoaded[index]) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) return;
@@ -68,7 +71,8 @@ class _GameImageGridState extends State<GameImageGrid> {
 
           Logger().info("📸 Image Loaded: $imageUrl [$_loadedCount/${widget.imageOptions.length}]");
 
-          gameFunctionsHelper?.storeImageCacheTimestamp(imageUrl);
+          // ✅ Store timestamp using FunctionHelperModule
+          _gameFunctionsHelper?.storeImageCacheTimestamp(context, imageUrl);
 
           if (_loadedCount >= widget.imageOptions.length && !_callbackFired) {
             _callbackFired = true;
@@ -96,8 +100,6 @@ class _GameImageGridState extends State<GameImageGrid> {
       }
     });
   }
-
-
 
   @override
   Widget build(BuildContext context) {
@@ -184,7 +186,4 @@ class _GameImageGridState extends State<GameImageGrid> {
       ),
     );
   }
-
-
-
 }

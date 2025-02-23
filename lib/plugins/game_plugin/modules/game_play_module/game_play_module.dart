@@ -1,5 +1,5 @@
 import 'dart:math';
-import 'package:flush_me_im_famous/plugins/main_plugin/modules/main_helper_module/main_helper_module.dart';
+import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../../core/00_base/module_base.dart';
 import '../../../../core/managers/app_manager.dart';
@@ -9,6 +9,7 @@ import '../../../../core/managers/state_manager.dart';
 import '../../../../core/services/shared_preferences.dart';
 import '../../../../tools/logging/logger.dart';
 import '../../../adverts_plugin/modules/admobs/rewarded/rewarded_ad.dart';
+import '../../../main_plugin/modules/main_helper_module/main_helper_module.dart';
 import '../question_module/question_module.dart';
 import '../rewards_module/rewards_module.dart';
 import 'config/gameplaymodule_config.dart';
@@ -16,19 +17,8 @@ import 'config/gameplaymodule_config.dart';
 class GamePlayModule extends ModuleBase {
   static final Logger _log = Logger(); // ✅ Use a static logger for static methods
 
-  final ServicesManager _servicesManager;
-  final ModuleManager _moduleManager;
-  final SharedPrefManager? _sharedPref;
-  final MainHelperModule? _mainHelperModule;
-
-  /// ✅ No-argument constructor
-  GamePlayModule()
-      : _moduleManager = ModuleManager(),
-        _servicesManager = ServicesManager(),
-        _sharedPref = ServicesManager().getService<SharedPrefManager>('shared_pref'),
-        _mainHelperModule =
-        ModuleManager().getLatestModule<MainHelperModule>(),
-        super("game_play_module") {
+  /// ✅ Constructor with module key
+  GamePlayModule() : super("game_play_module") {
     _log.info('📢 GamePlayModule initialized and auto-registered.');
   }
 
@@ -37,8 +27,8 @@ class GamePlayModule extends ModuleBase {
   String feedbackMessage = "";
   List<String> imageOptions = []; // ✅ Store shuffled images
 
-  Future<void> resetState() async {
-    final stateManager = Provider.of<StateManager>(AppManager.globalContext, listen: false);
+  Future<void> resetState(BuildContext context) async {
+    final stateManager = Provider.of<StateManager>(context, listen: false);
 
     stateManager.updatePluginState("game_timer", {
       "isRunning": false,
@@ -60,16 +50,16 @@ class GamePlayModule extends ModuleBase {
   }
 
   /// Fetch user level and request a question from backend
-  Future<void> roundInit(Function updateState) async {
-    final stateManager = Provider.of<StateManager>(AppManager.globalContext, listen: false);
-    final sharedPref = _servicesManager.getService('shared_pref');
+  Future<void> roundInit(BuildContext context, Function updateState) async {
+    final stateManager = Provider.of<StateManager>(context, listen: false);
+    final sharedPref = Provider.of<ServicesManager>(context, listen: false).getService<SharedPrefManager>();
 
     if (sharedPref == null) {
       _log.error("❌ SharedPrefManager not found!");
       return;
     }
 
-    final questionModule = ModuleManager().getLatestModule<QuestionModule>();
+    final questionModule = Provider.of<ModuleManager>(context, listen: false).getLatestModule<QuestionModule>();
 
     if (questionModule == null) {
       _log.error("❌ QuestionModule not found!");
@@ -87,17 +77,18 @@ class GamePlayModule extends ModuleBase {
 
     // ✅ Show an ad every 5 rounds
     if (updatedNumber % 5 == 0) {
-      final rewardedAdModule = ModuleManager().getLatestModule<RewardedAdModule>();
-      final mainHelper = ModuleManager().getLatestModule<MainHelperModule>();
+      final rewardedAdModule = Provider.of<ModuleManager>(context, listen: false).getLatestModule<RewardedAdModule>();
+      final mainHelper = Provider.of<ModuleManager>(context, listen: false).getLatestModule<MainHelperModule>();
 
       if (rewardedAdModule != null && mainHelper != null) {
-        mainHelper.pauseTimer(); // ✅ Pause timer for ad
+        mainHelper.pauseTimer(context); // ✅ Pause timer for ad
 
         rewardedAdModule.showAd(
+          context,
           onUserEarnedReward: () => Logger().info("Advert Played."),
           onAdDismissed: () {
             Future.delayed(const Duration(milliseconds: 500), () {
-              mainHelper.resumeTimer(() {
+              mainHelper.resumeTimer(context, () {
                 Logger().info("⏳ Timer resumed after ad.");
               });
             });
@@ -109,23 +100,22 @@ class GamePlayModule extends ModuleBase {
       }
     }
 
-    await resetState();  // ✅ Ensure state resets before fetching new data
+    await resetState(context);  // ✅ Ensure state resets before fetching new data
 
     try {
       // ✅ Get user's level and category from SharedPreferences
-      final category = await sharedPref.callServiceMethod('getString', ['category']) ?? "mixed";
-      final int level = await sharedPref.callServiceMethod('getInt', ['level_$category']) ?? 1;
+      final category = sharedPref.getString('category') ?? "mixed";
+      final int level = sharedPref.getInt('level_$category') ?? 1;
 
       _log.info("🏆 User category: $category | Level: $level");
 
       final guessedKey = "guessed_${category}_level$level";
-      List<String> guessedNames = await sharedPref.callServiceMethod('getStringList', [guessedKey]) ?? [];
+      List<String> guessedNames = sharedPref.getStringList(guessedKey) ?? [];
 
-// ✅ Log before sending request
       _log.info("📜 Final guessed names sent to backend: $guessedNames");
 
       // ✅ Fetch question with updated guessed list
-      final response = await questionModule.getQuestion(level, category, guessedNames);
+      final response = await questionModule.getQuestion(context, level, category, guessedNames);
 
       if (response.containsKey("error")) {
         if (response["error"].contains("No more actors left")) {
@@ -153,8 +143,8 @@ class GamePlayModule extends ModuleBase {
     }
   }
 
-  Future<void> setTimer(Function onTimeout) async {
-    final sharedPref = _servicesManager.getService('shared_pref');
+  Future<void> setTimer(BuildContext context, Function onTimeout) async {
+    final sharedPref = Provider.of<ServicesManager>(context, listen: false).getService<SharedPrefManager>();
 
     if (sharedPref == null) {
       _log.error("❌ SharedPrefManager not found!");
@@ -162,39 +152,34 @@ class GamePlayModule extends ModuleBase {
     }
 
     try {
-      // ✅ Get user's level
-      final int level = await sharedPref.callServiceMethod('getInt', ['level']) ?? 1;
+      final int level = sharedPref.getInt('level') ?? 1;
 
-      // ✅ Don't set a timer if level is 2 or less
       if (level <= 2) {
         _log.info("⏳ Skipping timer. Level is $level.");
         return;
       }
 
-      // ✅ Get the corresponding timer duration for the level (default to 10s if not set)
       final int duration = (GamePlayConfig.levelTimers[level] ?? 10).toInt();
 
       _log.info("⏳ Starting timer for Level $level: $duration seconds");
 
-      final stateManager = Provider.of<StateManager>(AppManager.globalContext, listen: false);
+      final stateManager = Provider.of<StateManager>(context, listen: false);
 
-      // ✅ Update the game timer state before starting
       stateManager.updatePluginState("game_timer", {
         "isRunning": true,
         "duration": duration,
       });
 
-      // ✅ Start timer with dynamic duration
-      _mainHelperModule?.startTimer(duration, () {
+      final mainHelper = Provider.of<ModuleManager>(context, listen: false).getLatestModule<MainHelperModule>();
+      mainHelper?.startTimer(context, duration, () {
         _log.info("⏰ Timer finished! Triggering timeout answer.");
 
-        // ✅ Update state when timer stops
         stateManager.updatePluginState("game_timer", {
           "isRunning": false,
           "duration": 0,
         });
 
-        onTimeout(); // ✅ Now directly calls _handleAnswer from GameScreen
+        onTimeout();
       });
 
     } catch (e) {
@@ -202,12 +187,13 @@ class GamePlayModule extends ModuleBase {
     }
   }
 
-  void checkAnswer(String selectedImage, Function updateState, {bool timeUp = false}) async {
+  void checkAnswer(BuildContext context, String selectedImage, Function updateState, {bool timeUp = false}) async {
+
     _log.info("🏆 Checking answer...");
 
     final correctImage = question?['image_url'] ?? "";
     final rewardsModule = ModuleManager().getLatestModule<RewardsModule>();
-    final stateManager = Provider.of<StateManager>(AppManager.globalContext, listen: false);
+    final stateManager = Provider.of<StateManager>(context, listen: false);
 
     if (rewardsModule == null || stateManager == null) {
       _log.error("❌ RewardsModule or StateManager not found.");
@@ -233,17 +219,19 @@ class GamePlayModule extends ModuleBase {
 
       // ✅ Determine points based on hint usage
       String pointsKey = hintUsed ? 'hint' : 'no_hint';
-      int points = await rewardsModule.getPoints(pointsKey, category, level);
+      int points = await rewardsModule.getPoints(context, pointsKey, category, level);
 
       _log.forceLog("📌 hint: $points ");
 
       // ✅ Call saveReward with all necessary data
       final rewardData = await rewardsModule.saveReward(
+        context: context, // ✅ Pass context here
         points: points,
         category: category,
         level: level,
         guessedActor: correctActor,
       );
+
       Logger().forceLog("📜 reward data if correct ${rewardData}");
       _log.info("🏆 Updated Rewards: ${rewardData}");
 

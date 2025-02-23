@@ -1,5 +1,6 @@
 import 'package:flush_me_im_famous/plugins/main_plugin/modules/connections_module/connections_module.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../../../../core/00_base/module_base.dart';
 import '../../../../core/managers/module_manager.dart';
 import '../../../../core/managers/services_manager.dart';
@@ -9,43 +10,38 @@ import '../../../../utils/consts/theme_consts.dart'; // ✅ Import Theme
 
 class LeaderboardModule extends ModuleBase {
   static final Logger _log = Logger(); // ✅ Use a static logger for static methods
-  final ServicesManager _servicesManager;
-  final ModuleManager _moduleManager;
-  final SharedPrefManager? _sharedPref;
 
-  /// ✅ Call `super` to set moduleKey & auto-register
-  LeaderboardModule()
-      : _moduleManager = ModuleManager(),
-        _servicesManager = ServicesManager(),
-        _sharedPref = ServicesManager().getService<SharedPrefManager>('shared_pref'),
-        super("leaderboard_module") {
+  /// ✅ Constructor - No stored instances, dependencies fetched dynamically
+  LeaderboardModule() : super("leaderboard_module") {
     _log.info('📢 LeaderboardModule initialized and auto-registered.');
   }
 
   /// ✅ Fetch leaderboard data from backend
-  Future<Map<String, dynamic>> getLeaderboard() async {
-    final connectionModule = ModuleManager().getLatestModule<ConnectionsModule>();
+  Future<Map<String, dynamic>> getLeaderboard(BuildContext context) async {
+    final moduleManager = Provider.of<ModuleManager>(context, listen: false);
+    final servicesManager = Provider.of<ServicesManager>(context, listen: false);
 
-    final sharedPrefService = _servicesManager.getService('shared_pref');
+    final connectionModule = moduleManager.getLatestModule<ConnectionsModule>();
+    final sharedPref = servicesManager.getService<SharedPrefManager>();
 
     if (connectionModule == null) {
       _log.error("❌ ConnectionModule not found!");
       return {};
     }
 
-    if (sharedPrefService == null) {
+    if (sharedPref == null) {
       _log.error("❌ SharedPrefManager not found!");
       return {};
     }
 
     try {
       // ✅ Retrieve user's email from SharedPreferences (if logged in)
-      final userEmail = await sharedPrefService.callServiceMethod('getString', ['email']);
+      final userEmail = sharedPref.getString('email');
       final queryParams = userEmail != null ? "?email=$userEmail" : "";
 
       _log.info("⚡ Fetching leaderboard data from `/get-leaderboard$queryParams`...");
 
-// ✅ Send GET request directly
+      // ✅ Send GET request directly
       final response = await connectionModule.sendGetRequest("/get-leaderboard$queryParams");
 
       _log.info("✅ Leaderboard response: $response");
@@ -136,12 +132,12 @@ class LeaderboardModule extends ModuleBase {
     );
   }
 
-  Widget buildLeaderboardWidget() {
+  /// ✅ **Leaderboard Screen Widget**
+  Widget buildLeaderboardWidget(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.scaffoldBackgroundColor, // ✅ Ensure solid background
       body: FutureBuilder<Map<String, dynamic>>(
-
-        future: getLeaderboard(),
+        future: getLeaderboard(context),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
@@ -167,5 +163,4 @@ class LeaderboardModule extends ModuleBase {
       ),
     );
   }
-
 }

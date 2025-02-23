@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:flush_me_im_famous/core/managers/module_manager.dart';
 import '../../../../core/00_base/screen_base.dart';
 import '../../../../tools/logging/logger.dart';
@@ -18,12 +19,20 @@ class LeaderboardScreen extends BaseScreen {
 }
 
 class LeaderboardScreenState extends BaseScreenState<LeaderboardScreen> {
-  final LeaderboardModule _leaderboardModule = LeaderboardModule();
+  LeaderboardModule? _leaderboardModule; // ✅ Use nullable to avoid crash
 
   @override
   void initState() {
     super.initState();
     Logger().info("📊 Initializing LeaderboardScreen...");
+
+    // ✅ Retrieve ModuleManager via Provider
+    final moduleManager = Provider.of<ModuleManager>(context, listen: false);
+    _leaderboardModule = moduleManager.getLatestModule<LeaderboardModule>();
+
+    if (_leaderboardModule == null) {
+      Logger().error("❌ LeaderboardModule not found!");
+    }
   }
 
   @override
@@ -34,7 +43,6 @@ class LeaderboardScreenState extends BaseScreenState<LeaderboardScreen> {
         Container(
           color: AppColors.scaffoldBackgroundColor, // ✅ Apply theme background
         ),
-
 
         // ✅ Leaderboard Title
         Positioned(
@@ -53,14 +61,24 @@ class LeaderboardScreenState extends BaseScreenState<LeaderboardScreen> {
           ),
         ),
 
-        // ✅ Display Leaderboard Widget
-        Positioned.fill(
-          top: 80,
-          child: Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: _leaderboardModule.buildLeaderboardWidget(),
+        // ✅ Display Leaderboard Widget if Module Exists
+        if (_leaderboardModule != null)
+          Positioned.fill(
+            top: 80,
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: _leaderboardModule!.buildLeaderboardWidget(context),
+            ),
+          )
+        else
+          Positioned.fill(
+            child: Center(
+              child: Text(
+                "❌ Leaderboard Module Not Available",
+                style: TextStyle(fontSize: 18, color: Colors.redAccent),
+              ),
+            ),
           ),
-        ),
       ],
     );
   }

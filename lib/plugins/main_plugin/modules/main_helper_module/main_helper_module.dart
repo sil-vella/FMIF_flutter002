@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:math';
+import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../../core/00_base/module_base.dart';
 import '../../../../core/managers/app_manager.dart';
@@ -12,8 +13,6 @@ import '../../../../utils/consts/theme_consts.dart';
 
 class MainHelperModule extends ModuleBase {
   static final Logger _log = Logger();
-  final ServicesManager _servicesManager;
-  final ModuleManager _moduleManager;
   static final Random _random = Random();
 
   Timer? _timer;
@@ -21,13 +20,9 @@ class MainHelperModule extends ModuleBase {
   bool _isPaused = false;
 
   /// ✅ Constructor with module key
-  MainHelperModule()
-      : _moduleManager = ModuleManager(),
-        _servicesManager = ServicesManager(),
-        super("main_helper_module") {
+  MainHelperModule() : super("main_helper_module") {
     _log.info('✅ MainHelperModule initialized.');
   }
-
 
   /// Retrieve background by index (looping if out of range)
   static String getBackground(int index) {
@@ -47,20 +42,20 @@ class MainHelperModule extends ModuleBase {
     return AppBackgrounds.backgrounds[_random.nextInt(AppBackgrounds.backgrounds.length)];
   }
 
-  /// Update user information in Shared Preferences
-  Future<void> updateUserInfo(String key, dynamic value) async {
-    final sharedPref = _servicesManager.getService('shared_pref');
+  /// ✅ Update user information in Shared Preferences
+  Future<void> updateUserInfo(BuildContext context, String key, dynamic value) async {
+    final sharedPref = Provider.of<ServicesManager>(context, listen: false).getService<SharedPrefManager>();
 
     if (sharedPref != null) {
       try {
         if (value is String) {
-          await sharedPref.callServiceMethod('setString', [key, value]);
+          await sharedPref.setString(key, value);
         } else if (value is int) {
-          await sharedPref.callServiceMethod('setInt', [key, value]);
+          await sharedPref.setInt(key, value);
         } else if (value is bool) {
-          await sharedPref.callServiceMethod('setBool', [key, value]);
+          await sharedPref.setBool(key, value);
         } else if (value is double) {
-          await sharedPref.callServiceMethod('setDouble', [key, value]);
+          await sharedPref.setDouble(key, value);
         } else {
           _log.error('Unsupported value type for key: $key');
           return;
@@ -74,17 +69,17 @@ class MainHelperModule extends ModuleBase {
     }
   }
 
-  /// Retrieve stored user information
-  Future<dynamic> getUserInfo(String key) async {
-    final sharedPref = _servicesManager.getService('shared_pref');
+  /// ✅ Retrieve stored user information
+  Future<dynamic> getUserInfo(BuildContext context, String key) async {
+    final sharedPref = Provider.of<ServicesManager>(context, listen: false).getService<SharedPrefManager>();
 
     if (sharedPref != null) {
       try {
         dynamic value;
         if (key == 'points') {
-          value = await sharedPref.callServiceMethod('getInt', [key]);
+          value = sharedPref.getInt(key);
         } else {
-          value = await sharedPref.callServiceMethod('getString', [key]);
+          value = sharedPref.getString(key);
         }
         _log.info('Retrieved $key: $value');
         return value;
@@ -98,8 +93,8 @@ class MainHelperModule extends ModuleBase {
   }
 
   /// ✅ Start a countdown timer with pause functionality
-  void startTimer(int seconds, Function callback) {
-    final stateManager = Provider.of<StateManager>(AppManager.globalContext, listen: false);
+  void startTimer(BuildContext context, int seconds, Function callback) {
+    final stateManager = Provider.of<StateManager>(context, listen: false);
 
     _log.info("⏳ Timer started for $seconds seconds...");
 
@@ -143,14 +138,14 @@ class MainHelperModule extends ModuleBase {
   }
 
   /// ✅ Pause the timer
-  void pauseTimer() {
+  void pauseTimer(BuildContext context) {
     if (_timer != null && !_isPaused) {
       _isPaused = true;
       _timer?.cancel();
       _log.info("⏸ Timer paused at $_remainingTime seconds.");
 
       // ✅ Update state to reflect the pause
-      final stateManager = Provider.of<StateManager>(AppManager.globalContext, listen: false);
+      final stateManager = Provider.of<StateManager>(context, listen: false);
       stateManager.updatePluginState("game_timer", {
         "isRunning": false,
         "duration": _remainingTime,
@@ -159,13 +154,13 @@ class MainHelperModule extends ModuleBase {
   }
 
   /// ✅ Resume the timer correctly
-  void resumeTimer(Function callback) {
+  void resumeTimer(BuildContext context, Function callback) {
     if (_isPaused && _remainingTime > 0) {
       _isPaused = false;
       _log.info("▶ Timer resumed with $_remainingTime seconds left.");
 
       // ✅ Update state: Mark timer as running again
-      final stateManager = Provider.of<StateManager>(AppManager.globalContext, listen: false);
+      final stateManager = Provider.of<StateManager>(context, listen: false);
       stateManager.updatePluginState("game_timer", {
         "isRunning": true,
         "duration": _remainingTime, // ✅ Ensure it continues from remaining time
@@ -202,9 +197,8 @@ class MainHelperModule extends ModuleBase {
     }
   }
 
-
   /// ✅ Stop and reset the timer
-  void stopTimer() {
+  void stopTimer(BuildContext context) {
     _timer?.cancel();
     _remainingTime = 0;
     _isPaused = false;
@@ -212,12 +206,10 @@ class MainHelperModule extends ModuleBase {
     _log.info("⏹ Timer stopped.");
 
     // ✅ Update state to reflect the stop
-    final stateManager = Provider.of<StateManager>(AppManager.globalContext, listen: false);
+    final stateManager = Provider.of<StateManager>(context, listen: false);
     stateManager.updatePluginState("game_timer", {
       "isRunning": false,
       "duration": 0,
     });
   }
-
-
 }

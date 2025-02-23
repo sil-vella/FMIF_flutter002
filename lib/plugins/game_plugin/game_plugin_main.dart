@@ -1,8 +1,11 @@
+import 'package:flush_me_im_famous/plugins/game_plugin/modules/game_play_module/game_play_module.dart';
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:flush_me_im_famous/plugins/game_plugin/modules/function_helper_module/function_helper_module.dart';
 import 'package:flush_me_im_famous/plugins/game_plugin/modules/leaderboard_module/leaderboard_module.dart';
 import 'package:flush_me_im_famous/plugins/game_plugin/modules/rewards_module/rewards_module.dart';
+import 'package:flush_me_im_famous/plugins/game_plugin/modules/question_module/question_module.dart';
 import 'package:flush_me_im_famous/plugins/game_plugin/screens/game_screen/game_screen.dart';
-import 'package:flutter/material.dart';
 import 'package:flush_me_im_famous/plugins/game_plugin/screens/leaderboard_screen/leaderboard_screen.dart';
 import 'package:flush_me_im_famous/plugins/game_plugin/screens/level_up_screen/level_up_screen.dart';
 import 'package:flush_me_im_famous/plugins/game_plugin/screens/progress_screen/progress_screen.dart';
@@ -14,53 +17,52 @@ import '../../core/managers/module_manager.dart';
 import '../../core/managers/navigation_manager.dart';
 import '../../core/managers/services_manager.dart';
 import '../../core/managers/state_manager.dart';
+import '../../core/services/shared_preferences.dart';
 import '../../tools/logging/logger.dart';
 import '../main_plugin/modules/connections_module/connections_module.dart';
-import 'modules/question_module/question_module.dart';
+import '../main_plugin/screens/preferences_screen/preferences_screen.dart';
 
 class GamePlugin extends PluginBase {
-  final ServicesManager servicesManager;
-  final StateManager stateManager;
-  final ModuleManager _moduleManager = ModuleManager();
+  late final NavigationManager navigationManager;
 
-  GamePlugin(
-      HooksManager hooksManager,
-      ModuleManager moduleManager,
-      NavigationContainer navigationContainer,
-      this.stateManager) // ✅ Pass StateManager
-      : servicesManager = ServicesManager(),
-        super(hooksManager, moduleManager) {
+  GamePlugin();
 
-    hookMap.addAll({
-      'app_startup': () async {
-        Logger().info('GamePlugin initialized.');
-        await getCategories(); // ✅ Fetch categories FIRST
-        await _initializeUserData(); // ✅ Initialize user data AFTER fetching categories
-        _registerGameTimerState(); // ✅ Register game timer state
-      },
-      'reg_nav': () {
-        navigationContainer.registerRoute('/game', (context) => GameScreen());
-        navigationContainer.registerNavItem(DrawerItem(
-          label: 'Play Guess Who',
-          route: '/game',
-          icon: Icons.quiz,
-        ), position: 1);
-        navigationContainer.registerRoute('/leaderboard', (context) => LeaderboardScreen());
-        navigationContainer.registerNavItem(DrawerItem(
-          label: 'Leaderboard',
-          route: '/leaderboard',
-          icon: Icons.quiz,
-        ), position: 4);
-        navigationContainer.registerRoute('/progress', (context) => ProgressScreen());
-        navigationContainer.registerNavItem(DrawerItem(
-          label: 'My Progress',
-          route: '/progress',
-          icon: Icons.quiz,
-        ), position: 3);
-        navigationContainer.registerRoute('/level-up', (context) => LevelUpScreen());
-      },
-    });
+  @override
+  void initialize(BuildContext context) {
+    log.info("🔄 Initializing ${runtimeType.toString()}...");
+
+    super.initialize(context);
+    final moduleManager = Provider.of<ModuleManager>(context, listen: false);
+    final servicesManager = Provider.of<ServicesManager>(context, listen: false);
+    final stateManager = Provider.of<StateManager>(context, listen: false);
+    navigationManager = Provider.of<NavigationManager>(context, listen: false);
+
+    getCategories(context); // ✅ Fetch categories dynamically
+    _initializeUserData(context); // ✅ Initialize user data
+    _registerGameTimerState(stateManager);
+    _registerNavigation();
+
+    // ✅ Register all game-related modules in ModuleManager
+    final modules = createModules();
+    for (var entry in modules.entries) {
+      final instanceKey = entry.key;
+      final module = entry.value;
+      moduleManager.registerModule(module, instanceKey: instanceKey);
+    }
   }
+
+  /// ✅ Register game-related modules
+  @override
+  Map<String?, ModuleBase> createModules() {
+    return {
+      null: GamePlayModule(),
+      null: QuestionModule(),
+      null: RewardsModule(),
+      null: LeaderboardModule(),
+      null: FunctionHelperModule(),
+    };
+  }
+
 
   /// ✅ Define initial states for this plugin
   @override
@@ -79,19 +81,30 @@ class GamePlugin extends PluginBase {
     };
   }
 
-  /// ✅ Register Ad-related modules with specific instance keys
-  @override
-  Map<String?, ModuleBase> createModules() {
-    return {
-      null: QuestionModule(),
-      null: RewardsModule(),
-      null: LeaderboardModule(),
-      null: FunctionHelperModule(),
-    };
+  void _registerNavigation() {
+    navigationManager.registerRoute(
+      path: '/leaderboard',
+      screen: (context) => const LeaderboardScreen(),
+      drawerTitle: 'Leaderboard', // ✅ Add to drawer
+      drawerIcon: Icons.leaderboard,
+    );
+
+    navigationManager.registerRoute(
+      path: '/progress',
+      screen: (context) => const ProgressScreen(),
+      drawerTitle: 'My Progress', // ✅ Add to drawer
+      drawerIcon: Icons.emoji_events,
+    );
+
+    navigationManager.registerRoute(
+      path: '/level-up',
+      screen: (context) => const LevelUpScreen(),
+    ); // ❌ No drawerTitle, so it WON'T appear in the drawer
   }
 
+
   /// ✅ Register game timer state in StateManager
-  void _registerGameTimerState() {
+  void _registerGameTimerState(StateManager stateManager) {
     if (!stateManager.isPluginStateRegistered("game_timer")) {
       stateManager.registerPluginState("game_timer", {
         "isRunning": false,
@@ -102,13 +115,15 @@ class GamePlugin extends PluginBase {
     }
   }
 
-
-  Future<void> getCategories() async {
-    final connectionModule = _moduleManager.getLatestModule<ConnectionsModule>();
-    final sharedPref = ServicesManager().getService('shared_pref');
+  /// ✅ Fetch game categories
+  Future<void> getCategories(BuildContext context) async {
+    final moduleManager = Provider.of<ModuleManager>(context, listen: false);
+    final servicesManager = Provider.of<ServicesManager>(context, listen: false);
+    final connectionModule = moduleManager.getLatestModule<ConnectionsModule>();
+    final sharedPref = servicesManager.getService<SharedPrefManager>();
 
     if (connectionModule == null) {
-      Logger().error('❌ ConnectionModule not found in ServicesManager.');
+      Logger().error('❌ ConnectionModule not found in ModuleManager.');
       return;
     }
 
@@ -124,24 +139,18 @@ class GamePlugin extends PluginBase {
       if (response != null && response is Map<String, dynamic> && response.containsKey("categories")) {
         final Map<String, dynamic> categoriesMap = response["categories"];
 
-        // ✅ Extract category names from the response
         List<String> categoryList = categoriesMap.keys.toList();
-
         Logger().info('✅ Successfully fetched categories: $categoryList');
 
-        // ✅ Save category list in SharedPreferences
-        await sharedPref.callServiceMethod('setStringList', ['available_categories', categoryList]);
+        sharedPref.setStringList('available_categories', categoryList);
 
-        // ✅ Store category levels in SharedPreferences
         for (String category in categoriesMap.keys) {
-          int levels = categoriesMap[category]["levels"] ?? 2; // Default to 2 if missing
-          await sharedPref.callServiceMethod('setInt', ['max_levels_$category', levels]);
+          int levels = categoriesMap[category]["levels"] ?? 2;
+          sharedPref.setInt('max_levels_$category', levels);
           Logger().info("✅ Saved max levels for $category: $levels");
         }
 
         Logger().info('✅ Categories and levels saved in SharedPreferences.');
-
-        // ✅ Now initialize SharedPreferences keys for levels, points, and guessed names
         await _initializeCategorySystem(categoryList, sharedPref);
       } else {
         Logger().error('❌ Failed to fetch categories. Unexpected response format: $response');
@@ -151,54 +160,10 @@ class GamePlugin extends PluginBase {
     }
   }
 
-  Future<void> _initializeCategorySystem(List<String> categories, dynamic sharedPref) async {
-    try {
-      Logger().info("⚙️ Initializing SharedPreferences for levels, points, and guessed names...");
 
-      for (String category in categories) {
-        // ✅ Fetch max levels from SharedPreferences instead of assuming 5
-        int maxLevels = await sharedPref.callServiceMethod('getInt', ['max_levels_$category']) ?? 0;
-
-        // ✅ Default to level 1
-        String levelKey = "level_$category";
-        int currentLevel = await sharedPref.callServiceMethod('getInt', [levelKey]) ?? 1;
-        await sharedPref.callServiceMethod('setInt', [levelKey, currentLevel]);
-
-        for (int level = 1; level <= maxLevels; level++) {
-          String pointsKey = "points_${category}_level$level";
-          String guessedKey = "guessed_${category}_level$level";
-
-          // ✅ Set default points
-          int points = await sharedPref.callServiceMethod('getInt', [pointsKey]) ?? 0;
-          await sharedPref.callServiceMethod('setInt', [pointsKey, points]);
-
-          // ✅ Set empty guessed names list
-          List<String> guessedNames = await sharedPref.callServiceMethod('getStringList', [guessedKey]) ?? [];
-          await sharedPref.callServiceMethod('setStringList', [guessedKey, guessedNames]);
-
-          Logger().info("✅ Initialized keys: $pointsKey, $guessedKey");
-        }
-      }
-
-      // ✅ Initialize `total_points` key if not already set
-      int existingTotalPoints = await sharedPref.callServiceMethod('getInt', ['total_points']) ?? 0;
-      if (existingTotalPoints == 0) {
-        await sharedPref.callServiceMethod('setInt', ['total_points', 0]);
-        Logger().info("✅ Initialized total_points key to 0");
-      } else {
-        Logger().info("✅ total_points key already exists: $existingTotalPoints");
-      }
-
-      Logger().info("✅ SharedPreferences system initialized successfully.");
-    } catch (e) {
-      Logger().error("❌ Error initializing category system: $e", error: e);
-    }
-  }
-
-
-
-  Future<void> _initializeUserData() async {
-    final sharedPref = servicesManager.getService('shared_pref');
+  Future<void> _initializeUserData(BuildContext context) async {
+    final servicesManager = Provider.of<ServicesManager>(context, listen: false);
+    final sharedPref = servicesManager.getService<SharedPrefManager>();
 
     if (sharedPref == null) {
       Logger().error('❌ SharedPrefManager not found.');
@@ -206,23 +171,55 @@ class GamePlugin extends PluginBase {
     }
 
     // ✅ Store user profile details if not already set
-    String? username = await sharedPref.callServiceMethod('getString', ['username']);
+    String? username = sharedPref.getString('username');
     if (username == null) {
-      await sharedPref.callServiceMethod('setString', ['username', 'Guest']);
-      await sharedPref.callServiceMethod('setString', ['email', '']);
-      await sharedPref.callServiceMethod('setString', ['password', '']);
+      sharedPref.setString('username', 'Guest');
+      sharedPref.setString('email', '');
+      sharedPref.setString('password', '');
     }
 
     // ✅ Check if categories are already saved
-    List<String> categories = await sharedPref.callServiceMethod('getStringList', ['available_categories']) ?? [];
-    if (categories.isEmpty) {
+    List<String>? categories = sharedPref.getStringList('available_categories');
+    if (categories == null || categories.isEmpty) {
       Logger().info("📜 Categories not found. Fetching from backend...");
-      await getCategories();
+      await getCategories(context);
     } else {
       Logger().info("✅ Categories already initialized in SharedPreferences.");
       await _initializeCategorySystem(categories, sharedPref);
     }
   }
 
+
+  /// ✅ Initialize SharedPreferences keys for levels, points, and guessed names
+  Future<void> _initializeCategorySystem(List<String> categories, SharedPrefManager sharedPref) async {
+    try {
+      Logger().info("⚙️ Initializing SharedPreferences for levels, points, and guessed names...");
+
+      for (String category in categories) {
+        // ✅ Fetch max levels directly
+        int maxLevels = sharedPref.getInt('max_levels_$category') ?? 0;
+
+        // ✅ Default to level 1
+        String levelKey = "level_$category";
+        int currentLevel = sharedPref.getInt(levelKey) ?? 1;
+        sharedPref.setInt(levelKey, currentLevel);
+
+        for (int level = 1; level <= maxLevels; level++) {
+          String pointsKey = "points_${category}_level$level";
+          String guessedKey = "guessed_${category}_level$level";
+
+          // ✅ Set default points directly
+          sharedPref.setInt(pointsKey, sharedPref.getInt(pointsKey) ?? 0);
+
+          // ✅ Set empty guessed names list directly
+          sharedPref.setStringList(guessedKey, sharedPref.getStringList(guessedKey) ?? []);
+
+          Logger().info("✅ Initialized keys for $category: level $level");
+        }
+      }
+    } catch (e) {
+      Logger().error("❌ Error initializing category system: $e", error: e);
+    }
+  }
 
 }

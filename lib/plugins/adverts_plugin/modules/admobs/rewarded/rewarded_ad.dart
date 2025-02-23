@@ -1,6 +1,8 @@
 import 'dart:ui';
-import '../../../../../core/00_base/module_base.dart';
+import 'package:flutter/material.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
+import 'package:provider/provider.dart';
+import '../../../../../core/00_base/module_base.dart';
 import '../../../../../core/managers/module_manager.dart';
 import '../../../../../core/managers/services_manager.dart';
 import '../../../../../core/services/shared_preferences.dart';
@@ -9,19 +11,12 @@ import '../../../../main_plugin/modules/main_helper_module/main_helper_module.da
 
 class RewardedAdModule extends ModuleBase {
   static final Logger _log = Logger();
-  final ServicesManager _servicesManager;
-  final ModuleManager _moduleManager;
-  final SharedPrefManager? _sharedPref;
   final String adUnitId;
   RewardedAd? _rewardedAd;
   bool _isAdReady = false;
 
   /// ✅ Constructor with module key
-  RewardedAdModule(this.adUnitId)
-      : _moduleManager = ModuleManager(),
-        _servicesManager = ServicesManager(),
-        _sharedPref = ServicesManager().getService<SharedPrefManager>('shared_pref'),
-        super("admobs_rewarded_ad_module") {
+  RewardedAdModule(this.adUnitId) : super("admobs_rewarded_ad_module") {
     _log.info('RewardedAdModule created');
     loadAd(); // ✅ Load ad on initialization
   }
@@ -47,17 +42,25 @@ class RewardedAdModule extends ModuleBase {
   }
 
   /// ✅ Shows the rewarded ad with callbacks
-  Future<void> showAd({VoidCallback? onUserEarnedReward, VoidCallback? onAdDismissed}) async {
+  Future<void> showAd(BuildContext context, {VoidCallback? onUserEarnedReward, VoidCallback? onAdDismissed}) async {
+    final servicesManager = Provider.of<ServicesManager>(context, listen: false);
+    final sharedPref = servicesManager.getService<SharedPrefManager>();
+
+    if (sharedPref == null) {
+      _log.error('❌ SharedPreferences service not available.');
+      return;
+    }
+
     if (_isAdReady && _rewardedAd != null) {
       _log.info('🎬 Showing Rewarded Ad for ID: $adUnitId');
 
       _rewardedAd!.fullScreenContentCallback = FullScreenContentCallback(
         onAdDismissedFullScreenContent: (Ad ad) {
-          onAdDismissed?.call(); // ✅ Call the provided callback when the ad is closed
+          onAdDismissed?.call(); // ✅ Call callback when ad is closed
           _rewardedAd?.dispose(); // ✅ Dispose when ad is closed
           _rewardedAd = null;
           _isAdReady = false;
-          loadAd(); // ✅ Preload the next ad
+          loadAd(); // ✅ Preload next ad
           _log.info('✅ Rewarded Ad dismissed and disposed.');
         },
         onAdFailedToShowFullScreenContent: (Ad ad, AdError error) {
@@ -72,6 +75,11 @@ class RewardedAdModule extends ModuleBase {
       _rewardedAd!.show(
         onUserEarnedReward: (AdWithoutView ad, RewardItem reward) {
           onUserEarnedReward?.call(); // ✅ Give reward to user
+
+          // ✅ Increment rewarded ad views in SharedPreferences
+          int rewardedViews = sharedPref.getInt('rewarded_ad_views') ?? 0;
+          sharedPref.setInt('rewarded_ad_views', rewardedViews + 1);
+          _log.info('🏆 Rewarded ad watched. Total views: ${rewardedViews + 1}');
         },
       );
     } else {

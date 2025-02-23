@@ -1,23 +1,49 @@
-import '../../../../../core/00_base/module_base.dart';
 import 'package:flutter/material.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
+import '../../../../../core/00_base/module_base.dart';
 import '../../../../../tools/logging/logger.dart';
 
 class BannerAdModule extends ModuleBase {
-  final Map<String, BannerAd?> _banners = {}; // Store multiple ads
-  static final Logger _log = Logger(); // ✅ Use a static logger for static methods
+  static final Logger _log = Logger();
+  final Map<String, BannerAd> _banners = {}; // Store multiple ads
 
-  /// ✅ No-argument constructor
-  BannerAdModule()
-      :  super("admobs_banner_ad_module") {
-    _log.info('📢 GamePlayModule initialized and auto-registered.');
+  /// ✅ Constructor
+  BannerAdModule() : super("admobs_banner_ad_module") {
+    _log.info('📢 BannerAdModule initialized and auto-registered.');
   }
 
   /// ✅ Loads the banner ad with a specified ad unit ID
   Future<void> loadBannerAd(String adUnitId) async {
+    if (_banners.containsKey(adUnitId)) {
+      _log.info('🔄 Banner Ad already exists for ID: $adUnitId');
+      return; // ✅ Prevent reloading if already exists
+    }
+
     _log.info('📢 Loading Banner Ad for ID: $adUnitId');
 
     final bannerAd = BannerAd(
+      adUnitId: adUnitId,
+      size: AdSize.banner,
+      request: const AdRequest(),
+      listener: BannerAdListener(
+        onAdLoaded: (_) => _log.info('✅ Banner Ad Loaded for ID: $adUnitId.'),
+        onAdFailedToLoad: (Ad ad, LoadAdError error) {
+          _log.error('❌ Failed to load Banner Ad for ID: $adUnitId. Error: ${error.message}');
+          ad.dispose();
+          _banners.remove(adUnitId); // ✅ Remove failed instance
+        },
+      ),
+    );
+
+    await bannerAd.load();
+    _banners[adUnitId] = bannerAd;
+  }
+
+  /// ✅ Retrieve a new unique banner ad widget each time
+  Widget getBannerWidget(BuildContext context, String adUnitId) {
+    _log.info('🔄 Creating new Banner Ad instance for Widget.');
+
+    final newBannerAd = BannerAd(
       adUnitId: adUnitId,
       size: AdSize.banner,
       request: const AdRequest(),
@@ -30,42 +56,16 @@ class BannerAdModule extends ModuleBase {
       ),
     );
 
-    await bannerAd.load();
-    _banners[adUnitId] = bannerAd;
-  }
-
-  Widget getBannerWidget(String adUnitId, BuildContext context, {String? widgetKey}) {
-    final key = widgetKey ?? DateTime.now().millisecondsSinceEpoch.toString();
-
-    if (!_banners.containsKey(key)) {
-      _log.info('📢 Creating new Banner Ad for Widget Key: $key');
-
-      final newBannerAd = BannerAd(
-        adUnitId: adUnitId,
-        size: AdSize.banner,
-        request: const AdRequest(),
-        listener: BannerAdListener(
-          onAdLoaded: (_) => _log.info('✅ Banner Ad Loaded for Widget Key: $key'),
-          onAdFailedToLoad: (Ad ad, LoadAdError error) {
-            _log.error('❌ Failed to load Banner Ad. Error: ${error.message}');
-            ad.dispose();
-          },
-        ),
-      )..load();
-
-      _banners[key] = newBannerAd;
-    }
+    newBannerAd.load();
 
     return SizedBox(
-      width: MediaQuery.of(context).size.width,
-      height: _banners[key]!.size.height.toDouble(),
-      child: AdWidget(ad: _banners[key]!),
+      width: newBannerAd.size.width.toDouble(),
+      height: newBannerAd.size.height.toDouble(),
+      child: AdWidget(ad: newBannerAd),
     );
   }
 
-
-
-  /// ✅ Disposes of the banner ad
+  /// ✅ Dispose a specific banner ad
   void disposeBannerAd(String adUnitId) {
     if (_banners.containsKey(adUnitId)) {
       _banners[adUnitId]?.dispose();
@@ -76,14 +76,14 @@ class BannerAdModule extends ModuleBase {
     }
   }
 
-  /// ✅ Override `dispose()` to clean up before module deregisters
+  /// ✅ Override `dispose()` to clean up all banner ads
   @override
   void dispose() {
     _log.info('🗑 Disposing all Banner Ads...');
     for (final ad in _banners.values) {
-      ad?.dispose();
+      ad.dispose();
     }
     _banners.clear();
-    super.dispose(); // ✅ Calls `ModuleBase.dispose()` to auto-deregister
+    super.dispose(); // ✅ Calls `ModuleBase.dispose()` for cleanup
   }
 }

@@ -1,5 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../../../../core/00_base/module_base.dart';
 import '../../../../core/managers/module_manager.dart';
 import '../../../../core/managers/services_manager.dart';
@@ -9,38 +11,30 @@ import '../../../main_plugin/modules/main_helper_module/main_helper_module.dart'
 
 class FunctionHelperModule extends ModuleBase {
   static final Logger _log = Logger();
-  final ServicesManager _servicesManager;
-  final ModuleManager _moduleManager;
-  final SharedPrefManager? _sharedPref;
 
   /// ✅ Constructor with module key
-  FunctionHelperModule()
-      : _moduleManager = ModuleManager(),
-        _servicesManager = ServicesManager(),
-        _sharedPref = ServicesManager().getService<SharedPrefManager>('shared_pref'),
-        super("game_functions_helper_module") {
+  FunctionHelperModule() : super("game_functions_helper_module") {
     _log.info('🚀 FunctionHelperModule initialized and auto-registered.');
-    cleanupExpiredImages(); // ✅ Run cleanup task
   }
 
   /// ✅ Fetches total points from all categories
-  Future<int> getTotalPoints() async {
-    final sharedPref = _servicesManager.getService('shared_pref');
+  Future<int> getTotalPoints(BuildContext context) async {
+    final sharedPref = Provider.of<ServicesManager>(context, listen: false).getService<SharedPrefManager>();
 
     if (sharedPref == null) {
       _log.error('❌ SharedPreferences service not available.');
       return 0;
     }
 
-    List<String> categories = await sharedPref.callServiceMethod('getStringList', ['available_categories']) ?? [];
+    List<String> categories = sharedPref.getStringList('available_categories') ?? [];
 
     int totalPoints = 0;
 
     for (String category in categories) {
-      int maxLevels = await sharedPref.callServiceMethod('getInt', ['max_levels_$category']) ?? 1;
+      int maxLevels = sharedPref.getInt('max_levels_$category') ?? 1;
 
       for (int level = 1; level <= maxLevels; level++) {
-        int points = await sharedPref.callServiceMethod('getInt', ['points_${category}_level$level']) ?? 0;
+        int points = sharedPref.getInt('points_${category}_level$level') ?? 0;
         totalPoints += points;
       }
     }
@@ -49,15 +43,16 @@ class FunctionHelperModule extends ModuleBase {
     return totalPoints;
   }
 
-  Future<void> storeImageCacheTimestamp(String imageUrl) async {
-    final sharedPref = _servicesManager.getService('shared_pref');
+  /// ✅ Store image cache timestamp
+  Future<void> storeImageCacheTimestamp(BuildContext context, String imageUrl) async {
+    final sharedPref = Provider.of<ServicesManager>(context, listen: false).getService<SharedPrefManager>();
 
     if (sharedPref == null) {
       _log.error('❌ SharedPreferences service not available.');
       return;
     }
 
-    String? cachedImages = await sharedPref.callServiceMethod('getString', ['cached_images']);
+    String? cachedImages = sharedPref.getString('cached_images');
     Map<String, int> imageCacheMap = cachedImages != null ? Map<String, int>.from(jsonDecode(cachedImages)) : {};
 
     if (imageCacheMap.containsKey(imageUrl)) {
@@ -65,19 +60,20 @@ class FunctionHelperModule extends ModuleBase {
     }
 
     imageCacheMap[imageUrl] = DateTime.now().millisecondsSinceEpoch;
-    await cleanupExpiredImages();
-    await sharedPref.callServiceMethod('setString', ['cached_images', jsonEncode(imageCacheMap)]);
+    await cleanupExpiredImages(context);
+    sharedPref.setString('cached_images', jsonEncode(imageCacheMap));
   }
 
-  Future<void> cleanupExpiredImages() async {
-    final sharedPref = _servicesManager.getService('shared_pref');
+  /// ✅ Clean up expired images from SharedPreferences
+  Future<void> cleanupExpiredImages(BuildContext context) async {
+    final sharedPref = Provider.of<ServicesManager>(context, listen: false).getService<SharedPrefManager>();
 
     if (sharedPref == null) {
       _log.error('❌ SharedPreferences service not available.');
       return;
     }
 
-    String? cachedImages = await sharedPref.callServiceMethod('getString', ['cached_images']);
+    String? cachedImages = sharedPref.getString('cached_images');
     if (cachedImages == null) return;
 
     Map<String, int> imageCacheMap = Map<String, int>.from(jsonDecode(cachedImages));
@@ -86,54 +82,61 @@ class FunctionHelperModule extends ModuleBase {
     final int twoMonthsAgo = now - (60 * 24 * 60 * 60 * 1000); // ✅ 60 days in milliseconds
 
     imageCacheMap.removeWhere((_, timestamp) => timestamp < twoMonthsAgo);
-    await sharedPref.callServiceMethod('setString', ['cached_images', jsonEncode(imageCacheMap)]);
+    sharedPref.setString('cached_images', jsonEncode(imageCacheMap));
   }
 
-  Future<void> clearUserProgress() async {
-    final sharedPref = _servicesManager.getService('shared_pref');
+  /// ✅ Clear all user progress
+  Future<void> clearUserProgress(BuildContext context) async {
+    final sharedPref = Provider.of<ServicesManager>(context, listen: false).getService<SharedPrefManager>();
+
+    if (sharedPref == null) {
+      _log.error('❌ SharedPrefManager not found.');
+      return;
+    }
+
     try {
-      Logger().info("🧹 Resetting SharedPreferences values for levels, points, and guessed names...");
+      _log.info("🧹 Resetting SharedPreferences values for levels, points, and guessed names...");
 
       // ✅ Fetch all keys from SharedPreferences
-      final Set<String> allKeys = await sharedPref?.callServiceMethod('getKeys', []) ?? {};
+      final Set<String> allKeys = sharedPref.getKeys();
 
       if (allKeys.isEmpty) {
-        Logger().info("⚠️ No keys found in SharedPreferences.");
+        _log.info("⚠️ No keys found in SharedPreferences.");
         return;
       }
 
-      Logger().info("✅ Retrieved all keys from SharedPreferences: $allKeys");
+      _log.info("✅ Retrieved all keys from SharedPreferences: $allKeys");
 
       for (String key in allKeys) {
         // Check if the key contains 'level', 'points', or 'guessed'
         if (key.contains('level') || key.contains('points') || key.contains('guessed')) {
           // Determine the type of the value and reset it
-          dynamic value = await sharedPref?.callServiceMethod('get', [key]);
+          dynamic value = sharedPref.get(key);
 
           if (value is int) {
             int resetValue = key.contains('level_') ? 1 : 0; // ✅ Levels reset to 1, Points reset to 0
-            await sharedPref?.callServiceMethod('setInt', [key, resetValue]);
-            Logger().info("✅ Reset key: $key to $resetValue");
+            sharedPref.setInt(key, resetValue);
+            _log.info("✅ Reset key: $key to $resetValue");
 
           } else if (value is List<String>) {
             // ✅ Reset lists to empty
-            await sharedPref?.callServiceMethod('setStringList', [key, []]);
-            Logger().info("✅ Reset key: $key to []");
+            sharedPref.setStringList(key, []);
+            _log.info("✅ Reset key: $key to []");
 
           } else if (value is String) {
             // ✅ Reset strings to empty (if applicable)
-            await sharedPref?.callServiceMethod('setString', [key, '']);
-            Logger().info("✅ Reset key: $key to ''");
+            sharedPref.setString(key, '');
+            _log.info("✅ Reset key: $key to ''");
 
           } else {
-            Logger().info("⚠️ Key $key has an unsupported type: ${value.runtimeType}");
+            _log.info("⚠️ Key $key has an unsupported type: ${value.runtimeType}");
           }
         }
       }
 
-      Logger().info("✅ SharedPreferences values reset successfully.");
+      _log.info("✅ SharedPreferences values reset successfully.");
     } catch (e) {
-      Logger().error("❌ Error resetting category system: $e", error: e);
+      _log.error("❌ Error resetting category system: $e", error: e);
     }
   }
 }

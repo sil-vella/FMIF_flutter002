@@ -1,3 +1,5 @@
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../../../../core/00_base/module_base.dart';
 import '../../../../core/managers/module_manager.dart';
 import '../../../../core/managers/services_manager.dart';
@@ -7,22 +9,16 @@ import '../../../main_plugin/modules/connections_module/connections_module.dart'
 
 class QuestionModule extends ModuleBase {
   static final Logger _log = Logger(); // ✅ Use a static logger for static methods
-  final ServicesManager _servicesManager;
-  final ModuleManager _moduleManager;
-  final SharedPrefManager? _sharedPref;
 
-  /// ✅ Constructor with module key
-  QuestionModule()
-       : _moduleManager = ModuleManager(),
-        _servicesManager = ServicesManager(),
-        _sharedPref = ServicesManager().getService<SharedPrefManager>('shared_pref'),
-        super("question_module") {
+  /// ✅ Constructor - No stored instances, dependencies are fetched dynamically
+  QuestionModule() : super("question_module") {
     _log.info('✅ QuestionModule initialized.');
   }
 
   /// ✅ Retrieve guessed names from SharedPreferences
-  Future<List<String>> getGuessedNames(String category, int level) async {
-    final sharedPref = _servicesManager.getService('shared_pref');
+  Future<List<String>> getGuessedNames(BuildContext context, String category, int level) async {
+    final servicesManager = Provider.of<ServicesManager>(context, listen: false);
+    final sharedPref = servicesManager.getService<SharedPrefManager>();
 
     if (sharedPref == null) {
       _log.error("❌ SharedPreferences service not available.");
@@ -30,15 +26,16 @@ class QuestionModule extends ModuleBase {
     }
 
     String guessedKey = "guessed_${category}_level$level";
-    List<String> guessedNames = await sharedPref.callServiceMethod('getStringList', [guessedKey]) ?? [];
+    List<String> guessedNames = sharedPref.getStringList(guessedKey) ?? [];
 
     _log.info("📜 Retrieved guessed names for $category Level $level: $guessedNames");
     return guessedNames;
   }
 
   /// ✅ Fetch a question from the backend
-  Future<Map<String, dynamic>> getQuestion(int difficulty, String category, List<String> guessedNames) async {
-    final connectionModule = ModuleManager().getLatestModule<ConnectionsModule>();
+  Future<Map<String, dynamic>> getQuestion(BuildContext context, int difficulty, String category, List<String> guessedNames) async {
+    final moduleManager = Provider.of<ModuleManager>(context, listen: false);
+    final connectionModule = moduleManager.getLatestModule<ConnectionsModule>();
 
     if (connectionModule == null) {
       _log.error("❌ ConnectionModule not found in QuestionModule.");

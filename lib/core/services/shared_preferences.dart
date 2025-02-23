@@ -6,7 +6,6 @@ import '../managers/services_manager.dart'; // Import ServicesManager
 
 class SharedPrefManager extends ServicesBase {
   static final Logger _log = Logger(); // ✅ Use a static logger for static methods
-
   static final SharedPrefManager _instance = SharedPrefManager._internal();
   SharedPreferences? _prefs;
 
@@ -15,39 +14,9 @@ class SharedPrefManager extends ServicesBase {
   factory SharedPrefManager() => _instance;
 
   @override
-  @override
   Future<void> initialize() async {
     _prefs = await SharedPreferences.getInstance();
     _log.info('✅ SharedPreferences initialized.');
-
-    // ✅ Register Setter Methods
-    registerServiceMethod('setString', setString);
-    registerServiceMethod('setInt', setInt);
-    registerServiceMethod('setBool', setBool);
-    registerServiceMethod('setDouble', setDouble);
-    registerServiceMethod('setStringList', setStringList);
-
-    // ✅ Register Getter Methods
-    registerServiceMethod('getString', getString);
-    registerServiceMethod('getInt', getInt);
-    registerServiceMethod('getBool', getBool);
-    registerServiceMethod('getDouble', getDouble);
-    registerServiceMethod('getStringList', getStringList);
-    registerServiceMethod('get', get); // ✅ Register get method
-
-    // ✅ Register Utility Methods
-    registerServiceMethod('remove', remove);
-    registerServiceMethod('clear', clear);
-    registerServiceMethod('getKeys', getKeys); // ✅ Register getKeys method
-
-    // ✅ Register Create Methods (Optional Pre-checks Before Setting)
-    registerServiceMethod('createString', createString);
-    registerServiceMethod('createInt', createInt);
-    registerServiceMethod('createBool', createBool);
-    registerServiceMethod('createDouble', createDouble);
-    registerServiceMethod('createStringList', createStringList);
-
-    // ✅ Log all SharedPreferences data at startup
     _logAllSharedPreferences();
   }
 
@@ -60,6 +29,7 @@ class SharedPrefManager extends ServicesBase {
   dynamic get(String key) {
     return _prefs?.get(key);
   }
+
   /// ✅ Logs all stored SharedPreferences data at startup
   void _logAllSharedPreferences() {
     final allKeys = _prefs?.getKeys() ?? {};

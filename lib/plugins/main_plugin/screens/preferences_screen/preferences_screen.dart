@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
-import 'package:flush_me_im_famous/plugins/game_plugin/modules/function_helper_module/function_helper_module.dart';
-import 'package:flush_me_im_famous/plugins/game_plugin/screens/progress_screen/progress_screen.dart';
+import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
 import '../../../../core/00_base/screen_base.dart';
 import '../../../../core/managers/module_manager.dart';
 import '../../../../core/managers/navigation_manager.dart';
 import '../../../../core/managers/services_manager.dart';
+import '../../../../core/services/shared_preferences.dart';
 import '../../../../tools/logging/logger.dart';
 import '../../../../utils/consts/theme_consts.dart';
-import '../../modules/connections_module/connections_module.dart';
+import '../../../game_plugin/modules/function_helper_module/function_helper_module.dart';
 import '../../modules/login_module/login_module.dart';
 import 'components/user_login.dart';
 import 'components/user_register.dart';
@@ -26,9 +27,12 @@ class PreferencesScreen extends BaseScreen {
 
 class PreferencesScreenState extends BaseScreenState<PreferencesScreen> {
   final Logger logger = Logger();
-  final loginModule = LoginModule();
-  final sharedPrefService = ServicesManager().getService('shared_pref');
-  final functionsHelperModule = FunctionHelperModule();
+
+  late ServicesManager _servicesManager;
+  late ModuleManager _moduleManager;
+  FunctionHelperModule? _functionHelperModule;
+  SharedPrefManager? _sharedPref;
+  LoginModule? _loginModule;
 
   bool _isLoggedIn = false;
   String? _username;
@@ -42,15 +46,31 @@ class PreferencesScreenState extends BaseScreenState<PreferencesScreen> {
   @override
   void initState() {
     super.initState();
+    logger.info("🔧 Initializing PreferencesScreen...");
+
+    // ✅ Retrieve managers and modules using Provider
+    _servicesManager = Provider.of<ServicesManager>(context, listen: false);
+    _moduleManager = Provider.of<ModuleManager>(context, listen: false);
+
+    _functionHelperModule =
+        _moduleManager.getLatestModule<FunctionHelperModule>();
+    _sharedPref = _servicesManager.getService<SharedPrefManager>();
+    _loginModule = _moduleManager.getLatestModule<LoginModule>();
+
+    if (_sharedPref == null) {
+      logger.error('❌ SharedPreferences service not available.');
+      return;
+    }
+
     _checkLoginStatus();
     _loadSelectedCategory();
   }
 
   /// ✅ Fetch stored category selection from SharedPreferences
   Future<void> _loadSelectedCategory() async {
-    if (sharedPrefService == null) return;
+    if (_sharedPref == null) return;
 
-    final savedCategory = await sharedPrefService?.callServiceMethod('getString', ['category']) ?? "Mixed";
+    final savedCategory = _sharedPref!.getString('category') ?? "Mixed";
 
     setState(() {
       _selectedCategory = savedCategory;
@@ -61,9 +81,9 @@ class PreferencesScreenState extends BaseScreenState<PreferencesScreen> {
 
   /// ✅ Handle category selection & update SharedPreferences
   Future<void> _updateCategory(String category) async {
-    if (sharedPrefService == null) return;
+    if (_sharedPref == null) return;
 
-    await sharedPrefService?.callServiceMethod('setString', ['category', category]);
+    await _sharedPref!.setString('category', category);
 
     setState(() {
       _selectedCategory = category;
@@ -73,13 +93,12 @@ class PreferencesScreenState extends BaseScreenState<PreferencesScreen> {
     Navigator.pop(context); // Close modal after selection
   }
 
-
   Future<void> _checkLoginStatus() async {
-    if (sharedPrefService == null) return;
+    if (_sharedPref == null) return;
 
-    final username = await sharedPrefService?.callServiceMethod('getString', ['username']);
-    final email = await sharedPrefService?.callServiceMethod('getString', ['email']);
-    final isLoggedIn = await sharedPrefService?.callServiceMethod('getBool', ['is_logged_in']) ?? false;
+    final username = _sharedPref!.getString('username');
+    final email = _sharedPref!.getString('email');
+    final isLoggedIn = _sharedPref!.getBool('is_logged_in') ?? false;
 
     setState(() {
       _username = username;
@@ -90,7 +109,10 @@ class PreferencesScreenState extends BaseScreenState<PreferencesScreen> {
 
   /// ✅ Handle user login
   Future<void> _loginUser() async {
-    final response = await loginModule.loginUser(
+    if (_loginModule == null) return;
+
+    final response = await _loginModule!.loginUser(
+      context: context,
       email: _emailController.text.trim(),
       password: _passwordController.text.trim(),
     );
@@ -102,18 +124,19 @@ class PreferencesScreenState extends BaseScreenState<PreferencesScreen> {
       await _checkLoginStatus();
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(response["error"] ?? "Login failed."), backgroundColor: Colors.red),
+        SnackBar(content: Text(response["error"] ?? "Login failed."),
+            backgroundColor: Colors.red),
       );
     }
   }
 
   /// ✅ Handle user logout
   Future<void> _logoutUser() async {
-    if (sharedPrefService == null) return;
+    if (_sharedPref == null) return;
 
-    await sharedPrefService?.callServiceMethod('setBool', ['is_logged_in', false]);
-    await sharedPrefService?.callServiceMethod('remove', ['username']);
-    await sharedPrefService?.callServiceMethod('remove', ['email']);
+    await _sharedPref!.setBool('is_logged_in', false);
+    await _sharedPref!.remove('username');
+    await _sharedPref!.remove('email');
 
     setState(() {
       _isLoggedIn = false;
@@ -126,13 +149,13 @@ class PreferencesScreenState extends BaseScreenState<PreferencesScreen> {
     );
   }
 
-
   /// ✅ UI for showing category selection modal
   void _showCategorySelector() async {
-    if (sharedPrefService == null) return;
+    if (_sharedPref == null) return;
 
-    // ✅ Properly await the result before using it
-    List<String> categories = await sharedPrefService!.callServiceMethod('getStringList', ['available_categories']) ?? [];
+    // ✅ Fetch categories from SharedPreferences
+    List<String> categories = _sharedPref!.getStringList(
+        'available_categories');
 
     showModalBottomSheet(
       context: context,
@@ -157,7 +180,7 @@ class PreferencesScreenState extends BaseScreenState<PreferencesScreen> {
                   itemCount: categories.length,
                   itemBuilder: (context, index) {
                     final category = categories[index];
-                    final formattedCategory = _formatCategory(category); // Format the category name
+                    final formattedCategory = _formatCategory(category);
                     return ListTile(
                       title: Text(formattedCategory),
                       trailing: _selectedCategory == category
@@ -175,16 +198,12 @@ class PreferencesScreenState extends BaseScreenState<PreferencesScreen> {
     );
   }
 
-  /// Helper function to format category names
+  /// ✅ Helper function to format category names
   String _formatCategory(String category) {
-    // Replace underscores with spaces
-    String formatted = category.replaceAll('_', ' ');
-    // Capitalize the first letter of each word
-    formatted = formatted.split(' ').map((word) {
-      if (word.isEmpty) return word;
-      return word[0].toUpperCase() + word.substring(1).toLowerCase();
-    }).join(' ');
-    return formatted;
+    return category.replaceAll("_", " ").splitMapJoin(
+      RegExp(r'(\w+)'),
+      onMatch: (m) => m[0]![0].toUpperCase() + m[0]!.substring(1).toLowerCase(),
+    );
   }
 
 
@@ -192,20 +211,23 @@ class PreferencesScreenState extends BaseScreenState<PreferencesScreen> {
   Future<void> _confirmDeleteAccount() async {
     final shouldDelete = await showDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text("Delete Account"),
-        content: const Text("Are you sure you want to delete your account? This will undo all your progress"),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text("Cancel"),
+      builder: (context) =>
+          AlertDialog(
+            title: const Text("Delete Account"),
+            content: const Text(
+                "Are you sure you want to delete your account? This will undo all your progress"),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: const Text("Cancel"),
+              ),
+              TextButton(
+                onPressed: () => Navigator.pop(context, true),
+                child: const Text(
+                    "Delete", style: TextStyle(color: Colors.red)),
+              ),
+            ],
           ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text("Delete", style: TextStyle(color: Colors.red)),
-          ),
-        ],
-      ),
     );
 
     if (shouldDelete == true) {
@@ -214,28 +236,27 @@ class PreferencesScreenState extends BaseScreenState<PreferencesScreen> {
   }
 
   Future<void> _deleteUser() async {
-    try {
-      Logger().info("🧹 deleting user...");
-      final response = await loginModule.deleteUser();
+    if (_loginModule == null || _functionHelperModule == null) return;
 
-      if (response != null && response.containsKey("success")) {
+    try {
+      log.info("🧹 Deleting user...");
+      final response = await _loginModule!.deleteUser(context);
+
+      if (response.containsKey("success")) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(response["success"])),
         );
-        await functionsHelperModule.clearUserProgress();
-        // ✅ Redirect to login screen after deletion
+        await _functionHelperModule!.clearUserProgress(context);
         await _logoutUser();
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(response?["error"] ?? "Failed to delete account."), backgroundColor: Colors.red),
+          SnackBar(
+              content: Text(response["error"] ?? "Failed to delete account."),
+              backgroundColor: Colors.red),
         );
       }
     } catch (e) {
-      logger.error("❌ Error deleting user: $e");
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Network error. Please check your connection."), backgroundColor: Colors.red),
-      );
+      log.error("❌ Error deleting user: $e");
     }
   }
 
@@ -247,10 +268,9 @@ class PreferencesScreenState extends BaseScreenState<PreferencesScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            const SizedBox(height: 20),
 
-            const SizedBox(height: 20), // ✅ Better spacing
-
-            // Select Category Button
+            // ✅ Select Category Button
             OutlinedButton.icon(
               onPressed: _showCategorySelector,
               icon: const Icon(Icons.category, color: AppColors.accentColor),
@@ -260,16 +280,19 @@ class PreferencesScreenState extends BaseScreenState<PreferencesScreen> {
               ),
             ),
             const SizedBox(height: 20),
+
             _isLoggedIn
                 ? _buildUserSection()
                 : _showRegisterForm
                 ? RegisterWidget(
               onRegister: (username, email, password) async {
-                final result = await loginModule.registerUser(
+                final result = await _loginModule!.registerUser(
+                  context: context, // ✅ Pass context here
                   username: username,
                   email: email,
                   password: password,
                 );
+
                 if (result.containsKey("success")) {
                   await _checkLoginStatus();
                   setState(() => _showRegisterForm = false);
@@ -290,13 +313,14 @@ class PreferencesScreenState extends BaseScreenState<PreferencesScreen> {
               onLogin: _loginUser,
               onRegisterToggle: () => setState(() => _showRegisterForm = true),
             ),
+
             const SizedBox(height: 10),
 
             // ✅ View Progress Button
             Center(
               child: ElevatedButton(
                 onPressed: () {
-                  NavigationContainer().navigateTo(context, "/progress");
+                  context.go("/progress"); // ✅ Updated to use GoRouter
                 },
                 child: const Text("View Your Progress"),
               ),
@@ -357,8 +381,10 @@ class PreferencesScreenState extends BaseScreenState<PreferencesScreen> {
                   onPressed: _confirmDeleteAccount,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.redAccent,
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 12),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8)),
                   ),
                   child: const Text(
                     "Delete Account",
@@ -372,5 +398,4 @@ class PreferencesScreenState extends BaseScreenState<PreferencesScreen> {
       ),
     );
   }
-
 }

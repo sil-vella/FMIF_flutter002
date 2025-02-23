@@ -14,26 +14,34 @@ class HooksManager {
   // Map of hooks with a list of (priority, callback) pairs
   final Map<String, List<MapEntry<int, HookCallback>>> _hooks = {};
 
-  /// Register a hook callback with an optional priority (default: 10)
   void registerHook(String hookName, HookCallback callback, {int priority = 10}) {
     _log.info('Registering hook: $hookName with priority $priority');
+
+    if (_hooks.containsKey(hookName) &&
+        _hooks[hookName]!.any((entry) => entry.value == callback)) {
+      _log.info('⚠️ Hook "$hookName" already has this callback registered. Skipping.');
+      return;
+    }
+
     _hooks.putIfAbsent(hookName, () => []).add(MapEntry(priority, callback));
     _hooks[hookName]!.sort((a, b) => a.key.compareTo(b.key)); // Sort by priority
-    _log.info('Current hooks: $hookName - ${_hooks[hookName]}'); // Log hooks to verify registration
+    _log.info('Current hooks: $hookName - ${_hooks[hookName]}');
   }
 
-  /// Trigger a hook by name, executing all its callbacks in priority order
   void triggerHook(String hookName) {
-    if (_hooks.containsKey(hookName)) {
+    _hooks.putIfAbsent(hookName, () => []); // ✅ Ensure the hook exists
+
+    if (_hooks[hookName]!.isNotEmpty) {
       _log.info('Triggering hook: $hookName with ${_hooks[hookName]!.length} callbacks');
       for (final entry in _hooks[hookName]!) {
         _log.info('Executing callback for hook: $hookName with priority ${entry.key}');
         entry.value(); // Execute the callback
       }
     } else {
-      _log.info('No callbacks registered for hook: $hookName');
+      _log.info('⚠️ Hook "$hookName" triggered but has no registered callbacks.');
     }
   }
+
 
   /// Deregister all hooks for a specific event
   void deregisterHook(String hookName) {

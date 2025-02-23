@@ -1,3 +1,5 @@
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:flush_me_im_famous/plugins/game_plugin/modules/function_helper_module/function_helper_module.dart';
 import 'package:flush_me_im_famous/plugins/game_plugin/modules/rewards_module/rewardsModule_config/config.dart';
 import '../../../../core/00_base/module_base.dart';
@@ -9,22 +11,16 @@ import '../../../main_plugin/modules/connections_module/connections_module.dart'
 
 class RewardsModule extends ModuleBase {
   static final Logger _log = Logger(); // ✅ Use a static logger for static methods
-  final ServicesManager _servicesManager;
-  final ModuleManager _moduleManager;
-  final SharedPrefManager? _sharedPref;
 
-  /// ✅ Constructor with module key
-  RewardsModule()
-      : _moduleManager = ModuleManager(),
-        _servicesManager = ServicesManager(),
-        _sharedPref = ServicesManager().getService<SharedPrefManager>('shared_pref'),
-        super("rewards_module") {
+  /// ✅ Constructor - No stored instances, dependencies are fetched dynamically
+  RewardsModule() : super("rewards_module") {
     _log.info('✅ RewardsModule initialized.');
   }
 
   /// ✅ Get points for a specific action, applying the multiplier for the provided level
-  Future<int> getPoints(String key, String category, int level) async {
-    final sharedPref = _servicesManager.getService('shared_pref');
+  Future<int> getPoints(BuildContext context, String key, String category, int level) async {
+    final servicesManager = Provider.of<ServicesManager>(context, listen: false);
+    final sharedPref = servicesManager.getService<SharedPrefManager>();
 
     if (sharedPref == null) {
       _log.error('❌ SharedPreferences service not available.');
@@ -44,14 +40,17 @@ class RewardsModule extends ModuleBase {
 
   /// ✅ Save Reward and Update Backend
   Future<Map<String, dynamic>> saveReward({
+    required BuildContext context,
     required int points,
     required String category,
     required int level,
     required String guessedActor,
   }) async {
-    final sharedPref = _servicesManager.getService('shared_pref');
-    final connectionModule = _moduleManager.getLatestModule<ConnectionsModule>();
-    final functionsHelper = _moduleManager.getLatestModule<FunctionHelperModule>();
+    final moduleManager = Provider.of<ModuleManager>(context, listen: false);
+    final servicesManager = Provider.of<ServicesManager>(context, listen: false);
+    final sharedPref = servicesManager.getService<SharedPrefManager>();
+    final connectionModule = moduleManager.getLatestModule<ConnectionsModule>();
+    final functionsHelper = moduleManager.getLatestModule<FunctionHelperModule>();
 
     if (sharedPref == null || connectionModule == null || functionsHelper == null) {
       _log.error('❌ SharedPreferences, ConnectionModule, or FunctionsHelperModule not available.');
@@ -60,26 +59,26 @@ class RewardsModule extends ModuleBase {
 
     // ✅ Retrieve current level & points
     int currentLevel = level;
-    int previousPoints = await sharedPref.callServiceMethod('getInt', ['points_${category}_level$currentLevel']) ?? 0;
+    int previousPoints = sharedPref.getInt('points_${category}_level$currentLevel') ?? 0;
     int updatedPoints = previousPoints + points;
 
     // ✅ Fetch guessed names for this level
     String guessedKey = "guessed_${category}_level$currentLevel";
-    List<String> guessedList = await sharedPref.callServiceMethod('getStringList', [guessedKey]) ?? [];
+    List<String> guessedList = sharedPref.getStringList(guessedKey) ?? [];
 
     if (!guessedList.contains(guessedActor)) {
       guessedList.add(guessedActor);
-      await sharedPref.callServiceMethod('setStringList', [guessedKey, guessedList]);
+      sharedPref.setStringList(guessedKey, guessedList);
       _log.info("📜 Updated guessed names for $category Level $currentLevel: $guessedList");
     }
 
     // ✅ Retrieve user details
-    final userId = await sharedPref.callServiceMethod('getInt', ['user_id']);
-    final username = await sharedPref.callServiceMethod('getString', ['username']);
-    final email = await sharedPref.callServiceMethod('getString', ['email']);
+    final userId = sharedPref.getInt('user_id');
+    final username = sharedPref.getString('username');
+    final email = sharedPref.getString('email');
 
-    await sharedPref.callServiceMethod('setInt', ['points_${category}_level$currentLevel', updatedPoints]);
-    int totalPoints = await functionsHelper.getTotalPoints(); // ✅ Get updated total
+    sharedPref.setInt('points_${category}_level$currentLevel', updatedPoints);
+    int totalPoints = await functionsHelper.getTotalPoints(context); // ✅ Get updated total
 
     // ✅ Backend request to update rewards
     Map<String, dynamic> response = {};
@@ -100,9 +99,9 @@ class RewardsModule extends ModuleBase {
         },
       );
 
-      _log.forceLog("📜 Response from backend: $response");
+      _log.info("📜 Response from backend: $response");
 
-      if (response == null || !response.containsKey("message")) {
+      if (response.isEmpty || !response.containsKey("message")) {
         _log.error("❌ Invalid response from backend.");
       }
 
@@ -118,9 +117,9 @@ class RewardsModule extends ModuleBase {
     bool endGame = response["endGame"] ?? false;
     int newLevel = levelUp ? currentLevel + 1 : currentLevel;
 
-    await sharedPref.callServiceMethod('setInt', ['level_$category', newLevel]);
+    sharedPref.setInt('level_$category', newLevel);
 
-    _log.forceLog("📜 SharedPreferences total after update: $totalPoints");
+    _log.info("📜 SharedPreferences total after update: $totalPoints");
     _log.info("🏆 Updated Rewards: Points: $updatedPoints | Level: $newLevel | Level Up: $levelUp | EndGame: $endGame");
 
     return {

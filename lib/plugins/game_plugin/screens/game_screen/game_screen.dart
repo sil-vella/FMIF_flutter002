@@ -8,10 +8,10 @@ import '../../../../core/managers/app_manager.dart';
 import '../../../../core/managers/module_manager.dart';
 import '../../../../core/managers/services_manager.dart';
 import '../../../../core/managers/state_manager.dart';
+import '../../../../core/services/shared_preferences.dart';
 import '../../../../tools/logging/logger.dart';
 import '../../../adverts_plugin/modules/admobs/rewarded/rewarded_ad.dart';
 import '../../../main_plugin/modules/main_helper_module/main_helper_module.dart';
-import '../../modules/function_helper_module/function_helper_module.dart';
 import '../../modules/game_play_module/config/gameplaymodule_config.dart';
 import '../../modules/game_play_module/game_play_module.dart';
 import 'components/fact_box.dart';
@@ -33,6 +33,16 @@ class GameScreen extends BaseScreen {
 }
 
 class GameScreenState extends BaseScreenState<GameScreen> {
+  static final Logger _log = Logger(); // ✅ Use a static logger for logging
+
+  late final ModuleManager _moduleManager;
+  late final ServicesManager _servicesManager;
+  late final SharedPrefManager? _sharedPref;
+  late final StateManager _stateManager;
+  late final GamePlayModule? _gamePlayModule;
+  late final MainHelperModule? _mainHelperModule;
+  late final RewardedAdModule? _rewardedAdModule;
+
   bool _showFeedback = false;
   String _feedbackText = "";
   String _correctName = "";
@@ -40,9 +50,6 @@ class GameScreenState extends BaseScreenState<GameScreen> {
   int _level = 1;
   int _points = 0;
   String _backgroundImage = "";
-  final ServicesManager _servicesManager = ServicesManager();
-  final ModuleManager _moduleManager = ModuleManager();
-  late final GamePlayModule gamePlayModule;
   final Random _random = Random();
   Set<String> fadedImages = {}; // ✅ Tracks faded images
   CachedNetworkImageProvider? _cachedSelectedImage;
@@ -50,29 +57,32 @@ class GameScreenState extends BaseScreenState<GameScreen> {
   @override
   void initState() {
     super.initState();
-    Logger().info("Initializing GameScreen...");
+    _log.info("Initializing GameScreen...");
 
-    // ✅ Assign gamePlayModule before use
-    gamePlayModule = _moduleManager.getLatestModule<GamePlayModule>() ?? GamePlayModule();
+    // ✅ Retrieve managers and modules via Provider
+    _moduleManager = Provider.of<ModuleManager>(context, listen: false);
+    _servicesManager = Provider.of<ServicesManager>(context, listen: false);
+    _stateManager = Provider.of<StateManager>(context, listen: false);
+
+    _sharedPref = _servicesManager.getService<SharedPrefManager>();
+    _gamePlayModule = _moduleManager.getLatestModule<GamePlayModule>();
+    _mainHelperModule = _moduleManager.getLatestModule<MainHelperModule>();
+    _rewardedAdModule = _moduleManager.getLatestModule<RewardedAdModule>();
 
     _initializeGame();
     _loadLevelAndPoints();
   }
 
-
   void _onImagesLoaded() {
-    Logger().info("🖼️ ALL images loaded. Updating game state...");
+    _log.info("🖼️ ALL images loaded. Updating game state...");
 
-    final stateManager = Provider.of<StateManager>(AppManager.globalContext, listen: false);
-    stateManager.updatePluginState("game_round", {
+    _stateManager.updatePluginState("game_round", {
       "imagesLoaded": true,
     }, force: true);
   }
 
   void _onFactsLoaded() {
-    final stateManager = Provider.of<StateManager>(AppManager.globalContext, listen: false);
-
-    stateManager.updatePluginState("game_round", {
+    _stateManager.updatePluginState("game_round", {
       "factLoaded": true,
     }, force: true);
   }
@@ -86,92 +96,83 @@ class GameScreenState extends BaseScreenState<GameScreen> {
 
   /// ✅ Handles "Help" button click with Rewarded Ad
   void _useHelp() {
-    final stateManager = Provider.of<StateManager>(AppManager.globalContext, listen: false);
-    final rewardedAdModule = _moduleManager.getLatestModule<RewardedAdModule>();
-    final mainHelper = _moduleManager.getLatestModule<MainHelperModule>();
+    if (_rewardedAdModule != null && _mainHelperModule != null) {
+      _mainHelperModule!.pauseTimer(context); // ✅ Pause timer when ad starts
 
-    if (rewardedAdModule != null && mainHelper != null) {
-      mainHelper.pauseTimer(); // ✅ Pause timer when ad starts
-      // ✅ Update the game timer state before starting
-      stateManager.updatePluginState("game_round", {
+      _stateManager.updatePluginState("game_round", {
         "hint": true,
       });
 
-      rewardedAdModule.showAd(
-        onUserEarnedReward: () {
-          _fadeOutIncorrectImage(); // ✅ Only fade image after reward
-        },
+      _rewardedAdModule!.showAd(
+        context, // ✅ Pass context as the first argument
+        onUserEarnedReward: _fadeOutIncorrectImage,
         onAdDismissed: () {
-          // ✅ Resume timer only after ad is fully dismissed
           Future.delayed(const Duration(milliseconds: 500), () {
-            mainHelper.resumeTimer(() {
-              Logger().info("⏳ Timer resumed after ad was closed.");
+            _mainHelperModule!.resumeTimer(context, () {
+              _log.info("⏳ Timer resumed after ad was closed.");
             });
           });
         },
       );
-      
+
     } else {
-      Logger().info("❌ RewardedAdModule or MainHelperModule not found!");
+      _log.info("❌ RewardedAdModule or MainHelperModule not found!");
     }
   }
 
   void _fadeOutIncorrectImage() {
-    if (_correctAnswer == null) return; // ✅ Ensure we have a correct answer
+    if (_correctAnswer == null) return;
 
-    List<String> incorrectImages = gamePlayModule.imageOptions
-        .where((img) => img != _correctAnswer && !fadedImages.contains(img)) // ✅ Remove only incorrect images
-        .toList();
+    List<String> incorrectImages = _gamePlayModule?.imageOptions
+        .where((img) => img != _correctAnswer && !fadedImages.contains(img))
+        .toList() ??
+        [];
 
     if (incorrectImages.isNotEmpty) {
-      String fadedImage = incorrectImages[_random.nextInt(incorrectImages.length)]; // ✅ Select a random incorrect image
+      String fadedImage = incorrectImages[_random.nextInt(incorrectImages.length)];
 
-      setState(() { // ✅ Ensure UI updates
-        fadedImages = Set.from(fadedImages)..add(fadedImage); // ✅ Force a new set
+      setState(() {
+        fadedImages = Set.from(fadedImages)..add(fadedImage);
       });
 
-      Logger().info("🚫 An incorrect image has been faded out: $fadedImage");
+      _log.info("🚫 An incorrect image has been faded out: $fadedImage");
     }
   }
 
-  /// ✅ Load the current category level and category-specific points from SharedPreferences
   Future<void> _loadLevelAndPoints() async {
-    final sharedPref = _servicesManager.getService('shared_pref');
-
-    if (sharedPref == null) {
-      Logger().error('❌ SharedPreferences service not available.');
+    if (_sharedPref == null) {
+      _log.error('❌ SharedPreferences service not available.');
       return;
     }
 
-    // ✅ Get the currently selected category
-    final String category = await sharedPref.callServiceMethod('getString', ['category']) ?? "Mixed";
-
-    // ✅ Fetch category-specific level
-    final int level = await sharedPref.callServiceMethod('getInt', ['level_$category']) ?? 1;
-
-    // ✅ Fetch total points for the selected category
+    final String category = _sharedPref!.getString('category') ?? "Mixed";
+    final int level = _sharedPref!.getInt('level_$category') ?? 1;
     int categoryPoints = 0;
-    final int maxLevels = await sharedPref.callServiceMethod('getInt', ['max_levels_$category']) ?? 1;
+
+    final int maxLevels = _sharedPref!.getInt('max_levels_$category') ?? 1;
 
     for (int lvl = 1; lvl <= maxLevels; lvl++) {
-      int points = await sharedPref.callServiceMethod('getInt', ['points_${category}_level$lvl']) ?? 0;
+      int points = _sharedPref!.getInt('points_${category}_level$lvl') ?? 0;
       categoryPoints += points;
     }
 
     setState(() {
       _level = level;
-      _points = categoryPoints; // ✅ Now using points for the selected category only
+      _points = categoryPoints;
     });
 
-    Logger().info("📊 Current Category: $category | Level: $_level | Points in Category: $_points");
+    _log.info("📊 Current Category: $category | Level: $_level | Points in Category: $_points");
   }
 
-
-
   void _initializeGame() {
+    if (_gamePlayModule == null) {
+      Logger().error("❌ GamePlayModule is not initialized!");
+      return; // ✅ Prevent crashing
+    }
+
     Logger().info("🔄 Initializing new game round...");
 
-    final stateManager = Provider.of<StateManager>(AppManager.globalContext, listen: false);
+    final stateManager = Provider.of<StateManager>(context, listen: false);
     final gameRoundState = stateManager.getPluginState<Map<String, dynamic>>("game_round") ?? {};
 
     bool levelUp = gameRoundState["levelUp"] ?? false;
@@ -202,7 +203,7 @@ class GameScreenState extends BaseScreenState<GameScreen> {
     setState(() {
       _correctAnswer = null;
       fadedImages.clear();
-      gamePlayModule.imageOptions = []; // ✅ Ensure images reset
+      _gamePlayModule?.imageOptions = []; // ✅ Ensure images reset
     });
 
     // ✅ Defer state update to the next frame to avoid "setState during build" error
@@ -216,31 +217,32 @@ class GameScreenState extends BaseScreenState<GameScreen> {
 
     // ✅ Clear the fact box content before loading new facts
     setState(() {
-      gamePlayModule.question = null;
+      _gamePlayModule?.question = null;
     });
 
-    // ✅ Small delay to allow UI update before loading new content
     Future.delayed(const Duration(milliseconds: 100), () async {
-      await gamePlayModule.roundInit(() {
+      await _gamePlayModule?.roundInit(context, () {  // ✅ Pass context here
         setState(() {
-          _correctAnswer = gamePlayModule.question?['image_url'];
-          gamePlayModule.imageOptions = [
-            gamePlayModule.question?['image_url'],
-            ...gamePlayModule.question?['distractor_images']
+          _correctAnswer = _gamePlayModule?.question?['image_url'];
+          _gamePlayModule?.imageOptions = [
+            _gamePlayModule?.question?['image_url'],
+            ..._gamePlayModule?.question?['distractor_images']
           ];
-          gamePlayModule.imageOptions.shuffle(Random());
+          _gamePlayModule?.imageOptions.shuffle(Random());
         });
       });
 
-      Logger().info("🔹 after round init ${gamePlayModule.question}");
+      Logger().info("🔹 after round init ${_gamePlayModule?.question}");
 
-      // ✅ Start timer for the new round
-      gamePlayModule.setTimer(() {
+// ✅ Pass context to setTimer
+      _gamePlayModule?.setTimer(context, () {
         _handleAnswer("", timeUp: true);
       });
 
+
       Logger().info("✅ New game round initialized!");
     });
+
   }
 
   String? _correctAnswer; // ✅ Stores the correct answer dynamically
@@ -250,7 +252,8 @@ class GameScreenState extends BaseScreenState<GameScreen> {
     /// ✅ Fetch Cached Image
     CachedNetworkImageProvider cachedImageProvider = CachedNetworkImageProvider(selectedImage);
 
-    gamePlayModule.checkAnswer(selectedImage, () {
+// ✅ Pass context to checkAnswer
+    _gamePlayModule?.checkAnswer(context, selectedImage, () {
       setState(() {
         _correctAnswer = selectedImage;
       });
@@ -259,13 +262,14 @@ class GameScreenState extends BaseScreenState<GameScreen> {
 
       _updateFeedbackState(
         showFeedback: true,
-        feedbackText: gamePlayModule.feedbackMessage,
+        feedbackText: _gamePlayModule!.feedbackMessage,
         cachedImage: cachedImageProvider, // ✅ Pass Cached Image
-        correctName: gamePlayModule.question?['actor'],
+        correctName: _gamePlayModule?.question?['actor'],
       );
 
       _loadLevelAndPoints();
     }, timeUp: timeUp);
+
   }
 
   /// ✅ Select a new random background
@@ -359,11 +363,12 @@ class GameScreenState extends BaseScreenState<GameScreen> {
               ),
 
               GameImageGrid(
-                imageOptions: gamePlayModule.imageOptions.map((e) => e.toString()).toList(),
+                imageOptions: _gamePlayModule?.imageOptions?.map((e) => e.toString()).toList() ?? [], // ✅ Prevent null
                 onImageTap: _handleAnswer,
                 fadedImages: fadedImages,
                 onAllImagesLoaded: _onImagesLoaded, // ✅ Call when images are loaded
               ),
+
 
               const SizedBox(height: 20),
 
@@ -382,11 +387,13 @@ class GameScreenState extends BaseScreenState<GameScreen> {
               const SizedBox(height: 20),
 
               FactBox(
-                facts: (gamePlayModule.question?['facts'] as List<dynamic>?)
+                facts: (_gamePlayModule?.question?['facts'] as List<dynamic>?)
                     ?.map((e) => e.toString())
-                    .toList(),
-                onFactsLoaded: _onFactsLoaded, // ✅ Callback when facts are loaded
+                    .toList() ??
+                    [], // ✅ Ensure facts is never null
+                onFactsLoaded: _onFactsLoaded,
               ),
+
             ],
           ),
         ),

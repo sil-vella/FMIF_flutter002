@@ -1,74 +1,71 @@
 import 'package:flutter/material.dart';
-import '../../tools/logging/logger.dart';
-import 'hooks_manager.dart';
+import 'package:go_router/go_router.dart';
 
-class NavigationContainer extends ChangeNotifier {
-  static final Logger _log = Logger(); // ✅ Use a static logger for static methods
-  static final NavigationContainer _instance = NavigationContainer._internal();
-  factory NavigationContainer() => _instance;
-  NavigationContainer._internal();
+import '../../plugins/main_plugin/screens/home_screen.dart';
 
-  final Map<String, WidgetBuilder> _routes = {};
-  final List<DrawerItem> _drawerItems = [];
+/// ✅ Holds route data, including optional drawer details
+class RegisteredRoute {
+  final String path;
+  final Widget Function(BuildContext) screen;
+  final String? drawerTitle;
+  final IconData? drawerIcon;
 
-  Map<String, WidgetBuilder> get routes => _routes;
-  List<DrawerItem> get drawerItems => _drawerItems;
+  RegisteredRoute({
+    required this.path,
+    required this.screen,
+    this.drawerTitle,
+    this.drawerIcon,
+  });
 
-  /// Register a new route
-  void registerRoute(String route, WidgetBuilder builder) {
-    _routes[route] = builder;
-    _log.info('Route registered: $route');
-    notifyListeners();
-  }
-
-  /// ✅ Register a new navigation item with an optional position
-  void registerNavItem(DrawerItem item, {int? position}) {
-    if (position != null && position >= 0 && position < _drawerItems.length) {
-      _drawerItems.insert(position, item); // Insert at specified position
-    } else {
-      _drawerItems.add(item); // Default to adding at the end
-    }
-
-    _log.info('DrawerItem added: ${item.label} at position ${position ?? _drawerItems.length - 1}');
-    notifyListeners();
-  }
-
-  /// ✅ New navigateTo Method
-  void navigateTo(BuildContext context, String route) {
-    if (_routes.containsKey(route)) {
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: _routes[route]!),
-      );
-    } else {
-      _log.error('Navigation Error: Route not found: $route');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error: Route not found')),
-      );
-    }
-  }
-
-  /// Register the `reg_nav` hook
-  void registerNavHook(HooksManager hooksManager) {
-    hooksManager.registerHook('reg_nav', () {
-      notifyListeners();
-    });
-  }
-
-  /// Trigger navigation updates
-  void triggerNavUpdate(HooksManager hooksManager) {
-    hooksManager.triggerHook('reg_nav');
+  GoRoute toGoRoute() {
+    return GoRoute(
+      path: path,
+      builder: (context, state) => screen(context),
+    );
   }
 }
 
-class DrawerItem {
-  final String label;
-  final String route;
-  final IconData icon;
+class NavigationManager extends ChangeNotifier {
+  static final NavigationManager _instance = NavigationManager._internal();
+  factory NavigationManager() => _instance;
+  NavigationManager._internal();
 
-  DrawerItem({
-    required this.label,
-    required this.route,
-    required this.icon,
-  });
+  final List<RegisteredRoute> _routes = [];
+
+  /// ✅ Getter for dynamically registered routes
+  List<GoRoute> get routes => _routes.map((r) => r.toGoRoute()).toList();
+
+  /// ✅ Getter for routes that should be in the drawer
+  List<RegisteredRoute> get drawerRoutes =>
+      _routes.where((r) => r.drawerTitle != null && r.drawerIcon != null).toList();
+
+  /// ✅ Register a new route dynamically
+  void registerRoute({
+    required String path,
+    required Widget Function(BuildContext) screen,
+    String? drawerTitle,
+    IconData? drawerIcon,
+  }) {
+    if (_routes.any((r) => r.path == path)) return; // Prevent duplicates
+
+    _routes.add(RegisteredRoute(
+      path: path,
+      screen: screen,
+      drawerTitle: drawerTitle,
+      drawerIcon: drawerIcon,
+    ));
+
+    notifyListeners();
+  }
+
+  /// ✅ Create a dynamic GoRouter instance
+  GoRouter get router {
+    return GoRouter(
+      initialLocation: '/',
+      routes: [
+        GoRoute(path: '/', builder: (context, state) => const HomeScreen()),
+        ...routes, // ✅ Include dynamically registered plugin routes
+      ],
+    );
+  }
 }
