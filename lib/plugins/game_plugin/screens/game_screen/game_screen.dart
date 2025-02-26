@@ -15,6 +15,7 @@ import '../../../adverts_plugin/modules/admobs/rewarded/rewarded_ad.dart';
 import '../../../main_plugin/modules/main_helper_module/main_helper_module.dart';
 import '../../modules/game_play_module/config/gameplaymodule_config.dart';
 import '../../modules/game_play_module/game_play_module.dart';
+import 'components/celeb_image.dart';
 import 'components/fact_box.dart';
 import 'components/feedback_message.dart';
 import 'components/game_image_grid.dart';
@@ -245,6 +246,7 @@ class GameScreenState extends BaseScreenState<GameScreen> {
       _correctAnswer = null;
       fadedImages.clear();
       _gamePlayModule?.imageOptions = []; // ✅ Ensure images reset
+      _gamePlayModule?.nameOptions = []; // ✅ Ensure images reset
     });
 
     // ✅ Defer state update to the next frame to avoid "setState during build" error
@@ -261,28 +263,35 @@ class GameScreenState extends BaseScreenState<GameScreen> {
       _gamePlayModule?.question = null;
     });
 
+// In GameScreen
     Future.delayed(const Duration(milliseconds: 100), () async {
-      await _gamePlayModule?.roundInit(context, () {  // ✅ Pass context here
+      await _gamePlayModule?.roundInit(context, () {
+        // Only update UI state after the necessary data is ready
         setState(() {
           _correctAnswer = _gamePlayModule?.question?['image_url'];
           _gamePlayModule?.imageOptions = [
-            _gamePlayModule?.question?['image_url'],
-            ..._gamePlayModule?.question?['distractor_images']
+            _gamePlayModule?.question?['image_url']
           ];
-          _gamePlayModule?.imageOptions.shuffle(Random());
+          _gamePlayModule?.nameOptions = List<String>.from(
+              (_gamePlayModule?.question?['distractor_names'] as List<dynamic>)
+                  .map((e) => e.toString())
+          );
+
+          _gamePlayModule?.nameOptions.shuffle(Random());
         });
       });
 
+      // Ensure the rest of the state is updated after fetching the question
       Logger().info("🔹 after round init ${_gamePlayModule?.question}");
 
-// ✅ Pass context to setTimer
+      // Pass context to setTimer
       _gamePlayModule?.setTimer(context, () {
         _handleAnswer("", timeUp: true);
       });
 
-
       Logger().info("✅ New game round initialized!");
     });
+
 
   }
 
@@ -352,6 +361,9 @@ class GameScreenState extends BaseScreenState<GameScreen> {
 
   @override
   Widget buildContent(BuildContext context) {
+    // Get the height of the screen
+    // double screenHeight = MediaQuery.of(context).size.height;
+
     return Stack(
       children: [
         // ✅ Background Image
@@ -361,9 +373,16 @@ class GameScreenState extends BaseScreenState<GameScreen> {
               : Container(color: Colors.black),
         ),
 
+        // ✅ CelebImage positioned behind everything
+        Positioned.fill(
+          child: CelebImage(
+            imageUrl: _gamePlayModule?.question?['image_url'] ?? "", // Pass the image URL for CelebImage
+            onImageLoaded: _onImagesLoaded, // Pass the callback function
+          ),
+        ),
+
         SingleChildScrollView(
           child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
             children: [
               // ✅ Top bar with Level, TimerBar, and Points
               Padding(
@@ -403,13 +422,12 @@ class GameScreenState extends BaseScreenState<GameScreen> {
                 ),
               ),
 
-              GameImageGrid(
-                imageOptions: _gamePlayModule?.imageOptions?.map((e) => e.toString()).toList() ?? [], // ✅ Prevent null
-                onImageTap: _handleAnswer,
-                fadedImages: fadedImages,
-                onAllImagesLoaded: _onImagesLoaded, // ✅ Call when images are loaded
+              GameNameRow(
+                correctName: _gamePlayModule?.question?['name'] ?? "", // ✅ Correct key name
+                nameOptions: _gamePlayModule?.nameOptions ?? [], // ✅ Directly use the pre-set nameOptions
+                onNameTap: _handleAnswer,
+                fadedNames: fadedImages,
               ),
-
 
               const SizedBox(height: 20),
 
@@ -426,15 +444,6 @@ class GameScreenState extends BaseScreenState<GameScreen> {
               ),
 
               const SizedBox(height: 20),
-
-              FactBox(
-                facts: (_gamePlayModule?.question?['facts'] as List<dynamic>?)
-                    ?.map((e) => e.toString())
-                    .toList() ??
-                    [], // ✅ Ensure facts is never null
-                onFactsLoaded: _onFactsLoaded,
-              ),
-
             ],
           ),
         ),
@@ -450,11 +459,31 @@ class GameScreenState extends BaseScreenState<GameScreen> {
             ),
           ),
 
+        // ✅ FactBox positioned at the bottom taking 1/3 of the screen height
+        Positioned(
+          bottom: 0,
+          child: Container(
+            width: MediaQuery.of(context).size.width,
+            decoration: BoxDecoration(
+              color: Colors.black.withOpacity(0.7),
+              borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+            ),
+            child: SingleChildScrollView(
+              child: FactBox(
+                facts: (_gamePlayModule?.question?['facts'] as List<dynamic>?)
+                    ?.map((e) => e.toString())
+                    .toList() ??
+                    [], // ✅ Ensure facts is never null
+                onFactsLoaded: _onFactsLoaded,
+              ),
+            ),
+          ),
+        ),
+
         // ✅ Full-Screen Loading Overlay
         const ScreenOverlay(), // ✅ New External Component
       ],
     );
   }
-
 
 }

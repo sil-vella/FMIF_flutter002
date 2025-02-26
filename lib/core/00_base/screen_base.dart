@@ -1,7 +1,6 @@
 import 'package:flush_me_im_famous/plugins/adverts_plugin/modules/admobs/banner/banner_ad.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:go_router/go_router.dart';
 import '../../tools/logging/logger.dart';
 import '../managers/app_manager.dart';
 import '../managers/module_manager.dart';
@@ -44,7 +43,6 @@ abstract class BaseScreenState<T extends BaseScreen> extends State<T> {
   }
 
   @override
-  @override
   Widget build(BuildContext context) {
     final navigationManager = Provider.of<NavigationManager>(context);
 
@@ -53,38 +51,37 @@ abstract class BaseScreenState<T extends BaseScreen> extends State<T> {
       appBar: AppBar(
         title: Text(
           widget.computeTitle(context),
-          style: AppTextStyles.headingMedium(color: AppColors.darkGray),
+          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.darkGray),
         ),
         backgroundColor: AppColors.accentColor,
-        iconTheme: IconThemeData(color: AppColors.darkGray),
+        iconTheme: const IconThemeData(color: AppColors.darkGray),
       ),
-
-      drawer: CustomDrawer(), // ✅ Use the correct drawer
+      drawer:  CustomDrawer(), // ✅ Use the correct drawer
 
       body: Column(
         children: [
+          // Display top banner dynamically
           if (bannerAdModule != null)
             Container(
-              height: 50,
               alignment: Alignment.center,
-              color: Colors.black,
               child: bannerAdModule!.getBannerWidget(context, Config.admobsTopBanner),
             ),
 
-          Expanded(child: buildContent(context)),
+          // The main content area that takes up all remaining space
+          Expanded(
+            child: buildContent(context), // The content between top and bottom banners
+          ),
 
+          // Display bottom banner dynamically
           if (bannerAdModule != null)
             Container(
-              height: 50,
               alignment: Alignment.center,
-              color: Colors.black,
               child: bannerAdModule!.getBannerWidget(context, Config.admobsBottomBanner),
             ),
         ],
       ),
     );
   }
-
 
   /// Abstract method to be implemented in subclasses
   Widget buildContent(BuildContext context);

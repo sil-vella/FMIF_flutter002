@@ -54,7 +54,6 @@ class QuestionModule extends ModuleBase {
 
       final response = await connectionModule.sendPostRequest("/get-question", payload);
 
-      _log.info("✅ Response Status: ${response['statusCode']}");
       _log.info("✅ Response Body: $response");
 
       return response;

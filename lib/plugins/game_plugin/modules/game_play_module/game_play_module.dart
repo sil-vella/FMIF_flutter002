@@ -28,6 +28,7 @@ class GamePlayModule extends ModuleBase {
   bool isLoading = true;
   String feedbackMessage = "";
   List<String> imageOptions = []; // ✅ Store shuffled images
+  List<String> nameOptions = [];
 
   Future<void> resetState(BuildContext context) async {
     final stateManager = Provider.of<StateManager>(context, listen: false);
@@ -129,13 +130,32 @@ class GamePlayModule extends ModuleBase {
       question = response;
       isLoading = false;
 
-      // ✅ Prepare shuffled images (correct + 3 distractors)
-      imageOptions = [response['image_url'], ...response['distractor_images']];
-      imageOptions.shuffle(Random());
+      _log.info("✅ Question response: $response");
+      _log.info("Received distractor_names: ${response['distractor_names']}");
 
-      // ✅ Update UI State in GameScreen
+// ✅ Prepare shuffled images (correct + 3 distractors)
+      imageOptions = [response['image_url']];
+
+// Check if 'distractor_names' is a List
+      if (response['distractor_names'] is List) {
+        nameOptions = List<String>.from(response['distractor_names'].map((item) => item.toString()));
+      } else {
+        _log.error("❌ 'distractor_names' is not a List.");
+        return;
+      }
+
+      _log.info("✅ name options before shuffle: $nameOptions");
+
+// ✅ Shuffle the options
+      nameOptions.shuffle(Random());
+
+      _log.info("✅ name options after shuffle: $nameOptions");
+      _log.info("✅ image options: $imageOptions");
+
+// ✅ Update UI State in GameScreen
       updateState();
       _log.info("✅ Question retrieved successfully: $response");
+
 
     } catch (e) {
       _log.error("❌ Failed to fetch question: $e", error: e);
@@ -155,7 +175,7 @@ class GamePlayModule extends ModuleBase {
     try {
       final int level = sharedPref.getInt('level') ?? 1;
 
-      if (level <= 0) {
+      if (level <= 2) {
         _log.info("⏳ Skipping timer. Level is $level.");
         return;
       }
