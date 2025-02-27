@@ -229,11 +229,11 @@ class GamePlayModule extends ModuleBase {
   }
 
 
-  void checkAnswer(BuildContext context, String selectedImage, Function updateState, {bool timeUp = false}) async {
+  void checkAnswer(BuildContext context, String selectedName, Function updateState, {bool timeUp = false}) async {
 
     _log.info("🏆 Checking answer...");
 
-    final correctImage = question?['image_url'] ?? "";
+    final correctName = question?['name'] ?? "";
     final rewardsModule = ModuleManager().getLatestModule<RewardsModule>();
     final stateManager = Provider.of<StateManager>(context, listen: false);
 
@@ -245,12 +245,10 @@ class GamePlayModule extends ModuleBase {
     // ✅ Extract category, level, and correct actor
     String category = question?["category"] ?? "mixed";
     int level = int.tryParse(question?["level"]?.toString() ?? "1") ?? 1;
-    String correctActor = question?["actor"] ?? "";
 
-    _log.info("📌 Checking answer for: $correctActor (Category: $category, Level: $level)");
-    _log.forceLog("📌 Checking answer for: $correctActor (Category: $category, Level: $level)");
+    _log.info("📌 Checking answer for: $correctName (Category: $category, Level: $level)");
 
-    if (selectedImage == correctImage) {
+    if (selectedName == correctName) {
       feedbackMessage = "🎉 Correct!";
 
       // ✅ Retrieve 'hint' state from StateManager
@@ -271,7 +269,7 @@ class GamePlayModule extends ModuleBase {
         points: points,
         category: category,
         level: level,
-        guessedActor: correctActor,
+        guessedActor: correctName,
       );
 
       Logger().forceLog("📜 reward data if correct ${rewardData}");
@@ -288,7 +286,7 @@ class GamePlayModule extends ModuleBase {
     }
 
     updateState();
-    _log.info("✅ User selected: $selectedImage | Correct: ${question?['image_url']}");
+    _log.info("✅ User selected: $selectedName | Correct: ${question?['image_url']}");
   }
 
 void showGameOverScreen() {

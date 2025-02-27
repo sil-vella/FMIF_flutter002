@@ -283,7 +283,7 @@ class GameScreenState extends BaseScreenState<GameScreen> {
       await _gamePlayModule?.roundInit(context, () {
         // Only update UI state after the necessary data is ready
         setState(() {
-          _correctAnswer = _gamePlayModule?.question?['image_url'];
+          _correctAnswer = _gamePlayModule?.question?['name'];
           _gamePlayModule?.imageOptions = [
             _gamePlayModule?.question?['image_url']
           ];
@@ -313,18 +313,15 @@ class GameScreenState extends BaseScreenState<GameScreen> {
   String? _correctAnswer; // ✅ Stores the correct answer dynamically
 
   void _handleAnswer(String selectedName, {bool timeUp = false}) {
+    Logger().info("🔹 Correct answer $_correctAnswer");
+    Logger().info("🔹 Selected answer $selectedName");
     _gamePlayModule?.checkAnswer(context, selectedName, () {
-      setState(() {
-        _correctAnswer = selectedName;
-      });
-
-      Logger().info("🔹 Correct answer $_correctAnswer");
 
       _updateFeedbackState(
         showFeedback: true,
         feedbackText: _gamePlayModule!.feedbackMessage,
         cachedImage: _cachedSelectedImage, // ✅ Pass Cached Image
-        correctName: _gamePlayModule?.question?['actor'],
+        correctName: _gamePlayModule?.question?['name'],
       );
 
       _loadLevelAndPoints();
@@ -341,12 +338,15 @@ class GameScreenState extends BaseScreenState<GameScreen> {
   }
 
   void _updateFeedbackState({required bool showFeedback, String feedbackText = "", CachedNetworkImageProvider? cachedImage, String correctName = ""}) {
+    Logger().info("🎨 _updateFeedbackState reached with  $showFeedback $feedbackText $cachedImage $correctName");
     setState(() {
       _showFeedback = showFeedback;
       _feedbackText = feedbackText;
       _cachedSelectedImage = cachedImage; // ✅ Store Cached Image
       _correctName = correctName;
     });
+
+    Logger().info("🎨 aftere setstate  $_showFeedback $_feedbackText $_cachedSelectedImage $_correctName");
 
     if (showFeedback) {
       _feedbackTimer?.cancel();
