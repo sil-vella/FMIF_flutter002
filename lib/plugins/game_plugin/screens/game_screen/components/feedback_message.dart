@@ -70,7 +70,7 @@ class _FeedbackMessageState extends State<FeedbackMessage> {
             mainAxisSize: MainAxisSize.min,
             children: [
               // ✅ Display Selected Image ONLY IF Answer is Correct
-              if (isCorrect && widget.cachedImage != null) ...[
+              if (widget.cachedImage != null) ...[
                 Padding(
                   padding: const EdgeInsets.only(bottom: 10),
                   child: Image(

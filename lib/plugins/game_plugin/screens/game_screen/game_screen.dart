@@ -44,7 +44,8 @@ class GameScreenState extends BaseScreenState<GameScreen> {
   late final GamePlayModule? _gamePlayModule;
   late final MainHelperModule? _mainHelperModule;
   late final RewardedAdModule? _rewardedAdModule;
-  late final TickerTimer? _roundTimer;
+  TickerTimer? _roundTimer;  // ✅ Make it nullable instead of `late final`
+
 
   bool _showFeedback = false;
   bool _helpUsed = false; // ✅ Track if help has been used
@@ -73,13 +74,16 @@ class GameScreenState extends BaseScreenState<GameScreen> {
     _mainHelperModule = _moduleManager.getLatestModule<MainHelperModule>();
     _rewardedAdModule = _moduleManager.getLatestModule<RewardedAdModule>();
 
-    // ✅ Ensure `round_timer` is only registered if it doesn't exist
+    // ✅ Initialize round timer properly
     _roundTimer = _servicesManager.getService<TickerTimer>('round_timer');
 
     if (_roundTimer == null) {
+      _log.error("⚠️ round_timer not found. Registering...");
       _servicesManager.registerService('round_timer', TickerTimer(id: 'round_timer')).then((_) {
-        // ✅ After registration, retrieve the instance
-        _roundTimer = _servicesManager.getService<TickerTimer>('round_timer');
+        setState(() {
+          _roundTimer = _servicesManager.getService<TickerTimer>('round_timer');
+          _log.info("✅ round_timer successfully registered.");
+        });
       });
     }
 
@@ -87,15 +91,26 @@ class GameScreenState extends BaseScreenState<GameScreen> {
     _loadLevelAndPoints();
   }
 
+  void _onImagesLoaded(ImageProvider imageProvider) {
+    final newImage = imageProvider as CachedNetworkImageProvider;
 
+    if (_cachedSelectedImage == newImage) {
+      return; // ✅ Prevent unnecessary re-renders
+    }
 
-  void _onImagesLoaded() {
-    _log.info("🖼️ ALL images loaded. Updating game state...");
+    _log.info("🖼️ Image loaded successfully, caching...");
 
-    _stateManager.updatePluginState("game_round", {
-      "imagesLoaded": true,
-    }, force: true);
+    setState(() {
+      _cachedSelectedImage = newImage;
+    });
+
+    if (!_stateManager.getPluginState<Map<String, dynamic>>("game_round")?["imagesLoaded"] ?? false) {
+      _stateManager.updatePluginState("game_round", {
+        "imagesLoaded": true,
+      }, force: true);
+    }
   }
+
 
   void _onFactsLoaded() {
     _stateManager.updatePluginState("game_round", {
@@ -297,15 +312,10 @@ class GameScreenState extends BaseScreenState<GameScreen> {
 
   String? _correctAnswer; // ✅ Stores the correct answer dynamically
 
-  void _handleAnswer(String selectedImage, {bool timeUp = false}) {
-
-    /// ✅ Fetch Cached Image
-    CachedNetworkImageProvider cachedImageProvider = CachedNetworkImageProvider(selectedImage);
-
-// ✅ Pass context to checkAnswer
-    _gamePlayModule?.checkAnswer(context, selectedImage, () {
+  void _handleAnswer(String selectedName, {bool timeUp = false}) {
+    _gamePlayModule?.checkAnswer(context, selectedName, () {
       setState(() {
-        _correctAnswer = selectedImage;
+        _correctAnswer = selectedName;
       });
 
       Logger().info("🔹 Correct answer $_correctAnswer");
@@ -313,14 +323,14 @@ class GameScreenState extends BaseScreenState<GameScreen> {
       _updateFeedbackState(
         showFeedback: true,
         feedbackText: _gamePlayModule!.feedbackMessage,
-        cachedImage: cachedImageProvider, // ✅ Pass Cached Image
+        cachedImage: _cachedSelectedImage, // ✅ Pass Cached Image
         correctName: _gamePlayModule?.question?['actor'],
       );
 
       _loadLevelAndPoints();
     }, timeUp: timeUp);
-
   }
+
 
   /// ✅ Select a new random background
   void _setRandomBackground() {
@@ -363,6 +373,10 @@ class GameScreenState extends BaseScreenState<GameScreen> {
   Widget buildContent(BuildContext context) {
     // Get the height of the screen
     // double screenHeight = MediaQuery.of(context).size.height;
+    String imageUrl = _gamePlayModule?.question?['image_url'] ?? "";
+    if (imageUrl.isEmpty) {
+      Logger().error("⚠️ No image URL provided for this round.");
+    }
 
     return Stack(
       children: [
@@ -373,13 +387,13 @@ class GameScreenState extends BaseScreenState<GameScreen> {
               : Container(color: Colors.black),
         ),
 
-        // ✅ CelebImage positioned behind everything
+// ✅ CelebImage positioned behind everything
         Positioned.fill(
           child: CelebImage(
-            imageUrl: _gamePlayModule?.question?['image_url'] ?? "",
+            imageUrl: imageUrl.isNotEmpty ? imageUrl : "assets/images/placeholder.png", // Use placeholder if missing
             currentCategory: _gamePlayModule!.category,
             currentLevel: _gamePlayModule!.level,
-            onImageLoaded: _onImagesLoaded, // Pass the callback function
+            onImageLoaded: _onImagesLoaded, // ✅ Modified to receive ImageProvider
           ),
         ),
 
@@ -450,17 +464,6 @@ class GameScreenState extends BaseScreenState<GameScreen> {
           ),
         ),
 
-        // ✅ Full-Screen Feedback Overlay
-        if (_showFeedback)
-          Positioned.fill(
-            child: FeedbackMessage(
-              feedback: _feedbackText,
-              onClose: _closeFeedback,
-              cachedImage: _cachedSelectedImage,
-              correctName: _correctName, // ✅ Pass Cached Image
-            ),
-          ),
-
         // ✅ FactBox positioned at the bottom taking 1/3 of the screen height
         Positioned(
           bottom: 0,
@@ -488,6 +491,16 @@ class GameScreenState extends BaseScreenState<GameScreen> {
           ),
         ),
 
+        // ✅ Full-Screen Feedback Overlay
+        if (_showFeedback)
+          Positioned.fill(
+            child: FeedbackMessage(
+              feedback: _feedbackText,
+              onClose: _closeFeedback,
+              cachedImage: _cachedSelectedImage,
+              correctName: _correctName, // ✅ Pass Cached Image
+            ),
+          ),
 
         // ✅ Full-Screen Loading Overlay
         const ScreenOverlay(), // ✅ New External Component
