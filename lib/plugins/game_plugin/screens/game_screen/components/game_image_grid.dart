@@ -33,6 +33,15 @@ class _GameNameRowState extends State<GameNameRow> {
     selectedName = null;
   }
 
+  /// ✅ Helper function to format names: replaces `_` with spaces and capitalizes each word
+  String _formatName(String name) {
+    return name
+        .replaceAll('_', ' ') // Replace underscores with spaces
+        .split(' ') // Split words
+        .map((word) => word.isNotEmpty ? word[0].toUpperCase() + word.substring(1) : '') // Capitalize first letter
+        .join(' '); // Rejoin words
+  }
+
   void _handleNameTap(String name) {
     if (widget.fadedNames.contains(name)) return; // ✅ Ignore faded names
 
@@ -56,7 +65,7 @@ class _GameNameRowState extends State<GameNameRow> {
     List<String> names = [widget.correctName, ...widget.nameOptions];
     names.shuffle(); // Randomize the order
 
-    return Row(
+    return Row( // ✅ Ensures buttons stay in a single row
       mainAxisAlignment: MainAxisAlignment.center,
       children: names.map((name) => _buildNameBox(name)).toList(),
     );
@@ -65,48 +74,52 @@ class _GameNameRowState extends State<GameNameRow> {
   Widget _buildNameBox(String name) {
     bool isSelected = selectedName == name;
     bool isFaded = widget.fadedNames.contains(name);
+    String formattedName = _formatName(name); // ✅ Apply formatting
 
     Logger().info("🎭 Checking if selected: $name -> ${isSelected ? "Selected" : "Not Selected"}");
 
-    return GestureDetector(
-      onTap: () => _handleNameTap(name),
-      child: AnimatedOpacity(
-        duration: const Duration(milliseconds: 300),
-        opacity: selectedName == null ? 1.0 : (isSelected ? 1.0 : 0.2), // ✅ Fade out unselected names slightly
-        child: AnimatedContainer(
+    return Expanded( // ✅ Makes all name boxes share the space evenly
+      child: GestureDetector(
+        onTap: isFaded ? null : () => _handleNameTap(name), // ✅ Disable taps on faded names
+        child: AnimatedOpacity(
           duration: const Duration(milliseconds: 300),
-          width: 120,
-          height: 60,
-          margin: const EdgeInsets.all(6),
-          decoration: BoxDecoration(
-            color: isSelected
-                ? Colors.greenAccent.withOpacity(0.8) // ✅ Selected name gets a green background
-                : (isFaded ? Colors.grey[300] : AppColors.primaryColor),
-            border: Border.all(
+          opacity: isFaded ? 0.3 : 1.0, // ✅ Reduce opacity for faded names
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 300),
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
+            margin: const EdgeInsets.all(6),
+            decoration: BoxDecoration(
               color: isSelected
-                  ? Colors.greenAccent // ✅ Green border when selected
-                  : (isFaded ? Colors.grey : AppColors.accentColor),
-              width: isSelected ? 4.0 : (isFaded ? 2.0 : 3.0),
-            ),
-            borderRadius: BorderRadius.circular(8.0),
-            boxShadow: isSelected
-                ? [
-              BoxShadow(
-                color: Colors.greenAccent.withOpacity(0.8),
-                blurRadius: 10,
-                spreadRadius: 2,
+                  ? Colors.greenAccent.withOpacity(0.8)
+                  : (isFaded ? Colors.grey[300] : AppColors.primaryColor),
+              border: Border.all(
+                color: isSelected
+                    ? Colors.greenAccent
+                    : (isFaded ? Colors.grey : AppColors.accentColor),
+                width: isSelected ? 4.0 : (isFaded ? 2.0 : 3.0),
               ),
-            ]
-                : [],
-          ),
-          child: Center(
-            child: Text(
-              name,
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                color: isSelected ? Colors.white : (isFaded ? Colors.grey[700] : Colors.white),
+              borderRadius: BorderRadius.circular(8.0),
+              boxShadow: isSelected
+                  ? [
+                BoxShadow(
+                  color: Colors.greenAccent.withOpacity(0.8),
+                  blurRadius: 10,
+                  spreadRadius: 2,
+                ),
+              ]
+                  : [],
+            ),
+            child: Center(
+              child: Text(
+                formattedName, // ✅ Use formatted name
+                textAlign: TextAlign.center,
+                maxLines: 2, // ✅ Allows word wrapping for long names
+                overflow: TextOverflow.ellipsis, // ✅ If too long, add "..."
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: isFaded ? Colors.grey[700] : Colors.white,
+                ),
               ),
             ),
           ),

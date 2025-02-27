@@ -31,6 +31,7 @@ class GamePlayModule extends ModuleBase {
   List<String> nameOptions = [];
   String category = "";
   int level = 0;
+  bool isCorrectGuess = false;
 
   Future<void> resetState(BuildContext context) async {
     final stateManager = Provider.of<StateManager>(context, listen: false);
@@ -228,9 +229,7 @@ class GamePlayModule extends ModuleBase {
     }
   }
 
-
   void checkAnswer(BuildContext context, String selectedName, Function updateState, {bool timeUp = false}) async {
-
     _log.info("🏆 Checking answer...");
 
     final correctName = question?['name'] ?? "";
@@ -248,7 +247,9 @@ class GamePlayModule extends ModuleBase {
 
     _log.info("📌 Checking answer for: $correctName (Category: $category, Level: $level)");
 
-    if (selectedName == correctName) {
+    isCorrectGuess = (selectedName == correctName); // ✅ Ensure correct value is set
+
+    if (isCorrectGuess) {
       feedbackMessage = "🎉 Correct!";
 
       // ✅ Retrieve 'hint' state from StateManager
@@ -265,14 +266,13 @@ class GamePlayModule extends ModuleBase {
 
       // ✅ Call saveReward with all necessary data
       final rewardData = await rewardsModule.saveReward(
-        context: context, // ✅ Pass context here
+        context: context,
         points: points,
         category: category,
         level: level,
         guessedActor: correctName,
       );
 
-      Logger().forceLog("📜 reward data if correct ${rewardData}");
       _log.info("🏆 Updated Rewards: ${rewardData}");
 
       // ✅ Update game state with level-up or end-game status
@@ -280,12 +280,18 @@ class GamePlayModule extends ModuleBase {
         if (rewardData["levelUp"]) "levelUp": true,
         if (rewardData["endGame"]) "endGame": true,
       });
-
     } else {
       feedbackMessage = "❌ Incorrect.";
     }
 
-    updateState();
+    // ✅ Ensure the updated value propagates
+    _log.info("✅ Setting isCorrectGuess: $isCorrectGuess");
+
+    // ✅ Delay UI update slightly to ensure correct state update
+    Future.delayed(Duration(milliseconds: 50), () {
+      updateState();
+    });
+
     _log.info("✅ User selected: $selectedName | Correct: ${question?['image_url']}");
   }
 

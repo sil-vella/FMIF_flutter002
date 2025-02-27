@@ -56,7 +56,7 @@ class GameScreenState extends BaseScreenState<GameScreen> {
   int _points = 0;
   String _backgroundImage = "";
   final Random _random = Random();
-  Set<String> fadedImages = {}; // ✅ Tracks faded images
+  Set<String> fadedNames = {}; // ✅ Tracks faded images
   CachedNetworkImageProvider? _cachedSelectedImage;
 
   @override
@@ -148,7 +148,7 @@ class GameScreenState extends BaseScreenState<GameScreen> {
 
       _rewardedAdModule!.showAd(
         context,
-        onUserEarnedReward: _fadeOutIncorrectImage,
+        onUserEarnedReward: _fadeOutIncorrectName,
         onAdDismissed: () {
           _log.info("✅ Ad dismissed! Attempting to resume timer...");
 
@@ -175,24 +175,24 @@ class GameScreenState extends BaseScreenState<GameScreen> {
     }
   }
 
-  void _fadeOutIncorrectImage() {
+  void _fadeOutIncorrectName() {
     if (_correctAnswer == null) return;
 
-    List<String> incorrectImages = _gamePlayModule?.imageOptions
-        .where((img) => img != _correctAnswer && !fadedImages.contains(img))
-        .toList() ??
-        [];
+    List<String> incorrectNames = _gamePlayModule?.nameOptions
+        .where((name) => name != _correctAnswer && !fadedNames.contains(name))
+        .toList() ?? [];
 
-    if (incorrectImages.isNotEmpty) {
-      String fadedImage = incorrectImages[_random.nextInt(incorrectImages.length)];
+    if (incorrectNames.isNotEmpty) {
+      String fadedName = incorrectNames[_random.nextInt(incorrectNames.length)];
 
       setState(() {
-        fadedImages = Set.from(fadedImages)..add(fadedImage);
+        fadedNames = Set.from(fadedNames)..add(fadedName);
       });
 
-      _log.info("🚫 An incorrect image has been faded out: $fadedImage");
+      _log.info("🚫 A name has been faded out: $fadedName");
     }
   }
+
 
   Future<void> _loadLevelAndPoints() async {
     if (_sharedPref == null) {
@@ -259,7 +259,7 @@ class GameScreenState extends BaseScreenState<GameScreen> {
     // ✅ Clear game state BEFORE setting new data
     setState(() {
       _correctAnswer = null;
-      fadedImages.clear();
+      fadedNames.clear();
       _gamePlayModule?.imageOptions = []; // ✅ Ensure images reset
       _gamePlayModule?.nameOptions = []; // ✅ Ensure images reset
     });
@@ -322,6 +322,7 @@ class GameScreenState extends BaseScreenState<GameScreen> {
         feedbackText: _gamePlayModule!.feedbackMessage,
         cachedImage: _cachedSelectedImage, // ✅ Pass Cached Image
         correctName: _gamePlayModule?.question?['name'],
+        isCorrectGuess: _gamePlayModule!.isCorrectGuess,
       );
 
       _loadLevelAndPoints();
@@ -337,8 +338,15 @@ class GameScreenState extends BaseScreenState<GameScreen> {
     Logger().info("🎨 New Background: $_backgroundImage");
   }
 
-  void _updateFeedbackState({required bool showFeedback, String feedbackText = "", CachedNetworkImageProvider? cachedImage, String correctName = ""}) {
-    Logger().info("🎨 _updateFeedbackState reached with  $showFeedback $feedbackText $cachedImage $correctName");
+  void _updateFeedbackState({
+    required bool showFeedback,
+    String feedbackText = "",
+    CachedNetworkImageProvider? cachedImage,
+    String correctName = "",
+    bool isCorrectGuess = false, // ✅ Added parameter
+  }) {
+    Logger().info("🎨 _updateFeedbackState reached with  $showFeedback $feedbackText $cachedImage $correctName | Correct? $isCorrectGuess");
+
     setState(() {
       _showFeedback = showFeedback;
       _feedbackText = feedbackText;
@@ -346,11 +354,16 @@ class GameScreenState extends BaseScreenState<GameScreen> {
       _correctName = correctName;
     });
 
-    Logger().info("🎨 aftere setstate  $_showFeedback $_feedbackText $_cachedSelectedImage $_correctName");
+    Logger().info("🎨 After setState -> showFeedback: $_showFeedback, feedbackText: $_feedbackText, correctName: $_correctName");
 
     if (showFeedback) {
       _feedbackTimer?.cancel();
-      _feedbackTimer = Timer(const Duration(seconds: 2), () {
+
+      int durationSeconds = isCorrectGuess ? 5 : 2; // ✅ Set different durations
+
+      Logger().info("⏳ Setting feedback timer for $durationSeconds seconds...");
+
+      _feedbackTimer = Timer(Duration(seconds: durationSeconds), () {
         if (mounted) {
           _closeFeedback();
         }
@@ -358,12 +371,13 @@ class GameScreenState extends BaseScreenState<GameScreen> {
     }
   }
 
+
   void _closeFeedback() {
     _updateFeedbackState(showFeedback: false);
     _feedbackTimer?.cancel();
 
     setState(() {
-      fadedImages.clear(); // ✅ Clear faded images
+      fadedNames.clear(); // ✅ Clear faded images
     });
 
     _initializeGame(); // ✅ Reset game and change background
@@ -390,7 +404,7 @@ class GameScreenState extends BaseScreenState<GameScreen> {
 // ✅ CelebImage positioned behind everything
         Positioned.fill(
           child: CelebImage(
-            imageUrl: imageUrl.isNotEmpty ? imageUrl : "assets/images/placeholder.png", // Use placeholder if missing
+            imageUrl: imageUrl.isNotEmpty ? imageUrl : "assets/images/icon.png", // Use placeholder if missing
             currentCategory: _gamePlayModule!.category,
             currentLevel: _gamePlayModule!.level,
             onImageLoaded: _onImagesLoaded, // ✅ Modified to receive ImageProvider
@@ -442,7 +456,7 @@ class GameScreenState extends BaseScreenState<GameScreen> {
                 correctName: _gamePlayModule?.question?['name'] ?? "", // ✅ Correct key name
                 nameOptions: _gamePlayModule?.nameOptions ?? [], // ✅ Directly use the pre-set nameOptions
                 onNameTap: _handleAnswer,
-                fadedNames: fadedImages,
+                fadedNames: fadedNames,
               ),
 
               const SizedBox(height: 20),
@@ -498,7 +512,9 @@ class GameScreenState extends BaseScreenState<GameScreen> {
               feedback: _feedbackText,
               onClose: _closeFeedback,
               cachedImage: _cachedSelectedImage,
-              correctName: _correctName, // ✅ Pass Cached Image
+              correctName: _correctName,
+              currentCategory: _gamePlayModule!.category,
+              currentLevel: _gamePlayModule!.level,
             ),
           ),
 

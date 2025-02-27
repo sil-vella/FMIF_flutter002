@@ -9,7 +9,9 @@ class FeedbackMessage extends StatefulWidget {
   final String correctName;
   final VoidCallback onClose;
   final String? selectedImageUrl;
-  final CachedNetworkImageProvider? cachedImage; // ✅ Add Cached Image Provider
+  final CachedNetworkImageProvider? cachedImage;
+  final String currentCategory;
+  final int currentLevel;
 
 
   const FeedbackMessage({
@@ -19,6 +21,8 @@ class FeedbackMessage extends StatefulWidget {
     required this.onClose,
     this.selectedImageUrl,
     this.cachedImage,
+    required this.currentCategory,
+    required this.currentLevel,
 
   }) : super(key: key);
 
@@ -55,48 +59,73 @@ class _FeedbackMessageState extends State<FeedbackMessage> {
   }
 
   @override
-  @override
   Widget build(BuildContext context) {
     bool isCorrect = widget.feedback.contains("Correct");
+    String safeCategory = widget.currentCategory.isNotEmpty ? widget.currentCategory : "default";
+    int safeLevel = widget.currentLevel > 0 ? widget.currentLevel : 1;
+
+    // Construct the background image paths
+    String backgroundImagePath = widget.currentCategory.isNotEmpty
+        ? 'assets/images/backgrounds/lev$safeLevel/$safeCategory/main_background_$safeCategory.png'
+        : 'assets/images/backgrounds/main_background_default.png';
+
+    String backgroundImageOverlayPath = widget.currentCategory.isNotEmpty
+        ? 'assets/images/backgrounds/lev$safeLevel/$safeCategory/main_background_overlay_$safeCategory.png'
+        : 'assets/images/backgrounds/main_background_overlay_default.png';
 
     return Stack(
       alignment: Alignment.center,
       children: [
-        // ✅ Background Overlay
-        Container(
-          color: Colors.black.withOpacity(0.8),
-          alignment: Alignment.center,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // ✅ Display Selected Image ONLY IF Answer is Correct
-              if (widget.cachedImage != null) ...[
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 10),
-                  child: Image(
-                    image: widget.cachedImage!,
-                    height: 120,
-                    width: 120,
-                    fit: BoxFit.cover,
-                  ),
-                ),
-                // ✅ Display Correct Name Under the Image
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 10),
-                  child: Text(
-                    _formatCorrectName(widget.correctName),
-                    style: const TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
-                  ),
-                ),
-              ],
+        if (isCorrect) ...[
+          // ✅ Full-Screen Background
+          Positioned.fill(
+            child: Image.asset(
+              backgroundImagePath,
+              fit: BoxFit.cover,
+              width: double.infinity,
+              height: double.infinity,
+            ),
+          ),
 
-              // ✅ Feedback text
+          // ✅ Cached Celeb Image (Centered)
+          Align(
+            alignment: Alignment.center,
+            child: FractionallySizedBox(
+              widthFactor: 0.2, // ✅ 10% of the screen width
+              child: Image(
+                image: widget.cachedImage!,
+                fit: BoxFit.contain,
+              ),
+            ),
+          ),
+
+          // ✅ Full-Screen Overlay
+          Positioned.fill(
+            child: Image.asset(
+              backgroundImageOverlayPath,
+              fit: BoxFit.cover,
+              width: double.infinity,
+              height: double.infinity,
+            ),
+          ),
+        ] else ...[
+          // ❌ Black Half-Opacity Background (Only if incorrect)
+          Positioned.fill(
+            child: Container(
+              color: Colors.black.withOpacity(0.8),
+            ),
+          ),
+        ],
+
+        // ✅ Name/Message Section (Always at the Top)
+        Positioned(
+          top: MediaQuery.of(context).size.height * 0.15, // ✅ Push to top
+          left: 0,
+          right: 0,
+          child: Column(
+            children: [
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                padding: const EdgeInsets.symmetric(horizontal: 20),
                 child: Text(
                   widget.feedback,
                   textAlign: TextAlign.center,
@@ -108,20 +137,38 @@ class _FeedbackMessageState extends State<FeedbackMessage> {
                 ),
               ),
 
-              const SizedBox(height: 20),
-
-              // ✅ Close Button
-              ElevatedButton(
-                onPressed: widget.onClose,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.accentColor,
-                  foregroundColor: Colors.black,
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8.0)),
+              if (isCorrect)
+                Padding(
+                  padding: const EdgeInsets.only(top: 10),
+                  child: Text(
+                    _formatCorrectName(widget.correctName),
+                    style: const TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
                 ),
-                child: const Text("Close", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-              ),
             ],
+          ),
+        ),
+
+        // ✅ Close Button (Always at the Very Bottom)
+        Positioned(
+          bottom: MediaQuery.of(context).size.height * 0.05, // ✅ Push to bottom
+          left: 0,
+          right: 0,
+          child: Center(
+            child: ElevatedButton(
+              onPressed: widget.onClose,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.accentColor,
+                foregroundColor: Colors.black,
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8.0)),
+              ),
+              child: const Text("Close", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            ),
           ),
         ),
 
@@ -146,6 +193,8 @@ class _FeedbackMessageState extends State<FeedbackMessage> {
           ),
       ],
     );
+
+
   }
 
 }
