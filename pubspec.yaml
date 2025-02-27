@@ -32,6 +32,7 @@ flutter:
   assets:
     - assets/
     - assets/images/
+    - assets/audio/
     - assets/images/backgrounds/
     - assets/images/backgrounds/lev1/actors/
     - assets/images/backgrounds/lev1/american_football_players/

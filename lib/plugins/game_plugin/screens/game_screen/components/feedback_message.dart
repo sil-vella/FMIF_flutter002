@@ -1,8 +1,12 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:confetti/confetti.dart';
+import 'package:just_audio/just_audio.dart';
+import 'package:provider/provider.dart';
 import '../../../../../core/managers/module_manager.dart';
 import '../../../../../utils/consts/theme_consts.dart';
+import '../../../../main_plugin/modules/animations_module/animations_module.dart';
+import '../../../../main_plugin/modules/audio_module/audio_module.dart'; // ✅ Import AudioModule
 
 class FeedbackMessage extends StatefulWidget {
   final String feedback;
@@ -13,7 +17,6 @@ class FeedbackMessage extends StatefulWidget {
   final String currentCategory;
   final int currentLevel;
 
-
   const FeedbackMessage({
     Key? key,
     required this.feedback,
@@ -23,39 +26,87 @@ class FeedbackMessage extends StatefulWidget {
     this.cachedImage,
     required this.currentCategory,
     required this.currentLevel,
-
   }) : super(key: key);
 
   @override
   _FeedbackMessageState createState() => _FeedbackMessageState();
 }
 
-class _FeedbackMessageState extends State<FeedbackMessage> {
+class _FeedbackMessageState extends State<FeedbackMessage> with SingleTickerProviderStateMixin {
+  late final ModuleManager _moduleManager;
+  late final AnimationsModule? _animationModule;
+  late final AudioModule? _audioModule; // ✅ AudioModule instance
   late ConfettiController _confettiController;
+  late AnimationController _animationController;
 
   @override
   void initState() {
     super.initState();
+    _moduleManager = Provider.of<ModuleManager>(context, listen: false);
+    _animationModule = _moduleManager.getLatestModule<AnimationsModule>();
+    _audioModule = _moduleManager.getLatestModule<AudioModule>(); // ✅ Get AudioModule instance
+
     _confettiController = ConfettiController(duration: const Duration(seconds: 2));
 
-    if (widget.feedback.contains("Correct")) {
-      _confettiController.play();
+    bool isCorrect = widget.feedback.contains("Correct");
+
+    // ✅ Play the correct or incorrect sound
+    if (_audioModule != null) {
+      if (isCorrect) {
+        final correctSoundPath = _audioModule!.correctSounds["correct_1"];
+
+        if (correctSoundPath != null) {
+          final player = AudioPlayer();
+
+          player.setAsset(correctSoundPath).then((_) async {
+            Duration? soundDuration = player.duration ?? const Duration(milliseconds: 1500); // Default to 1.5s if null
+
+            // ✅ Play the correct sound
+            await player.play();
+
+            // ✅ Wait for the correct sound to finish
+            await Future.delayed(soundDuration);
+
+            // ✅ Play the flushing sound after the correct sound finishes
+            _audioModule!.playSpecific("flushing_1", _audioModule!.flushingFiles);
+
+            // ✅ Dispose player after use to free memory
+            await player.dispose();
+          });
+        }
+
+        _confettiController.play();
+      }
+ else {
+        _audioModule!.playSpecific("incorrect_1", _audioModule!.incorrectSounds); // ✅ Play incorrect sound
+      }
+    }
+
+    // ✅ Initialize the animation controller
+    _animationController = AnimationController(
+      duration: const Duration(seconds: 4), // ✅ 4 seconds total (3s shake + 1s drop)
+      vsync: this,
+    );
+
+    // ✅ Start animation when widget loads
+    if (isCorrect && widget.cachedImage != null) {
+      _animationController.forward();
     }
   }
-
-  String _formatCorrectName(String name) {
-    return name
-        .replaceAll("_", " ") // ✅ Replace underscores with spaces
-        .split(" ") // ✅ Split into words
-        .map((word) => word.isNotEmpty ? word[0].toUpperCase() + word.substring(1).toLowerCase() : "") // ✅ Capitalize first letter of each word
-        .join(" "); // ✅ Join words back into a single string
-  }
-
 
   @override
   void dispose() {
     _confettiController.dispose();
+    _animationController.dispose();
     super.dispose();
+  }
+
+  String _formatCorrectName(String name) {
+    return name
+        .replaceAll("_", " ")
+        .split(" ")
+        .map((word) => word.isNotEmpty ? word[0].toUpperCase() + word.substring(1).toLowerCase() : "")
+        .join(" ");
   }
 
   @override
@@ -64,12 +115,11 @@ class _FeedbackMessageState extends State<FeedbackMessage> {
     String safeCategory = widget.currentCategory.isNotEmpty ? widget.currentCategory : "default";
     int safeLevel = widget.currentLevel > 0 ? widget.currentLevel : 1;
 
-    // Construct the background image paths
-    String backgroundImagePath = widget.currentCategory.isNotEmpty
+    String backgroundImagePath = isCorrect
         ? 'assets/images/backgrounds/lev$safeLevel/$safeCategory/main_background_$safeCategory.png'
         : 'assets/images/backgrounds/main_background_default.png';
 
-    String backgroundImageOverlayPath = widget.currentCategory.isNotEmpty
+    String backgroundImageOverlayPath = isCorrect
         ? 'assets/images/backgrounds/lev$safeLevel/$safeCategory/main_background_overlay_$safeCategory.png'
         : 'assets/images/backgrounds/main_background_overlay_default.png';
 
@@ -87,17 +137,29 @@ class _FeedbackMessageState extends State<FeedbackMessage> {
             ),
           ),
 
-          // ✅ Cached Celeb Image (Centered)
-          Align(
-            alignment: Alignment.center,
-            child: FractionallySizedBox(
-              widthFactor: 0.2, // ✅ 10% of the screen width
-              child: Image(
-                image: widget.cachedImage!,
-                fit: BoxFit.contain,
+          // ✅ Cached Celeb Image (Shake & Drop Animation Applied)
+          if (widget.cachedImage != null)
+            Align(
+              alignment: Alignment.center,
+              child: _animationModule != null
+                  ? _animationModule!.applyShakeAndDropAnimation( // ✅ Use the registered instance
+                child: FractionallySizedBox(
+                  widthFactor: 0.2, // ✅ 10% of the screen width
+                  child: Image(
+                    image: widget.cachedImage!,
+                    fit: BoxFit.contain,
+                  ),
+                ),
+                controller: _animationController, // ✅ Apply animation
+              )
+                  : FractionallySizedBox( // 🔄 Fallback (if module is null)
+                widthFactor: 0.2,
+                child: Image(
+                  image: widget.cachedImage!,
+                  fit: BoxFit.contain,
+                ),
               ),
             ),
-          ),
 
           // ✅ Full-Screen Overlay
           Positioned.fill(
@@ -177,9 +239,9 @@ class _FeedbackMessageState extends State<FeedbackMessage> {
           Positioned(
             top: MediaQuery.of(context).size.height * 0.20, // ✅ 1/4 from the top
             left: 0,
-            right: 0,  // ✅ Ensures full width for centering
+            right: 0, // ✅ Ensures full width for centering
             child: Align(
-              alignment: Alignment.topCenter,  // ✅ Center it horizontally
+              alignment: Alignment.topCenter, // ✅ Center it horizontally
               child: ConfettiWidget(
                 confettiController: _confettiController,
                 blastDirectionality: BlastDirectionality.explosive,
@@ -193,8 +255,5 @@ class _FeedbackMessageState extends State<FeedbackMessage> {
           ),
       ],
     );
-
-
   }
-
 }

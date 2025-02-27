@@ -1,5 +1,6 @@
 import 'package:flush_me_im_famous/core/managers/navigation_manager.dart';
 import 'package:flush_me_im_famous/plugins/main_plugin/modules/animations_module/animations_module.dart';
+import 'package:flush_me_im_famous/plugins/main_plugin/modules/audio_module/audio_module.dart';
 import 'package:flush_me_im_famous/plugins/main_plugin/modules/login_module/login_module.dart';
 import 'package:flush_me_im_famous/plugins/main_plugin/modules/main_helper_module/main_helper_module.dart';
 import 'package:flush_me_im_famous/plugins/main_plugin/screens/home_screen.dart';
@@ -51,6 +52,7 @@ class MainPlugin extends PluginBase {
       null: AnimationsModule(),
       null: MainHelperModule(),
       null: LoginModule(),
+      null: AudioModule(),
     };
   }
 
