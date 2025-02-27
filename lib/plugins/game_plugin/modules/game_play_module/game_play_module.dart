@@ -29,6 +29,8 @@ class GamePlayModule extends ModuleBase {
   String feedbackMessage = "";
   List<String> imageOptions = []; // ✅ Store shuffled images
   List<String> nameOptions = [];
+  String category = "";
+  int level = 0;
 
   Future<void> resetState(BuildContext context) async {
     final stateManager = Provider.of<StateManager>(context, listen: false);
@@ -104,8 +106,8 @@ class GamePlayModule extends ModuleBase {
 
     try {
       // ✅ Get user's level and category from SharedPreferences
-      final category = sharedPref.getString('category') ?? "mixed";
-      final int level = sharedPref.getInt('level_$category') ?? 1;
+      category = sharedPref.getString('category') ?? "mixed";
+      level = sharedPref.getInt('level_$category') ?? 1;
 
       _log.info("🏆 User category: $category | Level: $level");
 

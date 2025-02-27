@@ -47,8 +47,9 @@ class _FactBoxState extends State<FactBox> {
       ),
       child: ConstrainedBox(
         constraints: BoxConstraints(
-          maxHeight: MediaQuery.of(context).size.height * 0.4, // ✅ Limit height to 40% of screen
+          maxHeight: MediaQuery.of(context).size.height / 3, // ✅ Limit height to 1/3 of screen
         ),
+
         child: widget.facts != null && widget.facts!.isNotEmpty
             ? Scrollbar(
           controller: _scrollController,

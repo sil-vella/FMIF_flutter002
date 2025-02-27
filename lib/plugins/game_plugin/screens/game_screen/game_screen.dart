@@ -376,7 +376,9 @@ class GameScreenState extends BaseScreenState<GameScreen> {
         // ✅ CelebImage positioned behind everything
         Positioned.fill(
           child: CelebImage(
-            imageUrl: _gamePlayModule?.question?['image_url'] ?? "", // Pass the image URL for CelebImage
+            imageUrl: _gamePlayModule?.question?['image_url'] ?? "",
+            currentCategory: _gamePlayModule!.category,
+            currentLevel: _gamePlayModule!.level,
             onImageLoaded: _onImagesLoaded, // Pass the callback function
           ),
         ),
@@ -464,21 +466,28 @@ class GameScreenState extends BaseScreenState<GameScreen> {
           bottom: 0,
           child: Container(
             width: MediaQuery.of(context).size.width,
+            constraints: BoxConstraints(
+              maxHeight: MediaQuery.of(context).size.height / 3, // ✅ Max height 1/3 of screen
+            ),
             decoration: BoxDecoration(
               color: Colors.black.withOpacity(0.7),
               borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
             ),
-            child: SingleChildScrollView(
-              child: FactBox(
-                facts: (_gamePlayModule?.question?['facts'] as List<dynamic>?)
-                    ?.map((e) => e.toString())
-                    .toList() ??
-                    [], // ✅ Ensure facts is never null
-                onFactsLoaded: _onFactsLoaded,
+            child: ClipRRect(
+              borderRadius: BorderRadius.vertical(top: Radius.circular(20)), // ✅ Ensure no overflow
+              child: SingleChildScrollView(
+                child: FactBox(
+                  facts: (_gamePlayModule?.question?['facts'] as List<dynamic>?)
+                      ?.map((e) => e.toString())
+                      .toList() ??
+                      [], // ✅ Ensure facts is never null
+                  onFactsLoaded: _onFactsLoaded,
+                ),
               ),
             ),
           ),
         ),
+
 
         // ✅ Full-Screen Loading Overlay
         const ScreenOverlay(), // ✅ New External Component

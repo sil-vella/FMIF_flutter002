@@ -33,6 +33,22 @@ flutter:
     - assets/
     - assets/images/
     - assets/images/backgrounds/
+    - assets/images/backgrounds/lev1/actors/
+    - assets/images/backgrounds/lev1/american_football_players/
+    - assets/images/backgrounds/lev1/baseball_players/
+    - assets/images/backgrounds/lev1/basketball_players/
+    - assets/images/backgrounds/lev1/game_characters/
+    - assets/images/backgrounds/lev1/musicians/
+    - assets/images/backgrounds/lev1/soccer_players/
+    - assets/images/backgrounds/lev1/streamers/
+    - assets/images/backgrounds/lev2/actors/
+    - assets/images/backgrounds/lev2/american_football_players/
+    - assets/images/backgrounds/lev2/baseball_players/
+    - assets/images/backgrounds/lev2/basketball_players/
+    - assets/images/backgrounds/lev2/game_characters/
+    - assets/images/backgrounds/lev2/musicians/
+    - assets/images/backgrounds/lev2/soccer_players/
+    - assets/images/backgrounds/lev2/streamers/
 
 
 flutter_native_splash:
