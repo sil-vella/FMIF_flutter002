@@ -3,14 +3,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter/material.dart';
 
 class AppColors {
-  static const Color primaryColor = Color(0xFF1C1B2E); // Dark Slate Blue (Background)
-  static const Color accentColor = Color(0xFFCB9C50); // 🌟 Gold Accent
-  static const Color accentColor2 = Color(0xFF7A1C28);
-  static const Color scaffoldBackgroundColor = Color(0xFF121212); // 🔥 Deep Black for OLED Displays
+  static const Color primaryColor = Color(0xFF1C1B2E);
+  static const Color accentColor = Color(0xFF8A4090);
+  static const Color accentColor2 = Color(0xFFFBC02D);
+  static const Color scaffoldBackgroundColor = Color(0xFF1C1B2E);
   static const Color white = Colors.white;
-  static const Color darkGray = Color(0xFF333333); // 🎨 Deep Charcoal Gray
-  static const Color lightGray = Color(0xFFB0BEC5); // 🌫 Cool Gray for Subtle Text
-  static const Color redAccent = Colors.redAccent; // ⚠️ Error Color (Kept as-is)
+  static const Color darkGray = Color(0xFF333333);
+  static const Color lightGray = Color(0xFFB0BEC5);
+  static const Color redAccent = Colors.redAccent;
 }
 
 class AppBackgrounds {
@@ -18,10 +18,6 @@ class AppBackgrounds {
 
   static const List<String> backgrounds = [
     '${_path}gamescreen_background_01.jpg',
-    '${_path}gamescreen_background_02.jpg',
-    '${_path}gamescreen_background_03.jpg',
-    '${_path}gamescreen_background_04.jpg',
-    '${_path}gamescreen_background_05.jpg',
   ];
 }
 

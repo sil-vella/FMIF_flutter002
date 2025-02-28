@@ -1,7 +1,7 @@
 name: flush_me_im_famous
 description: Flush Me I'm Famous App.
 publish_to: "none"
-version: 1.0.0+7
+version: 1.0.0+9
 
 environment:
   sdk: ">=3.1.5 <4.0.0"

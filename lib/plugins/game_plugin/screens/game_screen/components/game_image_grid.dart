@@ -91,11 +91,11 @@ class _GameNameRowState extends State<GameNameRow> {
             decoration: BoxDecoration(
               color: isSelected
                   ? Colors.greenAccent.withOpacity(0.8)
-                  : (isFaded ? Colors.grey[300] : AppColors.primaryColor),
+                  : (isFaded ? Colors.grey[300] : AppColors.accentColor),
               border: Border.all(
                 color: isSelected
                     ? Colors.greenAccent
-                    : (isFaded ? Colors.grey : AppColors.accentColor),
+                    : (isFaded ? Colors.grey : AppColors.accentColor2),
                 width: isSelected ? 4.0 : (isFaded ? 2.0 : 3.0),
               ),
               borderRadius: BorderRadius.circular(8.0),

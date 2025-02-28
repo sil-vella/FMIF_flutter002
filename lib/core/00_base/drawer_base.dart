@@ -13,28 +13,50 @@ class CustomDrawer extends StatelessWidget {
     print("Rendering Drawer Items: ${drawerRoutes.map((r) => r.path).toList()}");
 
     return Drawer(
-      child: ListView(
-        children: [
-          DrawerHeader(
-            decoration: BoxDecoration(color: AppColors.primaryColor),
-            child: Text(
-              'Menu',
-              style: AppTextStyles.headingMedium(color: AppColors.accentColor),
+      child: Container(
+        decoration: BoxDecoration(
+          color: AppColors.primaryColor, // ✅ Background color
+          image: DecorationImage(
+            image: AssetImage('assets/images/icon_foreground.png'), // ✅ Background image
+            fit: BoxFit.cover, // ✅ Make sure it covers the drawer
+            opacity: 0.2, // ✅ Adjust opacity to blend with background
+          ),
+        ),
+        child: Column(
+          children: [
+            // ✅ Drawer Header with Image
+            DrawerHeader(
+
+              child: Align(
+                alignment: Alignment.bottomLeft,
+                child: Text(
+                  'Menu',
+                  style: AppTextStyles.headingMedium(color: AppColors.white),
+                ),
+              ),
             ),
-          ),
-          ListTile(
-            leading: Icon(Icons.home, color: AppColors.accentColor),
-            title: Text('Home', style: AppTextStyles.bodyLarge),
-            onTap: () => context.go('/'), // ✅ Navigate to home
-          ),
-          ...drawerRoutes.map((route) {
-            return ListTile(
-              leading: Icon(route.drawerIcon, color: AppColors.accentColor),
-              title: Text(route.drawerTitle ?? '', style: AppTextStyles.bodyLarge),
-              onTap: () => context.go(route.path), // ✅ Navigate via GoRouter
-            );
-          }),
-        ],
+            // ✅ Drawer Items List
+            Expanded(
+              child: ListView(
+                padding: EdgeInsets.zero,
+                children: [
+                  ListTile(
+                    leading: Icon(Icons.home, color: AppColors.accentColor),
+                    title: Text('Home', style: AppTextStyles.bodyLarge),
+                    onTap: () => context.go('/'),
+                  ),
+                  ...drawerRoutes.map((route) {
+                    return ListTile(
+                      leading: Icon(route.drawerIcon, color: AppColors.accentColor),
+                      title: Text(route.drawerTitle ?? '', style: AppTextStyles.bodyLarge),
+                      onTap: () => context.go(route.path),
+                    );
+                  }),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

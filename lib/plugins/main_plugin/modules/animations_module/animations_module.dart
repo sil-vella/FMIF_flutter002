@@ -207,5 +207,36 @@ class AnimationsModule extends ModuleBase {
     );
   }
 
+  /// ✅ Applies a repeating side-to-side animation
+  Widget applySideToSideAnimation({
+    required Widget child,
+    required AnimationController controller,
+    double distance = 20.0, // Default movement distance
+  }) {
+    registerController(controller);
+    _log.info('Applying repeating side-to-side animation.');
+
+    final sideToSideAnimation = Tween<Offset>(
+      begin: Offset(-distance, 0),
+      end: Offset(distance, 0),
+    ).animate(
+      CurvedAnimation(
+        parent: controller,
+        curve: Curves.easeInOut,
+      ),
+    );
+
+    return AnimatedBuilder(
+      animation: sideToSideAnimation,
+      builder: (context, _) {
+        return Transform.translate(
+          offset: Offset(sideToSideAnimation.value.dx, 0),
+          child: child,
+        );
+      },
+    );
+  }
+
+
 
 }

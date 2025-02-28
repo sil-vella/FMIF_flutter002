@@ -51,10 +51,10 @@ abstract class BaseScreenState<T extends BaseScreen> extends State<T> {
       appBar: AppBar(
         title: Text(
           widget.computeTitle(context),
-          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.darkGray),
+          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.white),
         ),
         backgroundColor: AppColors.accentColor,
-        iconTheme: const IconThemeData(color: AppColors.darkGray),
+        iconTheme: const IconThemeData(color: AppColors.white),
       ),
       drawer:  CustomDrawer(), // ✅ Use the correct drawer
 

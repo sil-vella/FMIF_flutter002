@@ -68,7 +68,7 @@ class _FactBoxState extends State<FactBox> {
                   style: const TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
-                    color: Colors.black,
+                    color: Colors.white,
                   ),
                 ),
               );

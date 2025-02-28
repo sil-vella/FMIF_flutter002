@@ -11,6 +11,7 @@ import '../../../../core/managers/state_manager.dart';
 import '../../../../core/services/shared_preferences.dart';
 import '../../../../core/services/ticker_timer/ticker_timer.dart';
 import '../../../../tools/logging/logger.dart';
+import '../../../../utils/consts/theme_consts.dart';
 import '../../../adverts_plugin/modules/admobs/rewarded/rewarded_ad.dart';
 import '../../../main_plugin/modules/main_helper_module/main_helper_module.dart';
 import '../../modules/game_play_module/config/gameplaymodule_config.dart';
@@ -414,20 +415,50 @@ class GameScreenState extends BaseScreenState<GameScreen> {
         SingleChildScrollView(
           child: Column(
             children: [
-              // ✅ Top bar with Level, TimerBar, and Points
+              // ✅ Top Bar with Level, TimerBar, and Points
               Padding(
-                padding: const EdgeInsets.all(12.0),
+                padding: const EdgeInsets.all(0.0),
                 child: Column(
                   children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text("⭐ Category Level: $_level",
-                            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                        Text("🏆 Points: $_points",
-                            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                      ],
+                    // ✅ Row with Background & Glow
+                    Container(
+                      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16), // Spacing inside
+                      decoration: BoxDecoration(
+                        color: AppColors.darkGray.withOpacity(0.6), // ✅ Semi-transparent dark background
+                        borderRadius: BorderRadius.circular(10), // ✅ Smooth rounded corners
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            "⭐ Category Level: $_level",
+                            style: AppTextStyles.headingSmall(color: AppColors.white).copyWith(
+                              shadows: [
+                                Shadow(
+                                  blurRadius: 15.0, // ✅ Glow intensity
+                                  color: AppColors.accentColor.withOpacity(0.9), // ✅ Accent glow
+                                  offset: const Offset(0, 0),
+                                ),
+                              ],
+                            ),
+                          ),
+                          Text(
+                            "🏆 Points: $_points",
+                            style: AppTextStyles.headingSmall(color: AppColors.white).copyWith(
+                              shadows: [
+                                Shadow(
+                                  blurRadius: 15.0,
+                                  color: AppColors.accentColor2.withOpacity(0.9), // ✅ Accent2 glow
+                                  offset: const Offset(0, 0),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
+
+
                     Consumer<StateManager>(
                       builder: (context, stateManager, child) {
                         final timerState =
@@ -461,17 +492,27 @@ class GameScreenState extends BaseScreenState<GameScreen> {
 
               const SizedBox(height: 20),
 
-              // ✅ Help Button (Center-aligned)
               ElevatedButton(
                 onPressed: _useHelp,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.orangeAccent,
+                  backgroundColor: AppColors.accentColor2,
                   foregroundColor: Colors.black,
                   padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8.0)),
                 ),
-                child: const Text("💡 Use Help", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                child: const Row(
+                  mainAxisSize: MainAxisSize.min, // ✅ Prevents unnecessary space
+                  children: [
+                    Icon(Icons.ondemand_video, color: Colors.black, size: 22), // ✅ Video icon
+                    SizedBox(width: 8), // ✅ Spacing between icon and text
+                    Text(
+                      "Get Help",
+                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    ),
+                  ],
+                ),
               ),
+
 
               const SizedBox(height: 20),
             ],

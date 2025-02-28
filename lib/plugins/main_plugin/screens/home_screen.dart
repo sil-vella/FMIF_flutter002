@@ -7,6 +7,7 @@ import '../../../core/00_base/screen_base.dart';
 import '../../../core/managers/app_manager.dart';
 import '../../../core/managers/module_manager.dart';
 import '../../../core/managers/state_manager.dart';
+import '../../../utils/consts/theme_consts.dart';
 import '../modules/main_helper_module/main_helper_module.dart'; // ✅ Import Helper Module
 
 class HomeScreen extends BaseScreen {
@@ -80,22 +81,33 @@ class HomeScreenState extends BaseScreenState<HomeScreen>
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              animationsModule.applyBounceAnimation(
+              // ✅ Apply the side-to-side animation instead of bounce
+              animationsModule.applySideToSideAnimation(
                 child: Image.asset(
-                  'assets/images/icon_foreground.png', // Replace with your actual asset path
-                  width: 300, // Adjust size as needed
-                  height: 300,
+                  'assets/images/head.png', // Replace with your actual asset path
+                  width: 200, // Adjust size as needed
+                  height: 200,
                 ),
                 controller: _controller,
               ),
               const SizedBox(height: 20),
               ElevatedButton(
                 onPressed: onPlayPressed,
-                child: const Text('Play'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.white, // 🎨 White background
+                  foregroundColor: AppColors.accentColor, // 📝 Text color (used only for Material States)
+                  padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 24),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                ),
+                child: Text(
+                  'Play',
+                  style: AppTextStyles.buttonText.copyWith(color: AppColors.accentColor), // ✅ Explicitly set text color
+                ),
               ),
-            ],
 
+            ],
           ),
+
         ),
 
       ],
