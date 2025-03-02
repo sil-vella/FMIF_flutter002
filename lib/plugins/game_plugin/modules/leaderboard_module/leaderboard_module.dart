@@ -37,7 +37,7 @@ class LeaderboardModule extends ModuleBase {
     try {
       // ✅ Retrieve user's email from SharedPreferences (if logged in)
       final userEmail = sharedPref.getString('email');
-      final queryParams = userEmail != null ? "?email=$userEmail" : "";
+      final queryParams = (userEmail != null && userEmail.isNotEmpty) ? "?email=$userEmail" : "";
 
       _log.info("⚡ Fetching leaderboard data from `/get-leaderboard$queryParams`...");
 
@@ -48,18 +48,25 @@ class LeaderboardModule extends ModuleBase {
 
       if (response != null && response.containsKey("leaderboard")) {
         return {
-          "leaderboard": List<Map<String, dynamic>>.from(response["leaderboard"]),
-          "user_rank": response["user_rank"] // ✅ User rank if available
+          "leaderboard": List<Map<String, dynamic>>.from(response["leaderboard"] ?? []),  // ✅ Always a list
+          "user_rank": response["user_rank"] ?? null  // ✅ Ensure `null` is handled properly
         };
       } else {
         _log.error("❌ Failed to retrieve leaderboard data.");
-        return {};
+        return {
+          "leaderboard": [],
+          "user_rank": null  // ✅ Default to `null` if missing
+        };
       }
     } catch (e) {
       _log.error("❌ Error fetching leaderboard: $e");
-      return {};
+      return {
+        "leaderboard": [],
+        "user_rank": null  // ✅ Handle errors gracefully
+      };
     }
   }
+
 
   /// ✅ **User Rank Card (Styled)**
   Widget buildUserRankCard(Map<String, dynamic>? userRank) {
@@ -113,9 +120,10 @@ class LeaderboardModule extends ModuleBase {
               leading: CircleAvatar(
                 backgroundColor: AppColors.accentColor,
                 child: Text(
-                  "${index + 1}",
+                  "${user["rank"]}", // ✅ Use the rank from the API
                   style: AppTextStyles.bodyMedium,
                 ),
+
               ),
               title: Text(
                 user["username"] ?? "Unknown",

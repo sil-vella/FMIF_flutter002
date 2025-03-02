@@ -2,7 +2,7 @@
 
 class Config {
 
-  static const bool loggerOn = true;
+  static const bool loggerOn = false;
 
   static const String appTitle = "Flush Me I'm Famous";
 

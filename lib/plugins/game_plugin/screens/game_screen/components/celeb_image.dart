@@ -10,29 +10,29 @@ import '../../../../../tools/logging/logger.dart';
 class CelebImage extends StatelessWidget {
   final String imageUrl;
   final Function(ImageProvider) onImageLoaded;
-  final String currentCategory;
   final int currentLevel;
+  final String actualCategory;
 
   const CelebImage({
     Key? key,
     required this.imageUrl,
     required this.onImageLoaded,
-    required this.currentCategory,
     required this.currentLevel,
+    required this.actualCategory,
   }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     // Ensure category and level are valid
-    String safeCategory = currentCategory.isNotEmpty ? currentCategory : "default";
+    String safeCategory = actualCategory.isNotEmpty ? actualCategory : "default";
     int safeLevel = currentLevel > 0 ? currentLevel : 1;
 
     // Construct the background image paths
-    String backgroundImagePath = currentCategory.isNotEmpty
+    String backgroundImagePath = actualCategory.isNotEmpty
         ? 'assets/images/backgrounds/lev$safeLevel/$safeCategory/main_background_$safeCategory.png'
         : 'assets/images/backgrounds/main_background_default.png';
 
-    String backgroundImageOverlayPath = currentCategory.isNotEmpty
+    String backgroundImageOverlayPath = actualCategory.isNotEmpty
         ? 'assets/images/backgrounds/lev$safeLevel/$safeCategory/main_background_overlay_$safeCategory.png'
         : 'assets/images/backgrounds/main_background_overlay_default.png';
 

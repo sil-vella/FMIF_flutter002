@@ -1,4 +1,5 @@
 import 'package:flush_me_im_famous/plugins/game_plugin/modules/game_play_module/game_play_module.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flush_me_im_famous/plugins/game_plugin/modules/function_helper_module/function_helper_module.dart';
@@ -124,7 +125,7 @@ class GamePlugin extends PluginBase {
     }
   }
 
-  /// ✅ Fetch game categories
+  /// ✅ Fetch game categories and update only if changed
   Future<void> getCategories(BuildContext context) async {
     final moduleManager = Provider.of<ModuleManager>(context, listen: false);
     final servicesManager = Provider.of<ServicesManager>(context, listen: false);
@@ -142,25 +143,38 @@ class GamePlugin extends PluginBase {
     }
 
     try {
-      Logger().info('⚡ Sending GET request to `/get-categories`...');
+      Logger().info('⚡ Fetching categories from /get-categories...');
       final response = await connectionModule.sendGetRequest('/get-categories');
 
       if (response != null && response is Map<String, dynamic> && response.containsKey("categories")) {
         final Map<String, dynamic> categoriesMap = response["categories"];
+        List<String> fetchedCategories = categoriesMap.keys.toList();
 
-        List<String> categoryList = categoriesMap.keys.toList();
-        Logger().info('✅ Successfully fetched categories: $categoryList');
+        Logger().info("✅ Fetched categories from backend: $fetchedCategories");
 
-        sharedPref.setStringList('available_categories', categoryList);
+        // ✅ Get currently stored categories
+        List<String>? storedCategories = sharedPref.getStringList('available_categories') ?? [];
 
-        for (String category in categoriesMap.keys) {
-          int levels = categoriesMap[category]["levels"] ?? 2;
-          sharedPref.setInt('max_levels_$category', levels);
-          Logger().info("✅ Saved max levels for $category: $levels");
+        // ✅ Only update if the categories have changed
+        if (storedCategories.isEmpty || !listEquals(storedCategories, fetchedCategories)) {
+          Logger().info("🔄 Categories changed, updating SharedPreferences...");
+
+          await sharedPref.setStringList('available_categories', fetchedCategories);
+
+          // ✅ Store max levels per category
+          for (String category in categoriesMap.keys) {
+            int levels = categoriesMap[category]["levels"] ?? 2;
+            await sharedPref.setInt('max_levels_$category', levels);
+            Logger().info("✅ Saved max levels for $category: $levels");
+          }
+
+          Logger().info('✅ Categories and levels updated in SharedPreferences.');
+        } else {
+          Logger().info("✅ Categories are unchanged. No update needed.");
         }
 
-        Logger().info('✅ Categories and levels saved in SharedPreferences.');
-        await _initializeCategorySystem(categoryList, sharedPref);
+        // ✅ Ensure initialization even if categories didn’t change
+        await _initializeCategorySystem(fetchedCategories, sharedPref);
       } else {
         Logger().error('❌ Failed to fetch categories. Unexpected response format: $response');
       }

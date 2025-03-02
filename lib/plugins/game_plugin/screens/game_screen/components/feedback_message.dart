@@ -14,7 +14,7 @@ class FeedbackMessage extends StatefulWidget {
   final VoidCallback onClose;
   final String? selectedImageUrl;
   final CachedNetworkImageProvider? cachedImage;
-  final String currentCategory;
+  final String actualCategory;
   final int currentLevel;
 
   const FeedbackMessage({
@@ -24,7 +24,7 @@ class FeedbackMessage extends StatefulWidget {
     required this.onClose,
     this.selectedImageUrl,
     this.cachedImage,
-    required this.currentCategory,
+    required this.actualCategory,
     required this.currentLevel,
   }) : super(key: key);
 
@@ -112,7 +112,7 @@ class _FeedbackMessageState extends State<FeedbackMessage> with SingleTickerProv
   @override
   Widget build(BuildContext context) {
     bool isCorrect = widget.feedback.contains("Correct");
-    String safeCategory = widget.currentCategory.isNotEmpty ? widget.currentCategory : "default";
+    String safeCategory = widget.actualCategory.isNotEmpty ? widget.actualCategory : "default";
     int safeLevel = widget.currentLevel > 0 ? widget.currentLevel : 1;
 
     String backgroundImagePath = isCorrect

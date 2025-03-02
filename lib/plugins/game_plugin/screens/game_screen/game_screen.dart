@@ -59,6 +59,7 @@ class GameScreenState extends BaseScreenState<GameScreen> {
   final Random _random = Random();
   Set<String> fadedNames = {}; // ✅ Tracks faded images
   CachedNetworkImageProvider? _cachedSelectedImage;
+  String _actualCategory = "";
 
   @override
   void initState() {
@@ -263,6 +264,7 @@ class GameScreenState extends BaseScreenState<GameScreen> {
       fadedNames.clear();
       _gamePlayModule?.imageOptions = []; // ✅ Ensure images reset
       _gamePlayModule?.nameOptions = []; // ✅ Ensure images reset
+      _actualCategory = "";
     });
 
     // ✅ Defer state update to the next frame to avoid "setState during build" error
@@ -282,9 +284,11 @@ class GameScreenState extends BaseScreenState<GameScreen> {
 // In GameScreen
     Future.delayed(const Duration(milliseconds: 100), () async {
       await _gamePlayModule?.roundInit(context, () {
+        String newCategory = _gamePlayModule?.question?['category'] ?? "";
         // Only update UI state after the necessary data is ready
         setState(() {
           _correctAnswer = _gamePlayModule?.question?['name'];
+          _actualCategory = newCategory;
           _gamePlayModule?.imageOptions = [
             _gamePlayModule?.question?['image_url']
           ];
@@ -406,7 +410,7 @@ class GameScreenState extends BaseScreenState<GameScreen> {
         Positioned.fill(
           child: CelebImage(
             imageUrl: imageUrl.isNotEmpty ? imageUrl : "assets/images/icon.png", // Use placeholder if missing
-            currentCategory: _gamePlayModule!.category,
+            actualCategory: _actualCategory,
             currentLevel: _gamePlayModule!.level,
             onImageLoaded: _onImagesLoaded, // ✅ Modified to receive ImageProvider
           ),
@@ -554,7 +558,7 @@ class GameScreenState extends BaseScreenState<GameScreen> {
               onClose: _closeFeedback,
               cachedImage: _cachedSelectedImage,
               correctName: _correctName,
-              currentCategory: _gamePlayModule!.category,
+              actualCategory: _actualCategory,
               currentLevel: _gamePlayModule!.level,
             ),
           ),
